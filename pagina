@@ -595,33 +595,6 @@
 </head>
 <body>
 
-    <!-- ========== MODAL DE CONFIGURAÇÃO DA GAVETA ========== -->
-    <div class="modal-overlay" id="modalGaveta">
-        <div class="modal-box">
-            <div class="modal-icon">🗄️</div>
-            <div class="modal-title">Configurar Gaveta de Dinheiro</div>
-            <div class="modal-subtitle">
-                Selecione o arquivo <strong>.py</strong> responsável por abrir a gaveta de dinheiro no seu computador.<br>
-                Ele será executado automaticamente ao finalizar uma venda em dinheiro.
-            </div>
-
-            <div class="modal-file-area" id="fileArea">
-                <input type="file" id="scriptGavetaInput" accept=".py" onchange="selecionarScript(this)">
-                <div class="modal-file-label" id="fileLabelText">
-                    📂 Clique para selecionar o script Python
-                    <span>Apenas arquivos .py são aceitos</span>
-                </div>
-            </div>
-
-            <div class="modal-btns">
-                <button class="modal-btn-skip" onclick="pularConfigGaveta()">Pular por agora</button>
-                <button class="modal-btn-confirm" id="btnConfirmarGaveta" onclick="confirmarGaveta()" disabled
-                    style="opacity:0.5; cursor:not-allowed;">
-                    ✅ Confirmar
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- ========== TOAST ========== -->
     <div class="toast" id="toast"></div>
@@ -642,13 +615,7 @@
             </div>
         </div>
 
-        <!-- Status da gaveta na sidebar -->
-        <div style="position: absolute; bottom: 20px; width: 100%;">
-            <div class="gaveta-status nao-config" id="gavetaSidebarStatus" onclick="reabrirModalGaveta()">
-                <span>🗄️</span>
-                <span id="gavetaSidebarTexto">Gaveta não configurada</span>
-            </div>
-        </div>
+
     </div>
 
     <!-- HEADER -->
@@ -728,9 +695,7 @@
             <button class="admin-btn" onclick="cancelamento()">Cancel.</button>
             <button class="admin-btn" onclick="intpos_venda()">IntPos V</button>
             <button class="admin-btn" onclick="intpos_adm()">IntPos A</button>
-            <button class="admin-btn" onclick="reabrirModalGaveta()" style="grid-column: span 2; background:#f0fdf4; border-color:#86efac; color:#15803d;">
-                🗄️ Config. Gaveta
-            </button>
+
         </div>
     </div>
 
@@ -764,124 +729,50 @@
             setTimeout(() => { t.className = 'toast'; }, duracao);
         }
 
-        // ==================== INICIALIZAÇÃO ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            carregarProdutos();
-            // Mostra o modal de configuração da gaveta ao iniciar
-            document.getElementById('modalGaveta').classList.remove('hidden');
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    carregarProdutos();
+    // Modal removido - gaveta agora é integrada no Flask
+});
 
-        // ==================== MODAL GAVETA ====================
-        function selecionarScript(input) {
-            const file = input.files[0];
-            if (!file) return;
 
-            if (!file.name.endsWith('.py')) {
-                showToast('❌ Selecione apenas arquivos .py', 'error');
-                input.value = '';
-                return;
-            }
 
-            scriptGavetaFile = file;
-            const label = document.getElementById('fileLabelText');
-            label.className = 'modal-file-label selected';
-            label.innerHTML = `✅ ${file.name}<span>Script selecionado com sucesso</span>`;
 
-            const area = document.getElementById('fileArea');
-            area.classList.add('has-file');
 
-            const btn = document.getElementById('btnConfirmarGaveta');
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-        }
 
-        function confirmarGaveta() {
-            if (!scriptGavetaFile) return;
-
-            scriptGavetaPath = scriptGavetaFile.name;
-            fecharModalGaveta();
-            atualizarStatusGaveta(true);
-            showToast(`✅ Gaveta configurada: ${scriptGavetaPath}`, 'success', 4000);
-        }
-
-        function pularConfigGaveta() {
-            fecharModalGaveta();
-            atualizarStatusGaveta(false);
-            showToast('⚠️ Gaveta não configurada. Botão DINHEIRO disponível sem abertura automática.', 'info', 4000);
-        }
-
-        function fecharModalGaveta() {
-            document.getElementById('modalGaveta').classList.add('hidden');
-        }
-
-        function reabrirModalGaveta() {
-            // Reseta o input para permitir nova seleção
-            const input = document.getElementById('scriptGavetaInput');
-            input.value = '';
-            const label = document.getElementById('fileLabelText');
-            label.className = 'modal-file-label';
-            label.innerHTML = `📂 Clique para selecionar o script Python<span>Apenas arquivos .py são aceitos</span>`;
-            document.getElementById('fileArea').classList.remove('has-file');
-            const btn = document.getElementById('btnConfirmarGaveta');
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
-
-            document.getElementById('modalGaveta').classList.remove('hidden');
-        }
-
-        function atualizarStatusGaveta(configurada) {
-            const statusEl = document.getElementById('gavetaSidebarStatus');
-            const textoEl  = document.getElementById('gavetaSidebarTexto');
-            const btnDinheiro = document.getElementById('btnDinheiro');
-
-            if (configurada) {
-                statusEl.className = 'gaveta-status config';
-                textoEl.textContent = `Gaveta: ${scriptGavetaPath}`;
-                btnDinheiro.classList.add('gaveta-ok');
-            } else {
-                statusEl.className = 'gaveta-status nao-config';
-                textoEl.textContent = 'Gaveta não configurada';
-                btnDinheiro.classList.remove('gaveta-ok');
-            }
-        }
 
         // ==================== EXECUTAR SCRIPT GAVETA ====================
-async function abrirGaveta() {
-    if (!scriptGavetaFile) {
-        console.warn('Script de gaveta não configurado.');
-        return false;
-    }
+// ==================== ABRIR GAVETA (INTEGRADO NO FLASK) ====================
 
+async function abrirGaveta() {
     try {
-        // 👇 ALTERAÇÃO: LER CONTEÚDO DO ARQUIVO
-        const textoScript = await scriptGavetaFile.text();
+        console.log('🗄️  Enviando comando para abrir gaveta...');
         
-        // 👇 ALTERAÇÃO: ENVIAR PARA http://localhost:5000/abrir-gaveta
+        // ⭐ NOVO: Envia requisição simples - gaveta abre direto no Flask
         const response = await fetch('http://localhost:5000/abrir-gaveta', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                script: textoScript,           // Conteúdo do .py
-                nome: scriptGavetaFile.name    // Nome do arquivo
-            }),
-            signal: AbortSignal.timeout(5000)  // Aumentado de 3s para 5s
+            body: JSON.stringify({ comando: 'abrir' }),
+            signal: AbortSignal.timeout(5000)
         });
 
-        if (response.ok) {
-            const resultado = await response.json();
-            console.log('✅ Gaveta aberta via Flask:', resultado);
+        const resultado = await response.json();
+        console.log('📡 Resposta do servidor:', resultado);
+
+        if (response.ok && resultado.sucesso) {
+            console.log('✅ Gaveta aberta com sucesso!');
+            console.log('   Mensagem:', resultado.mensagem);
             return true;
         } else {
-            const erro = await response.json();
-            console.error('❌ Erro ao abrir gaveta:', erro);
-            throw new Error(erro.erro || 'Erro desconhecido');
+            console.error('❌ Erro ao abrir gaveta:', resultado.erro);
+            const mensagem = resultado.detalhes 
+                ? `${resultado.erro}\n${resultado.detalhes}`
+                : resultado.erro;
+            showToast(`⚠️ ${mensagem}`, 'error', 5000);
+            return false;
         }
 
     } catch (err) {
         console.error('❌ Erro ao comunicar com Flask:', err.message);
-        // 👇 ALTERAÇÃO: Mensagem de erro melhorada
         showToast(`⚠️ Erro: ${err.message}. Verifique se Flask está rodando em localhost:5000`, 'error', 5000);
         return false;
     }
@@ -1159,25 +1050,19 @@ async function abrirGaveta() {
 async function finalizarVendaDinheiro() {
     if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
 
-    // 👇 NOVO: Aviso que está registrando
     showToast('💾 Registrando venda...', 'info', 2000);
     
-    // 1️⃣ Registra a venda no banco
+    // Registra a venda no banco
     await registrarVenda('DINHEIRO');
 
-    // 2️⃣ Tenta abrir a gaveta
-    if (scriptGavetaFile) {
-        showToast('🗄️ Abrindo gaveta...', 'info', 2000);
-        // 👇 NOVO: Aguarda resposta e verifica resultado
-        const resultado = await abrirGaveta();
-        
-        if (resultado) {
-            showToast('✅ Gaveta aberta com sucesso!', 'success', 3000);
-        } else {
-            showToast('⚠️ Gaveta não abriu. Verifique porta serial.', 'error', 3000);
-        }
+    // Abre a gaveta (agora integrada no Flask)
+    showToast('🗄️ Abrindo gaveta...', 'info', 2000);
+    const resultado = await abrirGaveta();
+    
+    if (resultado) {
+        showToast('✅ Gaveta aberta com sucesso!', 'success', 3000);
     } else {
-        showToast('⚠️ Gaveta não configurada. Venda registrada.', 'info', 3000);
+        showToast('⚠️ Gaveta não abriu. Verifique configuração do Flask.', 'error', 3000);
     }
 
     limparCarrinho();
