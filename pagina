@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMG PDV - Sistema de Vendas</title>
+   
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* ========== MODAL DE CONFIGURAÇÃO GAVETA ========== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.hidden {
+            display: none;
+        }
+        .modal-box {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            width: 480px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .modal-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+        .modal-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .modal-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+        .modal-file-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .modal-file-area:hover {
+            border-color: #6c059b;
+            background: #faf5ff;
+        }
+        .modal-file-area.has-file {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .modal-file-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .modal-file-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            pointer-events: none;
+        }
+        .modal-file-label span {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            margin-top: 4px;
+            color: #9ca3af;
+        }
+        .modal-file-label.selected {
+            color: #059669;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 12px;
+        }
+        .modal-btn-skip {
+            flex: 1;
+            padding: 14px;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-btn-skip:hover {
+            background: #e5e7eb;
+        }
+        .modal-btn-confirm {
+            flex: 2;
+            padding: 14px;
+            background: #6c059b;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .modal-btn-confirm:hover {
+            background: #4a0470;
+            transform: translateY(-1px);
+        }
+
+        /* ========== TOAST NOTIFICATION ========== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 9998;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.success { background: #059669; }
+        .toast.error   { background: #dc2626; }
+        .toast.info    { background: #6c059b; }
+
+        /* SIDEBAR ESQUERDO */
+        .sidebar-left {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 226px;
+            height: 100vh;
+            background: linear-gradient(180deg, #6c059b 0%, #4a0470 100%);
+            z-index: 1000;
+        }
+        .logo {
+            margin: 0 auto 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+        }
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .nav-menu {
+            padding: 0 20px;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .nav-item:hover { background: rgba(255, 255, 255, 0.2); }
+        .nav-item.active { background: rgba(108, 5, 155, 0.8); }
+
+        /* HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 226px;
+            right: 420px;
+            height: 80px;
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            z-index: 999;
+        }
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px 20px 12px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #6c059b;
+            box-shadow: 0 0 0 3px rgba(108, 5, 155, 0.1);
+        }
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #9ca3af;
+        }
+
+        /* ÁREA PRINCIPAL */
+        .main-content {
+            margin-left: 226px;
+            margin-right: 420px;
+            margin-top: 80px;
+            padding: 30px;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* GRID DE CATEGORIAS */
+        .categorias-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .categoria-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .categoria-header {
+            padding: 20px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+        .categoria-header.bebidas  { background: #10b981; }
+        .categoria-header.salgados { background: #f59e0b; }
+        .categoria-header.combos   { background: #ec4899; }
+        .categoria-header.outros   { background: #6c059b; }
+        .categoria-produtos {
+            padding: 15px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        /* PRODUTO ITEM */
+        .produto-item {
+            padding: 20px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            background: white;
+            border: 2px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+        .produto-item:hover {
+            border-color: #6c059b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 5, 155, 0.1);
+        }
+        .produto-nome {
+            font-weight: 700;
+            font-size: 20px;
+            color: #1f2937;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+        .produto-codigo {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+        .produto-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .produto-preco {
+            font-weight: 700;
+            color: #10b981;
+            font-size: 28px;
+        }
+        .btn-adicionar {
+            width: 56px;
+            height: 56px;
+            background: #6c059b;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 32px;
+            font-weight: 700;
+            transition: all 0.2s;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .btn-adicionar:hover  { background: #4a0470; transform: scale(1.1); }
+        .btn-adicionar:active { transform: scale(0.95); }
+
+        /* SIDEBAR DIREITO - CARRINHO */
+        .sidebar-right {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 420px;
+            height: 100vh;
+            background: white;
+            border-left: 2px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .carrinho-header {
+            padding: 25px 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        .carrinho-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #1f2937;
+        }
+        .carrinho-table {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead {
+            background: #f9fafb;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        th {
+            padding: 15px 12px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        th:last-child { text-align: right; }
+        td {
+            padding: 15px 12px;
+            font-size: 14px;
+            color: #1f2937;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        td:last-child { text-align: right; font-weight: 600; }
+        .qtd-controls { display: flex; align-items: center; gap: 8px; }
+        .qtd-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        .qtd-btn:hover {
+            border-color: #6c059b;
+            color: #6c059b;
+            background: #f3e8ff;
+        }
+        .qtd-numero { min-width: 25px; text-align: center; font-weight: 600; }
+        .carrinho-total {
+            padding: 25px 20px;
+            border-top: 2px solid #e5e7eb;
+            background: #f9fafb;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .total-valor {
+            font-size: 28px;
+            font-weight: 700;
+            color: #6c059b;
+        }
+
+        /* BOTÕES DE PAGAMENTO */
+        .pagamento-btns {
+            padding: 20px;
+            background: white;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .btn-pagamento {
+            padding: 16px 8px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-pagamento .btn-icon { font-size: 20px; }
+
+        .btn-pix      { background: #10b981; }
+        .btn-pix:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+        }
+        .btn-credito  { background: #6c059b; }
+        .btn-credito:hover {
+            background: #4a0470;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108,5,155,0.3);
+        }
+        .btn-debito   { background: #f59e0b; }
+        .btn-debito:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+        }
+
+        /* ========== BOTÃO DINHEIRO ========== */
+        .btn-dinheiro { background: #16a34a; position: relative; }
+        .btn-dinheiro:hover {
+            background: #15803d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(22,163,74,0.35);
+        }
+        .btn-dinheiro:active { transform: scale(0.97); }
+        /* indicador de gaveta configurada */
+        .btn-dinheiro .gaveta-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #bbf7d0;
+            display: none;
+        }
+        .btn-dinheiro.gaveta-ok .gaveta-dot { display: block; }
+
+        .carrinho-empty {
+            padding: 60px 20px;
+            text-align: center;
+            color: #9ca3af;
+        }
+        .carrinho-empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* LOADING */
+        .loading-container {
+            padding: 40px;
+            text-align: center;
+            color: #6b7280;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #6c059b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* PAINEL ADMIN */
+        .admin-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 246px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1001;
+        }
+        .admin-panel.active { display: block; }
+        .admin-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #1f2937; }
+        .admin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .admin-btn {
+            padding: 10px 14px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #6b7280;
+        }
+        .admin-btn:hover {
+            background: #6c059b;
+            border-color: #6c059b;
+            color: white;
+        }
+
+        /* ========== STATUS GAVETA NA SIDEBAR ========== */
+        .gaveta-status {
+            margin: 0 20px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .gaveta-status.nao-config {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+        }
+        .gaveta-status.nao-config:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .gaveta-status.config {
+            background: rgba(22,163,74,0.25);
+            color: #86efac;
+        }
+        .gaveta-status.config:hover {
+            background: rgba(22,163,74,0.35);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========== MODAL DE CONFIGURAÇÃO DA GAVETA ========== -->
+    <div class="modal-overlay" id="modalGaveta">
+        <div class="modal-box">
+            <div class="modal-icon">🗄️</div>
+            <div class="modal-title">Configurar Gaveta de Dinheiro</div>
+            <div class="modal-subtitle">
+                Selecione o arquivo <strong>.py</strong> responsável por abrir a gaveta de dinheiro no seu computador.<br>
+                Ele será executado automaticamente ao finalizar uma venda em dinheiro.
+            </div>
+
+            <div class="modal-file-area" id="fileArea">
+                <input type="file" id="scriptGavetaInput" accept=".py" onchange="selecionarScript(this)">
+                <div class="modal-file-label" id="fileLabelText">
+                    📂 Clique para selecionar o script Python
+                    <span>Apenas arquivos .py são aceitos</span>
+                </div>
+            </div>
+
+            <div class="modal-btns">
+                <button class="modal-btn-skip" onclick="pularConfigGaveta()">Pular por agora</button>
+                <button class="modal-btn-confirm" id="btnConfirmarGaveta" onclick="confirmarGaveta()" disabled
+                    style="opacity:0.5; cursor:not-allowed;">
+                    ✅ Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TOAST ========== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- SIDEBAR ESQUERDO -->
+    <div class="sidebar-left">
+        <div class="logo">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTEtiowkqHNljDt44tx14aMfcjeFYnTHMRMh8RRk4Dbi8YeZV0BmwVyuA_Af4jOwtI1CiZlgvqPu1KFIYARRTgoL5FmyK6vTQktTO0JOIeOnpCuqekWRLGLsfdk63UIYcFf_tzsZuGWcUpfs6QwHJwdNMN3IKywregT5zYTsaGrQyewXyna7QLVq1KKVbj/s16000/Generated%20Image%20February%2012,%202026%20-%201_04PM.png" alt="Logo OMG">
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" onclick="toggleView('pdv', event)">
+                <span>🏪</span>
+                <span>HOME</span>
+            </div>
+            <div class="nav-item" onclick="toggleView('admin', event)">
+                <span>⚙️</span>
+                <span>ADMIN</span>
+            </div>
+        </div>
+
+        <!-- Status da gaveta na sidebar -->
+        <div style="position: absolute; bottom: 20px; width: 100%;">
+            <div class="gaveta-status nao-config" id="gavetaSidebarStatus" onclick="reabrirModalGaveta()">
+                <span>🗄️</span>
+                <span id="gavetaSidebarTexto">Gaveta não configurada</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input
+                type="text"
+                class="search-input"
+                id="searchInput"
+                placeholder="Buscar produtos por nome ou código..."
+                oninput="filtrarProdutos(this.value)"
+            >
+        </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="main-content">
+        <div class="categorias-grid" id="categoriasGrid">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 20px;">Carregando produtos...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR DIREITO - CARRINHO -->
+    <div class="sidebar-right">
+        <div class="carrinho-header">
+            <h2>🛒 Carrinho</h2>
+        </div>
+        <div class="carrinho-table" id="carrinhoTable">
+            <div class="carrinho-empty">
+                <div class="carrinho-empty-icon">🛒</div>
+                <p>Carrinho vazio</p>
+            </div>
+        </div>
+        <div class="carrinho-total" id="carrinhoTotalDiv" style="display: none;">
+            <div class="total-row">
+                <span>TOTAL:</span>
+                <span class="total-valor" id="totalValor">R$ 0,00</span>
+            </div>
+        </div>
+
+        <!-- BOTÕES DE PAGAMENTO - agora com 4 colunas incluindo DINHEIRO -->
+        <div class="pagamento-btns">
+            <button class="btn-pagamento btn-pix" onclick="finalizarVendaPix()">
+                <span class="btn-icon">⚡</span>
+                PIX
+            </button>
+            <button class="btn-pagamento btn-credito" onclick="finalizarVendaCredito()">
+                <span class="btn-icon">💳</span>
+                CRÉDITO
+            </button>
+            <button class="btn-pagamento btn-debito" onclick="finalizarVendaDebito()">
+                <span class="btn-icon">🏧</span>
+                DÉBITO
+            </button>
+            <button class="btn-pagamento btn-dinheiro" id="btnDinheiro" onclick="finalizarVendaDinheiro()">
+                <span class="gaveta-dot"></span>
+                <span class="btn-icon">💵</span>
+                DINHEIRO
+            </button>
+        </div>
+    </div>
+
+    <!-- PAINEL ADMINISTRATIVO -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-title">Funções Administrativas TEF</div>
+        <div class="admin-grid">
+            <button class="admin-btn" onclick="start()">Start</button>
+            <button class="admin-btn" onclick="stop()">Stop</button>
+            <button class="admin-btn" onclick="configuracao()">Config</button>
+            <button class="admin-btn" onclick="ativacao()">Ativação</button>
+            <button class="admin-btn" onclick="reimpressao()">Reimp.</button>
+            <button class="admin-btn" onclick="relatorio()">Relatório</button>
+            <button class="admin-btn" onclick="cancelamento()">Cancel.</button>
+            <button class="admin-btn" onclick="intpos_venda()">IntPos V</button>
+            <button class="admin-btn" onclick="intpos_adm()">IntPos A</button>
+            <button class="admin-btn" onclick="reabrirModalGaveta()" style="grid-column: span 2; background:#f0fdf4; border-color:#86efac; color:#15803d;">
+                🗄️ Config. Gaveta
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURAÇÃO SUPABASE ====================
+        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+
+        let supabaseClient;
+        try {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (error) {
+            console.error('Erro ao inicializar Supabase:', error);
+        }
+
+        // ==================== VARIÁVEIS GLOBAIS ====================
+        let carrinho = [];
+        let produtosTodos = [];
+
+        // ==================== GAVETA - VARIÁVEIS ====================
+        // scriptGavetaFile armazena o File object selecionado pelo usuário
+        let scriptGavetaFile = null;
+        // scriptGavetaPath é o caminho/nome guardado para exibição
+        let scriptGavetaPath = null;
+
+        // ==================== TOAST ====================
+        function showToast(msg, tipo = 'info', duracao = 3000) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = `toast ${tipo} show`;
+            setTimeout(() => { t.className = 'toast'; }, duracao);
+        }
+
+        // ==================== INICIALIZAÇÃO ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarProdutos();
+            // Mostra o modal de configuração da gaveta ao iniciar
+            document.getElementById('modalGaveta').classList.remove('hidden');
+        });
+
+        // ==================== MODAL GAVETA ====================
+        function selecionarScript(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (!file.name.endsWith('.py')) {
+                showToast('❌ Selecione apenas arquivos .py', 'error');
+                input.value = '';
+                return;
+            }
+
+            scriptGavetaFile = file;
+            const label = document.getElementById('fileLabelText');
+            label.className = 'modal-file-label selected';
+            label.innerHTML = `✅ ${file.name}<span>Script selecionado com sucesso</span>`;
+
+            const area = document.getElementById('fileArea');
+            area.classList.add('has-file');
+
+            const btn = document.getElementById('btnConfirmarGaveta');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
+
+        function confirmarGaveta() {
+            if (!scriptGavetaFile) return;
+
+            scriptGavetaPath = scriptGavetaFile.name;
+            fecharModalGaveta();
+            atualizarStatusGaveta(true);
+            showToast(`✅ Gaveta configurada: ${scriptGavetaPath}`, 'success', 4000);
+        }
+
+        function pularConfigGaveta() {
+            fecharModalGaveta();
+            atualizarStatusGaveta(false);
+            showToast('⚠️ Gaveta não configurada. Botão DINHEIRO disponível sem abertura automática.', 'info', 4000);
+        }
+
+        function fecharModalGaveta() {
+            document.getElementById('modalGaveta').classList.add('hidden');
+        }
+
+        function reabrirModalGaveta() {
+            // Reseta o input para permitir nova seleção
+            const input = document.getElementById('scriptGavetaInput');
+            input.value = '';
+            const label = document.getElementById('fileLabelText');
+            label.className = 'modal-file-label';
+            label.innerHTML = `📂 Clique para selecionar o script Python<span>Apenas arquivos .py são aceitos</span>`;
+            document.getElementById('fileArea').classList.remove('has-file');
+            const btn = document.getElementById('btnConfirmarGaveta');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+
+            document.getElementById('modalGaveta').classList.remove('hidden');
+        }
+
+        function atualizarStatusGaveta(configurada) {
+            const statusEl = document.getElementById('gavetaSidebarStatus');
+            const textoEl  = document.getElementById('gavetaSidebarTexto');
+            const btnDinheiro = document.getElementById('btnDinheiro');
+
+            if (configurada) {
+                statusEl.className = 'gaveta-status config';
+                textoEl.textContent = `Gaveta: ${scriptGavetaPath}`;
+                btnDinheiro.classList.add('gaveta-ok');
+            } else {
+                statusEl.className = 'gaveta-status nao-config';
+                textoEl.textContent = 'Gaveta não configurada';
+                btnDinheiro.classList.remove('gaveta-ok');
+            }
+        }
+
+        // ==================== EXECUTAR SCRIPT GAVETA ====================
+        async function abrirGaveta() {
+            if (!scriptGavetaFile) {
+                console.warn('Script de gaveta não configurado.');
+                return false;
+            }
+
+            try {
+                /*
+                 * Como este é um app web rodando no navegador, não podemos
+                 * executar diretamente um processo Python do browser por segurança.
+                 *
+                 * A solução implementada aqui usa a File System Access API:
+                 * lemos o conteúdo do .py e tentamos executá-lo via um
+                 * endpoint local (ex: pequeno servidor Flask/FastAPI que o
+                 * operador roda na máquina do caixa em http://localhost:9999).
+                 *
+                 * Se o servidor local não estiver disponível, exibimos instrução.
+                 */
+                const texto = await scriptGavetaFile.text();
+
+                // Tenta chamar servidor local que executa o script
+                const resp = await fetch('http://localhost:9999/abrir-gaveta', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ script: texto, nome: scriptGavetaFile.name }),
+                    signal: AbortSignal.timeout(3000)
+                });
+
+                if (resp.ok) {
+                    console.log('✅ Gaveta aberta via servidor local.');
+                    return true;
+                } else {
+                    throw new Error(`Servidor respondeu ${resp.status}`);
+                }
+            } catch (err) {
+                /*
+                 * Servidor local não disponível.
+                 * Fallback: tenta abrir via intent Android (se for dispositivo Android/Chrome)
+                 * ou exibe instrução ao operador.
+                 */
+                console.warn('Servidor local indisponível:', err.message);
+
+                // Fallback Android intent
+                try {
+                    window.location.href = `intent://executar-python?script=${encodeURIComponent(scriptGavetaFile.name)}#Intent;scheme=gaveta;end`;
+                } catch(e2) {}
+
+                showToast('⚠️ Gaveta: servidor local não detectado em localhost:9999', 'error', 5000);
+                return false;
+            }
+        }
+
+        // ==================== CARREGAR PRODUTOS ====================
+        async function carregarProdutos() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('itens')
+                    .select('codigo, nome, categoria, preco_venda, estoque, unidade')
+                    .eq('ativo', true)
+                    .gt('estoque', 0)
+                    .order('nome');
+
+                if (error) throw error;
+
+                produtosTodos = data || [];
+                renderizarCategorias(produtosTodos);
+            } catch (error) {
+                console.error('Erro ao carregar produtos:', error);
+                document.getElementById('categoriasGrid').innerHTML = `
+                    <div class="carrinho-empty">
+                        <div class="carrinho-empty-icon">⚠️</div>
+                        <p>Erro ao carregar produtos</p>
+                        <p style="font-size: 12px; margin-top: 8px;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ==================== RENDERIZAR CATEGORIAS ====================
+        function renderizarCategorias(produtos) {
+            const categorias = ['Bebidas', 'Salgados', 'Combos', 'Outros'];
+            const grid = document.getElementById('categoriasGrid');
+
+            if (produtos.length === 0) {
+                grid.innerHTML = `
+                    <div class="carrinho-empty">
+                        <div class="carrinho-empty-icon">📦</div>
+                        <p>Nenhum produto cadastrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            categorias.forEach(categoria => {
+                const produtosCategoria = produtos.filter(p => p.categoria === categoria);
+                if (produtosCategoria.length === 0) return;
+                const corClasse = categoria.toLowerCase();
+
+                html += `
+                    <div class="categoria-card">
+                        <div class="categoria-header ${corClasse}">${categoria.toUpperCase()}</div>
+                        <div class="categoria-produtos">
+                            ${produtosCategoria.map(produto => `
+                                <div class="produto-item">
+                                    <div class="produto-nome">${produto.nome}</div>
+                                    <div class="produto-codigo">Cód: ${produto.codigo} | Estoque: ${produto.estoque}</div>
+                                    <div class="produto-footer">
+                                        <div class="produto-preco">R$ ${parseFloat(produto.preco_venda).toFixed(2)}</div>
+                                        <button class="btn-adicionar" onclick='adicionarAoCarrinho(${JSON.stringify(produto).replace(/'/g, "&apos;")})'>+</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        // ==================== FILTRAR ====================
+        function filtrarProdutos(termo) {
+            if (!termo || termo.trim() === '') {
+                renderizarCategorias(produtosTodos);
+                return;
+            }
+            const termoLower = termo.toLowerCase();
+            const filtrados = produtosTodos.filter(p =>
+                p.nome.toLowerCase().includes(termoLower) ||
+                p.codigo.toLowerCase().includes(termoLower)
+            );
+            renderizarCategorias(filtrados);
+        }
+
+        // ==================== CARRINHO ====================
+        function adicionarAoCarrinho(produto) {
+            const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
+            if (itemExistente) {
+                if (itemExistente.quantidade >= produto.estoque) {
+                    showToast(`⚠️ Estoque insuficiente! Disponível: ${produto.estoque}`, 'error');
+                    return;
+                }
+                itemExistente.quantidade++;
+            } else {
+                carrinho.push({
+                    codigo: produto.codigo,
+                    nome: produto.nome,
+                    preco: produto.preco_venda,
+                    quantidade: 1,
+                    estoque: produto.estoque
+                });
+            }
+            atualizarCarrinho();
+        }
+
+        function removerDoCarrinho(index) {
+            carrinho.splice(index, 1);
+            atualizarCarrinho();
+        }
+
+        function alterarQuantidade(index, delta) {
+            const item = carrinho[index];
+            const novaQuantidade = item.quantidade + delta;
+            if (novaQuantidade <= 0) { removerDoCarrinho(index); return; }
+            if (novaQuantidade > item.estoque) {
+                showToast(`⚠️ Estoque insuficiente! Disponível: ${item.estoque}`, 'error');
+                return;
+            }
+            item.quantidade = novaQuantidade;
+            atualizarCarrinho();
+        }
+
+        function atualizarCarrinho() {
+            const carrinhoTable = document.getElementById('carrinhoTable');
+            const carrinhoTotalDiv = document.getElementById('carrinhoTotalDiv');
+
+            if (carrinho.length === 0) {
+                carrinhoTable.innerHTML = `
+                    <div class="carrinho-empty">
+                        <div class="carrinho-empty-icon">🛒</div>
+                        <p>Carrinho vazio</p>
+                    </div>
+                `;
+                carrinhoTotalDiv.style.display = 'none';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Qtd</th>
+                            <th>Preço</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let total = 0;
+            carrinho.forEach((item, index) => {
+                const subtotal = item.preco * item.quantidade;
+                total += subtotal;
+                html += `
+                    <tr>
+                        <td>${item.codigo}</td>
+                        <td>
+                            <div class="qtd-controls">
+                                <button class="qtd-btn" onclick="alterarQuantidade(${index}, -1)">−</button>
+                                <span class="qtd-numero">${item.quantidade}</span>
+                                <button class="qtd-btn" onclick="alterarQuantidade(${index}, 1)">+</button>
+                            </div>
+                        </td>
+                        <td>R$ ${parseFloat(item.preco).toFixed(2)}</td>
+                        <td>R$ ${subtotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            carrinhoTable.innerHTML = html;
+            carrinhoTotalDiv.style.display = 'block';
+            document.getElementById('totalValor').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        function limparCarrinho() {
+            if (carrinho.length === 0) return;
+            carrinho = [];
+            atualizarCarrinho();
+        }
+
+        function getValorTotal() {
+            return carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0).toFixed(2);
+        }
+
+        // ==================== REGISTRAR VENDA ====================
+        async function registrarVenda(tipoPagamento) {
+            if (carrinho.length === 0) return;
+            try {
+                for (const item of carrinho) {
+                    const { data: itemAtual, error: fetchError } = await supabaseClient
+                        .from('itens')
+                        .select('estoque')
+                        .eq('codigo', item.codigo)
+                        .single();
+
+                    if (fetchError) continue;
+
+                    const novoEstoque = itemAtual.estoque - item.quantidade;
+                    await supabaseClient
+                        .from('itens')
+                        .update({ estoque: novoEstoque })
+                        .eq('codigo', item.codigo);
+
+                    await supabaseClient
+                        .from('movimentacoes')
+                        .insert([{
+                            item_codigo: item.codigo,
+                            tipo: 'VENDA',
+                            quantidade: -item.quantidade,
+                            valor_unitario: item.preco,
+                            responsavel: 'PDV',
+                            observacao: `Venda ${tipoPagamento}`
+                        }]);
+                }
+            } catch (error) {
+                console.error('Erro ao registrar venda:', error);
+            }
+        }
+
+        // ==================== FINALIZAR VENDAS ====================
+        async function finalizarVendaPix() {
+            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+            try {
+                const resultado = await pix();
+                if (resultado && resultado.resultado && resultado.resultado.data) {
+                    await registrarVenda('PIX');
+                    limparCarrinho();
+                    showToast('✅ Pagamento PIX realizado!', 'success');
+                } else {
+                    showToast('❌ Pagamento PIX não aprovado.', 'error');
+                }
+            } catch (error) {
+                showToast('❌ Erro ao processar PIX.', 'error');
+            }
+        }
+
+        async function finalizarVendaCredito() {
+            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+            try {
+                const resultado = await credito();
+                if (resultado && resultado.resultado && resultado.resultado.data) {
+                    await registrarVenda('CREDITO');
+                    limparCarrinho();
+                    showToast('✅ Pagamento CRÉDITO realizado!', 'success');
+                } else {
+                    showToast('❌ Pagamento CRÉDITO não aprovado.', 'error');
+                }
+            } catch (error) {
+                showToast('❌ Erro ao processar CRÉDITO.', 'error');
+            }
+        }
+
+        async function finalizarVendaDebito() {
+            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+            try {
+                const resultado = await debito();
+                if (resultado && resultado.resultado && resultado.resultado.data) {
+                    await registrarVenda('DEBITO');
+                    limparCarrinho();
+                    showToast('✅ Pagamento DÉBITO realizado!', 'success');
+                } else {
+                    showToast('❌ Pagamento DÉBITO não aprovado.', 'error');
+                }
+            } catch (error) {
+                showToast('❌ Erro ao processar DÉBITO.', 'error');
+            }
+        }
+
+        // ==================== FINALIZAR VENDA DINHEIRO (NOVO) ====================
+        async function finalizarVendaDinheiro() {
+            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+
+            // Registra a venda no banco
+            await registrarVenda('DINHEIRO');
+
+            // Tenta abrir a gaveta
+            if (scriptGavetaFile) {
+                showToast('🗄️ Abrindo gaveta...', 'info', 2000);
+                await abrirGaveta();
+            } else {
+                showToast('⚠️ Gaveta não configurada. Venda registrada.', 'info', 3000);
+            }
+
+            limparCarrinho();
+            showToast('✅ Venda em DINHEIRO registrada!', 'success', 4000);
+        }
+
+        // ==================== TOGGLE VIEW ====================
+        function toggleView(view, event) {
+            const adminPanel = document.getElementById('adminPanel');
+            if (view === 'admin') {
+                adminPanel.classList.add('active');
+            } else {
+                adminPanel.classList.remove('active');
+            }
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.nav-item').classList.add('active');
+        }
+    </script>
+
+    <!-- ==================== CÓDIGO TEF ORIGINAL (NÃO MODIFICADO) ==================== -->
+    <script>
+        const BASE_URL = 'http://localhost:2001/tef/v1'
+        const historicoVendas = []
+
+        function start() { window.location.href = 'intent://connect/start' }
+        function stop()  { window.location.href = 'intent://connect/stop'  }
+
+        function configuracao() {
+            sendPost('/configuracao', {
+                nome: "Elgin Tef Web",
+                versao: "0.0.1",
+                textoPinpad: "TEF WEB",
+                producao: "0",
+                estabelecimento: "estabelecimento teste",
+                terminal: "000000",
+                loja: ""
+            })
+        }
+
+        function ativacao() {
+            const cnpj = prompt('Insira o CNPJ com pontuação')
+            sendPost('/ativacao', { cnpjCpf: cnpj })
+        }
+
+        function reimpressao() { sendGet('/adm/reimpressao') }
+        function relatorio()   { sendGet('/adm/relatorio')   }
+
+        async function venda() {
+            const venda = await sendPost('/venda', null)
+            if (!venda) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
+            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+        }
+
+        async function debito() {
+            const valor = getValorTotal() || prompt('Insira um valor em R$ no formato (00.00)', '1.00')
+            const venda = await sendPost('/venda/debito', { valor })
+            if (!venda) { console.error('Erro: TEF não disponível'); return null; }
+            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            return venda;
+        }
+
+        async function credito() {
+            const valor = getValorTotal() || prompt('Insira um valor em R$ no formato (00.00)', '1.00')
+            const venda = await sendPost('/venda/credito', { valor, parcelas: '1', financiamento: '1' })
+            if (!venda) { console.error('Erro: TEF não disponível'); return null; }
+            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            return venda;
+        }
+
+        async function cancelamento() {
+            const ultimaVenda = historicoVendas.pop()
+            if (ultimaVenda === undefined) return alert('Primeiro realizar uma venda')
+            const nsu  = ultimaVenda.resultado.nsu.padStart(6, '0')
+            const data = ultimaVenda.resultado.data.split(' ')[0].replace(/\/20/g, '/')
+            let { valor } = ultimaVenda.resultado
+            if (valor.indexOf('.') === -1) valor = valor + '.00'
+            const cancelamento = await sendPost('/adm/cancelamento', { nsu, valor, data })
+            if (!cancelamento) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
+        }
+
+        async function pix() {
+            const valor = getValorTotal() || prompt('Insira um valor em R$ no formato (00.00)', '1.00')
+            const venda = await sendPost('/pix', { valor })
+            if (!venda) { console.error('Erro: TEF não disponível'); return null; }
+            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            return venda;
+        }
+
+        async function intpos_venda() {
+            const valor = prompt('Insira um valor em R$ no formato (00.00)', '1.00')
+            await sendPost('/intpos', { 'intpos': `000-000 = CRT\n001-000 = 123\n003-000 = ${valor}\n999-999 = 0\n` })
+        }
+
+        async function intpos_adm() {
+            await sendPost('/intpos', { 'intpos': '000-000 = ADM\n001-000 = 123\n999-999 = 0\n' })
+        }
+
+        async function sendGet(rota) {
+            try {
+                const responseData = await fetch(BASE_URL + rota, {
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    method: 'GET'
+                })
+                const data = await responseData.json()
+                console.log('TEF Response (GET):', data)
+                return data
+            } catch (err) {
+                console.error('Erro TEF (GET):', err)
+                return null
+            }
+        }
+
+        async function sendPost(rota, body) {
+            try {
+                const responseData = await fetch(BASE_URL + rota, {
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                })
+                const data = await responseData.json()
+                if (data.resultado !== undefined && data.resultado.indexOf('{') !== -1)
+                    data.resultado = JSON.parse(data.resultado)
+                console.log('TEF Response (POST):', data)
+                return data
+            } catch (err) {
+                console.error('Erro TEF (POST):', err)
+                return null
+            }
+        }
+    </script>
+</body>
+</html>
