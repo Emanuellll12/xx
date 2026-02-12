@@ -848,58 +848,44 @@
         }
 
         // ==================== EXECUTAR SCRIPT GAVETA ====================
-        async function abrirGaveta() {
-            if (!scriptGavetaFile) {
-                console.warn('Script de gaveta não configurado.');
-                return false;
-            }
+async function abrirGaveta() {
+    if (!scriptGavetaFile) {
+        console.warn('Script de gaveta não configurado.');
+        return false;
+    }
 
-            try {
-                /*
-                 * Como este é um app web rodando no navegador, não podemos
-                 * executar diretamente um processo Python do browser por segurança.
-                 *
-                 * A solução implementada aqui usa a File System Access API:
-                 * lemos o conteúdo do .py e tentamos executá-lo via um
-                 * endpoint local (ex: pequeno servidor Flask/FastAPI que o
-                 * operador roda na máquina do caixa em http://localhost:9999).
-                 *
-                 * Se o servidor local não estiver disponível, exibimos instrução.
-                 */
-                const texto = await scriptGavetaFile.text();
+    try {
+        // 👇 ALTERAÇÃO: LER CONTEÚDO DO ARQUIVO
+        const textoScript = await scriptGavetaFile.text();
+        
+        // 👇 ALTERAÇÃO: ENVIAR PARA http://localhost:5000/abrir-gaveta
+        const response = await fetch('http://localhost:5000/abrir-gaveta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                script: textoScript,           // Conteúdo do .py
+                nome: scriptGavetaFile.name    // Nome do arquivo
+            }),
+            signal: AbortSignal.timeout(5000)  // Aumentado de 3s para 5s
+        });
 
-                // Tenta chamar servidor local que executa o script
-                const resp = await fetch('http://localhost:9999/abrir-gaveta', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ script: texto, nome: scriptGavetaFile.name }),
-                    signal: AbortSignal.timeout(3000)
-                });
-
-                if (resp.ok) {
-                    console.log('✅ Gaveta aberta via servidor local.');
-                    return true;
-                } else {
-                    throw new Error(`Servidor respondeu ${resp.status}`);
-                }
-            } catch (err) {
-                /*
-                 * Servidor local não disponível.
-                 * Fallback: tenta abrir via intent Android (se for dispositivo Android/Chrome)
-                 * ou exibe instrução ao operador.
-                 */
-                console.warn('Servidor local indisponível:', err.message);
-
-                // Fallback Android intent
-                try {
-                    window.location.href = `intent://executar-python?script=${encodeURIComponent(scriptGavetaFile.name)}#Intent;scheme=gaveta;end`;
-                } catch(e2) {}
-
-                showToast('⚠️ Gaveta: servidor local não detectado em localhost:9999', 'error', 5000);
-                return false;
-            }
+        if (response.ok) {
+            const resultado = await response.json();
+            console.log('✅ Gaveta aberta via Flask:', resultado);
+            return true;
+        } else {
+            const erro = await response.json();
+            console.error('❌ Erro ao abrir gaveta:', erro);
+            throw new Error(erro.erro || 'Erro desconhecido');
         }
 
+    } catch (err) {
+        console.error('❌ Erro ao comunicar com Flask:', err.message);
+        // 👇 ALTERAÇÃO: Mensagem de erro melhorada
+        showToast(`⚠️ Erro: ${err.message}. Verifique se Flask está rodando em localhost:5000`, 'error', 5000);
+        return false;
+    }
+}
         // ==================== CARREGAR PRODUTOS ====================
         async function carregarProdutos() {
             try {
@@ -1170,24 +1156,33 @@
         }
 
         // ==================== FINALIZAR VENDA DINHEIRO (NOVO) ====================
-        async function finalizarVendaDinheiro() {
-            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+async function finalizarVendaDinheiro() {
+    if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
 
-            // Registra a venda no banco
-            await registrarVenda('DINHEIRO');
+    // 👇 NOVO: Aviso que está registrando
+    showToast('💾 Registrando venda...', 'info', 2000);
+    
+    // 1️⃣ Registra a venda no banco
+    await registrarVenda('DINHEIRO');
 
-            // Tenta abrir a gaveta
-            if (scriptGavetaFile) {
-                showToast('🗄️ Abrindo gaveta...', 'info', 2000);
-                await abrirGaveta();
-            } else {
-                showToast('⚠️ Gaveta não configurada. Venda registrada.', 'info', 3000);
-            }
-
-            limparCarrinho();
-            showToast('✅ Venda em DINHEIRO registrada!', 'success', 4000);
+    // 2️⃣ Tenta abrir a gaveta
+    if (scriptGavetaFile) {
+        showToast('🗄️ Abrindo gaveta...', 'info', 2000);
+        // 👇 NOVO: Aguarda resposta e verifica resultado
+        const resultado = await abrirGaveta();
+        
+        if (resultado) {
+            showToast('✅ Gaveta aberta com sucesso!', 'success', 3000);
+        } else {
+            showToast('⚠️ Gaveta não abriu. Verifique porta serial.', 'error', 3000);
         }
+    } else {
+        showToast('⚠️ Gaveta não configurada. Venda registrada.', 'info', 3000);
+    }
 
+    limparCarrinho();
+    showToast('✅ Venda em DINHEIRO finalizada!', 'success', 4000);
+}
         // ==================== TOGGLE VIEW ====================
         function toggleView(view, event) {
             const adminPanel = document.getElementById('adminPanel');
