@@ -5,167 +5,24 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OMG PDV - Sistema de Vendas</title>
-   
+    
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Inter', sans-serif;
             background: #f5f5f5;
             color: #333;
         }
-
-        /* ========== MODAL DE CONFIGURAÇÃO GAVETA ========== */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(4px);
-        }
-        .modal-overlay.hidden {
-            display: none;
-        }
-        .modal-box {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            width: 480px;
-            max-width: 95vw;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
-            animation: modalIn 0.3s ease;
-        }
-        @keyframes modalIn {
-            from { transform: scale(0.85); opacity: 0; }
-            to   { transform: scale(1);    opacity: 1; }
-        }
-        .modal-icon {
-            font-size: 56px;
-            margin-bottom: 16px;
-        }
-        .modal-title {
-            font-size: 22px;
-            font-weight: 800;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-        .modal-subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            margin-bottom: 28px;
-            line-height: 1.6;
-        }
-        .modal-file-area {
-            border: 2px dashed #d1d5db;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .modal-file-area:hover {
-            border-color: #6c059b;
-            background: #faf5ff;
-        }
-        .modal-file-area.has-file {
-            border-color: #10b981;
-            background: #f0fdf4;
-        }
-        .modal-file-area input[type="file"] {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-        }
-        .modal-file-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: #6b7280;
-            pointer-events: none;
-        }
-        .modal-file-label span {
-            display: block;
-            font-size: 12px;
-            font-weight: 400;
-            margin-top: 4px;
-            color: #9ca3af;
-        }
-        .modal-file-label.selected {
-            color: #059669;
-        }
-        .modal-btns {
-            display: flex;
-            gap: 12px;
-        }
-        .modal-btn-skip {
-            flex: 1;
-            padding: 14px;
-            background: #f3f4f6;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            color: #6b7280;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .modal-btn-skip:hover {
-            background: #e5e7eb;
-        }
-        .modal-btn-confirm {
-            flex: 2;
-            padding: 14px;
-            background: #6c059b;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .modal-btn-confirm:hover {
-            background: #4a0470;
-            transform: translateY(-1px);
-        }
-
-        /* ========== TOAST NOTIFICATION ========== */
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #1f2937;
-            color: white;
-            padding: 14px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 9998;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            pointer-events: none;
-            white-space: nowrap;
-        }
-        .toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-        .toast.success { background: #059669; }
-        .toast.error   { background: #dc2626; }
-        .toast.info    { background: #6c059b; }
 
         /* SIDEBAR ESQUERDO */
         .sidebar-left {
@@ -176,8 +33,12 @@
             height: 100vh;
             background: linear-gradient(180deg, #6c059b 0%, #4a0470 100%);
             z-index: 1000;
+            padding-top: 30px;
         }
+
         .logo {
+            width: 180px;
+            height: 120px;
             margin: 0 auto 40px;
             display: flex;
             align-items: center;
@@ -186,14 +47,17 @@
             border-radius: 16px;
             padding: 15px;
         }
+
         .logo img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
+
         .nav-menu {
             padding: 0 20px;
         }
+
         .nav-item {
             display: flex;
             align-items: center;
@@ -208,48 +72,413 @@
             font-size: 16px;
             font-weight: 500;
         }
-        .nav-item:hover { background: rgba(255, 255, 255, 0.2); }
-        .nav-item.active { background: rgba(108, 5, 155, 0.8); }
 
-        /* HEADER */
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-item.active {
+            background: rgba(108, 5, 155, 0.8);
+        }
+
+        /* HEADER COM BARRA DE PESQUISA */
         .header {
             position: fixed;
             top: 0;
             left: 226px;
             right: 420px;
             height: 80px;
-            background: white;
-            border-bottom: 2px solid #e5e7eb;
+            background: linear-gradient(135deg, #6c059b 0%, #4a0470 100%);
+            border-bottom: 3px solid #8b5cf6;
+            border-top: 3px solid #8b5cf6;
             display: flex;
             align-items: center;
             padding: 0 30px;
             z-index: 999;
+            box-shadow: 0 4px 12px rgba(108, 5, 155, 0.3);
         }
+
         .search-container {
             flex: 1;
             max-width: 600px;
             position: relative;
+            margin-right: 15px;
         }
+
         .search-input {
             width: 100%;
             padding: 12px 20px 12px 50px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid rgba(255,255,255,0.3);
             border-radius: 12px;
             font-size: 15px;
             transition: all 0.3s;
+            background: rgba(255,255,255,0.95);
         }
+
         .search-input:focus {
             outline: none;
-            border-color: #6c059b;
-            box-shadow: 0 0 0 3px rgba(108, 5, 155, 0.1);
+            border-color: white;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
         }
+
         .search-icon {
             position: absolute;
             left: 18px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 18px;
+            color: #6c059b;
+        }
+
+        /* BOTÃO ABRIR CAIXA */
+        .btn-caixa {
+            padding: 12px 24px;
+            border: 2px solid white;
+            background: transparent;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-caixa:hover {
+            background: white;
+            color: #6c059b;
+            transform: translateY(-2px);
+        }
+
+        .btn-caixa.aberto {
+            background: #22c55e;
+            border-color: #22c55e;
+            color: white;
+        }
+
+        .btn-caixa.aberto:hover {
+            background: #16a34a;
+            border-color: #16a34a;
+        }
+
+        .btn-caixa.fechado {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: white;
+        }
+
+        .btn-caixa.fechado:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        /* BOTÃO RETIRAR DINHEIRO */
+        .btn-retirada {
+            padding: 12px 20px;
+            border: 2px solid #f59e0b;
+            background: #f59e0b;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+
+        .btn-retirada:hover {
+            background: #d97706;
+            border-color: #d97706;
+            transform: translateY(-2px);
+        }
+
+        /* BOTÃO HISTÓRICO */
+        .btn-historico {
+            padding: 12px 20px;
+            border: 2px solid white;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }
+
+        .btn-historico:hover {
+            background: white;
+            color: #6c059b;
+            transform: translateY(-2px);
+        }
+
+        /* MODAL HISTÓRICO */
+        .modal-historico {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-historico.active {
+            display: flex;
+        }
+
+        .modal-historico-content {
+            background: white;
+            border-radius: 20px;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal-historico-header {
+            background: linear-gradient(135deg, #6c059b 0%, #4a0470 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 20px 20px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-historico-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .btn-close-modal {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-close-modal:hover {
+            background: white;
+            color: #6c059b;
+        }
+
+        .modal-historico-body {
+            padding: 30px;
+        }
+
+        .filtro-data {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filtro-data label {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .filtro-data input[type="date"] {
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .filtro-data input[type="date"]:focus {
+            outline: none;
+            border-color: #6c059b;
+        }
+
+        .btn-buscar {
+            padding: 10px 24px;
+            background: #6c059b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-buscar:hover {
+            background: #4a0470;
+        }
+
+        .venda-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .venda-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: #6c059b;
+        }
+
+        .venda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .venda-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .venda-id {
+            font-size: 18px;
+            font-weight: 700;
+            color: #6c059b;
+        }
+
+        .venda-data {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .venda-total {
+            font-size: 24px;
+            font-weight: 700;
+            color: #22c55e;
+        }
+
+        .venda-metodo {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .metodo-pix {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .metodo-credito {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .metodo-debito {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .metodo-dinheiro {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .venda-itens {
+            margin-bottom: 15px;
+        }
+
+        .item-venda {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .item-venda:last-child {
+            border-bottom: none;
+        }
+
+        .item-nome {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .item-qtd {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .item-preco {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .venda-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn-reverter {
+            padding: 10px 20px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-reverter:hover {
+            background: #dc2626;
+        }
+
+        .btn-reverter:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .venda-cancelada {
+            opacity: 0.6;
+            border-color: #ef4444 !important;
+        }
+
+        .badge-cancelada {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .loading-vendas {
+            text-align: center;
+            padding: 60px;
+            color: #6b7280;
+            font-size: 18px;
+        }
+
+        .empty-vendas {
+            text-align: center;
+            padding: 60px;
             color: #9ca3af;
+        }
+
+        .empty-vendas-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
         }
 
         /* ÁREA PRINCIPAL */
@@ -267,12 +496,14 @@
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
         }
+
         .categoria-card {
             background: white;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
+
         .categoria-header {
             padding: 20px;
             color: white;
@@ -280,17 +511,30 @@
             font-weight: 600;
             text-align: center;
         }
-        .categoria-header.bebidas  { background: #10b981; }
-        .categoria-header.salgados { background: #f59e0b; }
-        .categoria-header.combos   { background: #ec4899; }
-        .categoria-header.outros   { background: #6c059b; }
+
+        .categoria-header.bebidas {
+            background: #10b981;
+        }
+
+        .categoria-header.salgados {
+            background: #f59e0b;
+        }
+
+        .categoria-header.combos {
+            background: #ec4899;
+        }
+
+        .categoria-header.outros {
+            background: #6c059b;
+        }
+
         .categoria-produtos {
             padding: 15px;
             max-height: 600px;
             overflow-y: auto;
         }
 
-        /* PRODUTO ITEM */
+        /* PRODUTO ITEM - NOVO LAYOUT */
         .produto-item {
             padding: 20px;
             margin-bottom: 12px;
@@ -299,11 +543,13 @@
             border: 2px solid #e5e7eb;
             transition: all 0.2s;
         }
+
         .produto-item:hover {
             border-color: #6c059b;
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(108, 5, 155, 0.1);
         }
+
         .produto-nome {
             font-weight: 700;
             font-size: 20px;
@@ -311,21 +557,25 @@
             line-height: 1.2;
             margin-bottom: 8px;
         }
+
         .produto-codigo {
             font-size: 12px;
             color: #9ca3af;
             margin-bottom: 12px;
         }
+
         .produto-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
+
         .produto-preco {
             font-weight: 700;
             color: #10b981;
             font-size: 28px;
         }
+
         .btn-adicionar {
             width: 56px;
             height: 56px;
@@ -342,8 +592,15 @@
             justify-content: center;
             flex-shrink: 0;
         }
-        .btn-adicionar:hover  { background: #4a0470; transform: scale(1.1); }
-        .btn-adicionar:active { transform: scale(0.95); }
+
+        .btn-adicionar:hover {
+            background: #4a0470;
+            transform: scale(1.1);
+        }
+
+        .btn-adicionar:active {
+            transform: scale(0.95);
+        }
 
         /* SIDEBAR DIREITO - CARRINHO */
         .sidebar-right {
@@ -358,10 +615,12 @@
             flex-direction: column;
             z-index: 1000;
         }
+
         .carrinho-header {
             padding: 25px 20px;
             border-bottom: 2px solid #e5e7eb;
         }
+
         .carrinho-header h2 {
             font-size: 20px;
             font-weight: 600;
@@ -370,18 +629,25 @@
             gap: 10px;
             color: #1f2937;
         }
+
         .carrinho-table {
             flex: 1;
             overflow-y: auto;
             padding: 0;
         }
-        table { width: 100%; border-collapse: collapse; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
         thead {
             background: #f9fafb;
             position: sticky;
             top: 0;
             z-index: 10;
         }
+
         th {
             padding: 15px 12px;
             text-align: left;
@@ -390,15 +656,29 @@
             color: #6b7280;
             border-bottom: 2px solid #e5e7eb;
         }
-        th:last-child { text-align: right; }
+
+        th:last-child {
+            text-align: right;
+        }
+
         td {
             padding: 15px 12px;
             font-size: 14px;
             color: #1f2937;
             border-bottom: 1px solid #f3f4f6;
         }
-        td:last-child { text-align: right; font-weight: 600; }
-        .qtd-controls { display: flex; align-items: center; gap: 8px; }
+
+        td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .qtd-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .qtd-btn {
             width: 24px;
             height: 24px;
@@ -413,17 +693,25 @@
             color: #6b7280;
             transition: all 0.2s;
         }
+
         .qtd-btn:hover {
             border-color: #6c059b;
             color: #6c059b;
             background: #f3e8ff;
         }
-        .qtd-numero { min-width: 25px; text-align: center; font-weight: 600; }
+
+        .qtd-numero {
+            min-width: 25px;
+            text-align: center;
+            font-weight: 600;
+        }
+
         .carrinho-total {
             padding: 25px 20px;
             border-top: 2px solid #e5e7eb;
             background: #f9fafb;
         }
+
         .total-row {
             display: flex;
             justify-content: space-between;
@@ -432,6 +720,7 @@
             font-weight: 600;
             color: #1f2937;
         }
+
         .total-valor {
             font-size: 28px;
             font-weight: 700;
@@ -443,71 +732,68 @@
             padding: 20px;
             background: white;
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
         }
+
         .btn-pagamento {
-            padding: 16px 8px;
+            padding: 18px;
             border: none;
             border-radius: 10px;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.3s;
             color: white;
             text-transform: uppercase;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
         }
-        .btn-pagamento .btn-icon { font-size: 20px; }
 
-        .btn-pix      { background: #10b981; }
+        .btn-pix {
+            background: #10b981;
+        }
+
         .btn-pix:hover {
             background: #059669;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
-        .btn-credito  { background: #6c059b; }
+
+        .btn-credito {
+            background: #6c059b;
+        }
+
         .btn-credito:hover {
             background: #4a0470;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(108,5,155,0.3);
+            box-shadow: 0 4px 12px rgba(108, 5, 155, 0.3);
         }
-        .btn-debito   { background: #f59e0b; }
+
+        .btn-debito {
+            background: #f59e0b;
+        }
+
         .btn-debito:hover {
             background: #d97706;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
         }
 
-        /* ========== BOTÃO DINHEIRO ========== */
-        .btn-dinheiro { background: #16a34a; position: relative; }
+        .btn-dinheiro {
+            background: #22c55e;
+        }
+
         .btn-dinheiro:hover {
-            background: #15803d;
+            background: #16a34a;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(22,163,74,0.35);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
         }
-        .btn-dinheiro:active { transform: scale(0.97); }
-        /* indicador de gaveta configurada */
-        .btn-dinheiro .gaveta-dot {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #bbf7d0;
-            display: none;
-        }
-        .btn-dinheiro.gaveta-ok .gaveta-dot { display: block; }
 
         .carrinho-empty {
             padding: 60px 20px;
             text-align: center;
             color: #9ca3af;
         }
+
         .carrinho-empty-icon {
             font-size: 64px;
             margin-bottom: 16px;
@@ -520,6 +806,7 @@
             text-align: center;
             color: #6b7280;
         }
+
         .loading-spinner {
             display: inline-block;
             width: 40px;
@@ -529,7 +816,10 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
 
         /* PAINEL ADMIN */
         .admin-panel {
@@ -543,9 +833,24 @@
             display: none;
             z-index: 1001;
         }
-        .admin-panel.active { display: block; }
-        .admin-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #1f2937; }
-        .admin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .admin-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
         .admin-btn {
             padding: 10px 14px;
             background: #f9fafb;
@@ -557,83 +862,63 @@
             transition: all 0.2s;
             color: #6b7280;
         }
+
         .admin-btn:hover {
             background: #6c059b;
             border-color: #6c059b;
             color: white;
         }
-
-        /* ========== STATUS GAVETA NA SIDEBAR ========== */
-        .gaveta-status {
-            margin: 0 20px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .gaveta-status.nao-config {
-            background: rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.6);
-        }
-        .gaveta-status.nao-config:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        .gaveta-status.config {
-            background: rgba(22,163,74,0.25);
-            color: #86efac;
-        }
-        .gaveta-status.config:hover {
-            background: rgba(22,163,74,0.35);
-        }
     </style>
 </head>
 <body>
-
-
-    <!-- ========== TOAST ========== -->
-    <div class="toast" id="toast"></div>
-
     <!-- SIDEBAR ESQUERDO -->
     <div class="sidebar-left">
         <div class="logo">
-            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhTEtiowkqHNljDt44tx14aMfcjeFYnTHMRMh8RRk4Dbi8YeZV0BmwVyuA_Af4jOwtI1CiZlgvqPu1KFIYARRTgoL5FmyK6vTQktTO0JOIeOnpCuqekWRLGLsfdk63UIYcFf_tzsZuGWcUpfs6QwHJwdNMN3IKywregT5zYTsaGrQyewXyna7QLVq1KKVbj/s16000/Generated%20Image%20February%2012,%202026%20-%201_04PM.png" alt="Logo OMG">
+            <img src="https://via.placeholder.com/150x100/6c059b/FFFFFF?text=OMG" alt="Logo OMG">
         </div>
         <div class="nav-menu">
-            <div class="nav-item active" onclick="toggleView('pdv', event)">
+            <div class="nav-item active" onclick="toggleView('pdv')">
                 <span>🏪</span>
                 <span>HOME</span>
             </div>
-            <div class="nav-item" onclick="toggleView('admin', event)">
+            <div class="nav-item" onclick="toggleView('admin')">
                 <span>⚙️</span>
                 <span>ADMIN</span>
             </div>
+            <div class="nav-item" onclick="fazerLogout()" style="margin-top: auto;">
+                <span>🚪</span>
+                <span>SAIR</span>
+            </div>
         </div>
-
-
     </div>
 
-    <!-- HEADER -->
+    <!-- HEADER COM BARRA DE PESQUISA -->
     <div class="header">
         <div class="search-container">
             <span class="search-icon">🔍</span>
-            <input
-                type="text"
-                class="search-input"
+            <input 
+                type="text" 
+                class="search-input" 
                 id="searchInput"
                 placeholder="Buscar produtos por nome ou código..."
                 oninput="filtrarProdutos(this.value)"
             >
         </div>
+        <button class="btn-caixa" id="btnCaixa" onclick="gerenciarCaixa()">
+            <span id="iconeCaixa">💰</span>
+            <span id="textoCaixa">ABRIR CAIXA</span>
+        </button>
+        <button class="btn-retirada" id="btnRetirada" onclick="retirarDinheiro()" style="display: none;">
+            💸 RETIRAR
+        </button>
+        <button class="btn-historico" onclick="abrirHistoricoVendas()">
+            📊 HISTÓRICO
+        </button>
     </div>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <div class="main-content">
+        <!-- GRID DE CATEGORIAS -->
         <div class="categorias-grid" id="categoriasGrid">
             <div class="loading-container">
                 <div class="loading-spinner"></div>
@@ -647,12 +932,14 @@
         <div class="carrinho-header">
             <h2>🛒 Carrinho</h2>
         </div>
+
         <div class="carrinho-table" id="carrinhoTable">
             <div class="carrinho-empty">
                 <div class="carrinho-empty-icon">🛒</div>
                 <p>Carrinho vazio</p>
             </div>
         </div>
+
         <div class="carrinho-total" id="carrinhoTotalDiv" style="display: none;">
             <div class="total-row">
                 <span>TOTAL:</span>
@@ -660,25 +947,11 @@
             </div>
         </div>
 
-        <!-- BOTÕES DE PAGAMENTO - agora com 4 colunas incluindo DINHEIRO -->
         <div class="pagamento-btns">
-            <button class="btn-pagamento btn-pix" onclick="finalizarVendaPix()">
-                <span class="btn-icon">⚡</span>
-                PIX
-            </button>
-            <button class="btn-pagamento btn-credito" onclick="finalizarVendaCredito()">
-                <span class="btn-icon">💳</span>
-                CRÉDITO
-            </button>
-            <button class="btn-pagamento btn-debito" onclick="finalizarVendaDebito()">
-                <span class="btn-icon">🏧</span>
-                DÉBITO
-            </button>
-            <button class="btn-pagamento btn-dinheiro" id="btnDinheiro" onclick="finalizarVendaDinheiro()">
-                <span class="gaveta-dot"></span>
-                <span class="btn-icon">💵</span>
-                DINHEIRO
-            </button>
+            <button class="btn-pagamento btn-pix" onclick="finalizarVendaPix()">PIX</button>
+            <button class="btn-pagamento btn-credito" onclick="finalizarVendaCredito()">CRÉDITO</button>
+            <button class="btn-pagamento btn-debito" onclick="finalizarVendaDebito()">DÉBITO</button>
+            <button class="btn-pagamento btn-dinheiro" onclick="finalizarVendaDinheiro()">💵 DINHEIRO</button>
         </div>
     </div>
 
@@ -695,7 +968,6 @@
             <button class="admin-btn" onclick="cancelamento()">Cancel.</button>
             <button class="admin-btn" onclick="intpos_venda()">IntPos V</button>
             <button class="admin-btn" onclick="intpos_adm()">IntPos A</button>
-
         </div>
     </div>
 
@@ -703,92 +975,165 @@
         // ==================== CONFIGURAÇÃO SUPABASE ====================
         const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
-
+        
         let supabaseClient;
+        let lojaAtual = null;
+        let usuarioAtual = null;
+        
         try {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('Supabase inicializado com sucesso!');
         } catch (error) {
             console.error('Erro ao inicializar Supabase:', error);
+        }
+
+        // ==================== VERIFICAR AUTENTICAÇÃO ====================
+        async function verificarAutenticacao() {
+            console.log('Verificando autenticação...');
+            
+            try {
+                // Verificar sessão do Supabase
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    console.error('❌ Erro ao buscar sessão:', error);
+                    return false; // NÃO redirecionar em erro de rede
+                }
+
+                if (!session || !session.user) {
+                    console.log('❌ Usuário não autenticado, redirecionando para login...');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                console.log('✅ Sessão ativa:', session.user.email);
+                usuarioAtual = session.user;
+
+                // Buscar loja do usuário (CORRIGIDO - query mais simples)
+                console.log('Buscando loja do usuário:', session.user.id);
+                
+                const { data: usuarioLoja, error: lojaError } = await supabaseClient
+                    .from('usuarios_loja')
+                    .select('loja_id, cargo')
+                    .eq('user_id', session.user.id)
+                    .maybeSingle(); // ✅ USA maybeSingle PARA NÃO DAR ERRO SE NÃO ENCONTRAR
+
+                if (lojaError) {
+                    console.error('❌ Erro SQL ao buscar loja:', lojaError);
+                    alert('Erro ao buscar loja: ' + lojaError.message);
+                    return false; // NÃO redirecionar em erro SQL
+                }
+
+                if (!usuarioLoja || !usuarioLoja.loja_id) {
+                    console.error('❌ Usuário sem loja associada');
+                    alert('Erro: Usuário sem loja associada.\n\nAbra diagnostico.html e clique em "Tentar Corrigir"');
+                    await supabaseClient.auth.signOut();
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                console.log('✅ Registro encontrado em usuarios_loja:', usuarioLoja);
+
+                // Agora buscar dados completos da loja
+                const { data: lojaInfo, error: lojaInfoError } = await supabaseClient
+                    .from('lojas')
+                    .select('*')
+                    .eq('id', usuarioLoja.loja_id)
+                    .single();
+
+                if (lojaInfoError || !lojaInfo) {
+                    console.error('❌ Erro ao buscar informações da loja:', lojaInfoError);
+                    alert('Erro ao carregar informações da loja');
+                    await supabaseClient.auth.signOut();
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                lojaAtual = lojaInfo;
+                console.log('✅ Loja carregada:', lojaAtual.nome);
+                console.log('📊 Plano:', lojaAtual.plano);
+                console.log('👤 Cargo:', usuarioLoja.cargo);
+
+                // Verificar status da loja
+                if (lojaAtual.status !== 'ATIVO') {
+                    alert('Loja suspensa ou cancelada. Entre em contato com o suporte.');
+                    await supabaseClient.auth.signOut();
+                    window.location.href = 'login.html';
+                    return false;
+                }
+
+                // Atualizar interface com nome da loja
+                atualizarInfoLoja();
+                
+                return true;
+
+            } catch (error) {
+                console.error('❌ Erro crítico na verificação:', error);
+                // NÃO redirecionar automaticamente em erro de rede
+                // Apenas mostrar erro e permitir que o usuário tente novamente
+                alert('Erro ao verificar autenticação: ' + error.message + '\n\nVerifique sua conexão e recarregue a página.');
+                return false;
+            }
+        }
+
+        // ==================== ATUALIZAR INFO DA LOJA NA UI ====================
+        function atualizarInfoLoja() {
+            // Você pode adicionar o nome da loja no header se quiser
+            console.log(`🏪 Loja: ${lojaAtual.nome}`);
+        }
+
+        // ==================== LOGOUT ====================
+        async function fazerLogout() {
+            if (confirm('Deseja sair do sistema?')) {
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            }
         }
 
         // ==================== VARIÁVEIS GLOBAIS ====================
         let carrinho = [];
         let produtosTodos = [];
+        let caixaAtual = null;
 
-        // ==================== GAVETA - VARIÁVEIS ====================
-        // scriptGavetaFile armazena o File object selecionado pelo usuário
-        let scriptGavetaFile = null;
-        // scriptGavetaPath é o caminho/nome guardado para exibição
-        let scriptGavetaPath = null;
+        // ==================== INICIALIZAÇÃO ====================
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOM carregado, verificando autenticação...');
+            
+            // PRIMEIRO: Verificar se está autenticado
+            const autenticado = await verificarAutenticacao();
+            
+            if (!autenticado) {
+                return; // Para a execução se não estiver autenticado
+            }
 
-        // ==================== TOAST ====================
-        function showToast(msg, tipo = 'info', duracao = 3000) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = `toast ${tipo} show`;
-            setTimeout(() => { t.className = 'toast'; }, duracao);
-        }
+            // SEGUNDO: Verificar status do caixa
+            await verificarStatusCaixa();
 
-document.addEventListener('DOMContentLoaded', () => {
-    carregarProdutos();
-    // Modal removido - gaveta agora é integrada no Flask
-});
-
-
-
-
-
-
-
-        // ==================== EXECUTAR SCRIPT GAVETA ====================
-// ==================== ABRIR GAVETA (INTEGRADO NO FLASK) ====================
-
-async function abrirGaveta() {
-    try {
-        console.log('🗄️  Enviando comando para abrir gaveta...');
-        
-        // ⭐ NOVO: Envia requisição simples - gaveta abre direto no Flask
-        const response = await fetch('http://localhost:5000/abrir-gaveta', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ comando: 'abrir' }),
-            signal: AbortSignal.timeout(5000)
+            // TERCEIRO: Carregar produtos da loja
+            console.log('Iniciando carregamento de produtos...');
+            carregarProdutos();
         });
 
-        const resultado = await response.json();
-        console.log('📡 Resposta do servidor:', resultado);
-
-        if (response.ok && resultado.sucesso) {
-            console.log('✅ Gaveta aberta com sucesso!');
-            console.log('   Mensagem:', resultado.mensagem);
-            return true;
-        } else {
-            console.error('❌ Erro ao abrir gaveta:', resultado.erro);
-            const mensagem = resultado.detalhes 
-                ? `${resultado.erro}\n${resultado.detalhes}`
-                : resultado.erro;
-            showToast(`⚠️ ${mensagem}`, 'error', 5000);
-            return false;
-        }
-
-    } catch (err) {
-        console.error('❌ Erro ao comunicar com Flask:', err.message);
-        showToast(`⚠️ Erro: ${err.message}. Verifique se Flask está rodando em localhost:5000`, 'error', 5000);
-        return false;
-    }
-}
-        // ==================== CARREGAR PRODUTOS ====================
+        // ==================== CARREGAR PRODUTOS DO SUPABASE ====================
         async function carregarProdutos() {
+            console.log('Carregando produtos da loja:', lojaAtual.id);
             try {
+                // IMPORTANTE: O RLS já filtra automaticamente por loja_id
+                // Mas podemos ser explícitos para garantir
                 const { data, error } = await supabaseClient
                     .from('itens')
-                    .select('codigo, nome, categoria, preco_venda, estoque, unidade')
+                    .select('codigo, nome, categoria, preco_venda, estoque, unidade, loja_id')
                     .eq('ativo', true)
+                    .eq('loja_id', lojaAtual.id) // Filtro explícito por segurança
                     .gt('estoque', 0)
                     .order('nome');
 
-                if (error) throw error;
+                if (error) {
+                    console.error('Erro Supabase:', error);
+                    throw error;
+                }
 
+                console.log(`✅ ${data.length} produtos carregados da loja ${lojaAtual.nome}`);
                 produtosTodos = data || [];
                 renderizarCategorias(produtosTodos);
             } catch (error) {
@@ -805,6 +1150,7 @@ async function abrirGaveta() {
 
         // ==================== RENDERIZAR CATEGORIAS ====================
         function renderizarCategorias(produtos) {
+            console.log('Renderizando categorias com', produtos.length, 'produtos');
             const categorias = ['Bebidas', 'Salgados', 'Combos', 'Outros'];
             const grid = document.getElementById('categoriasGrid');
 
@@ -819,11 +1165,14 @@ async function abrirGaveta() {
             }
 
             let html = '';
+
             categorias.forEach(categoria => {
                 const produtosCategoria = produtos.filter(p => p.categoria === categoria);
+                
                 if (produtosCategoria.length === 0) return;
-                const corClasse = categoria.toLowerCase();
 
+                const corClasse = categoria.toLowerCase();
+                
                 html += `
                     <div class="categoria-card">
                         <div class="categoria-header ${corClasse}">${categoria.toUpperCase()}</div>
@@ -844,31 +1193,38 @@ async function abrirGaveta() {
             });
 
             grid.innerHTML = html;
+            console.log('Categorias renderizadas com sucesso');
         }
 
-        // ==================== FILTRAR ====================
+        // ==================== FILTRAR PRODUTOS ====================
         function filtrarProdutos(termo) {
             if (!termo || termo.trim() === '') {
                 renderizarCategorias(produtosTodos);
                 return;
             }
+
             const termoLower = termo.toLowerCase();
-            const filtrados = produtosTodos.filter(p =>
-                p.nome.toLowerCase().includes(termoLower) ||
-                p.codigo.toLowerCase().includes(termoLower)
+            const produtosFiltrados = produtosTodos.filter(produto => 
+                produto.nome.toLowerCase().includes(termoLower) ||
+                produto.codigo.toLowerCase().includes(termoLower)
             );
-            renderizarCategorias(filtrados);
+
+            renderizarCategorias(produtosFiltrados);
         }
 
-        // ==================== CARRINHO ====================
+        // ==================== CARRINHO DE COMPRAS ====================
         function adicionarAoCarrinho(produto) {
+            console.log('Adicionando ao carrinho:', produto);
+            
             const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
+            
             if (itemExistente) {
                 if (itemExistente.quantidade >= produto.estoque) {
-                    showToast(`⚠️ Estoque insuficiente! Disponível: ${produto.estoque}`, 'error');
+                    alert(`Estoque insuficiente! Disponível: ${produto.estoque}`);
                     return;
                 }
                 itemExistente.quantidade++;
+                console.log('Quantidade atualizada:', itemExistente);
             } else {
                 carrinho.push({
                     codigo: produto.codigo,
@@ -877,7 +1233,9 @@ async function abrirGaveta() {
                     quantidade: 1,
                     estoque: produto.estoque
                 });
+                console.log('Novo item adicionado');
             }
+            
             atualizarCarrinho();
         }
 
@@ -889,19 +1247,26 @@ async function abrirGaveta() {
         function alterarQuantidade(index, delta) {
             const item = carrinho[index];
             const novaQuantidade = item.quantidade + delta;
-            if (novaQuantidade <= 0) { removerDoCarrinho(index); return; }
-            if (novaQuantidade > item.estoque) {
-                showToast(`⚠️ Estoque insuficiente! Disponível: ${item.estoque}`, 'error');
+
+            if (novaQuantidade <= 0) {
+                removerDoCarrinho(index);
                 return;
             }
+
+            if (novaQuantidade > item.estoque) {
+                alert(`Estoque insuficiente! Disponível: ${item.estoque}`);
+                return;
+            }
+
             item.quantidade = novaQuantidade;
             atualizarCarrinho();
         }
 
         function atualizarCarrinho() {
+            console.log('Atualizando carrinho. Total de itens:', carrinho.length);
             const carrinhoTable = document.getElementById('carrinhoTable');
             const carrinhoTotalDiv = document.getElementById('carrinhoTotalDiv');
-
+            
             if (carrinho.length === 0) {
                 carrinhoTable.innerHTML = `
                     <div class="carrinho-empty">
@@ -927,9 +1292,11 @@ async function abrirGaveta() {
             `;
 
             let total = 0;
+
             carrinho.forEach((item, index) => {
                 const subtotal = item.preco * item.quantidade;
                 total += subtotal;
+
                 html += `
                     <tr>
                         <td>${item.codigo}</td>
@@ -946,138 +1313,882 @@ async function abrirGaveta() {
                 `;
             });
 
-            html += `</tbody></table>`;
+            html += `
+                    </tbody>
+                </table>
+            `;
+
             carrinhoTable.innerHTML = html;
             carrinhoTotalDiv.style.display = 'block';
             document.getElementById('totalValor').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+            console.log('Carrinho atualizado. Total:', total);
         }
 
-        function limparCarrinho() {
+        function limparCarrinho(semConfirmacao = false) {
             if (carrinho.length === 0) return;
-            carrinho = [];
-            atualizarCarrinho();
+            
+            if (semConfirmacao || confirm('Deseja limpar o carrinho?')) {
+                carrinho = [];
+                atualizarCarrinho();
+            }
         }
 
         function getValorTotal() {
             return carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0).toFixed(2);
         }
 
-        // ==================== REGISTRAR VENDA ====================
-        async function registrarVenda(tipoPagamento) {
+        // ==================== REGISTRAR VENDA NO SUPABASE ====================
+        async function registrarVenda(tipoPagamento, dadosTEF) {
             if (carrinho.length === 0) return;
+
             try {
+                const valorTotal = parseFloat(getValorTotal());
+                const quantidadeItens = carrinho.reduce((total, item) => total + item.quantidade, 0);
+                
+                console.log('=== INICIANDO REGISTRO DE VENDA ===');
+                console.log('Loja:', lojaAtual.nome, '(', lojaAtual.id, ')');
+                console.log('Método:', tipoPagamento);
+                console.log('Valor Total:', valorTotal);
+                console.log('Quantidade de Itens:', quantidadeItens);
+                console.log('Produtos:', carrinho);
+                
+                // 1. INSERIR VENDA NA TABELA VENDAS (loja_id será adicionado automaticamente pelo trigger)
+                const vendaData = {
+                    valor_total: valorTotal,
+                    metodo_pagamento: tipoPagamento,
+                    quantidade_itens: quantidadeItens,
+                    status: 'CONCLUIDA',
+                    usuario: usuarioAtual.email,
+                    nsu_tef: dadosTEF?.nsu || null,
+                    chave_tef: dadosTEF?.chave || null,
+                    observacao: `Venda realizada via ${tipoPagamento} - Loja: ${lojaAtual.nome}`
+                };
+                
+                const { data: vendaRegistrada, error: vendaError } = await supabaseClient
+                    .from('vendas')
+                    .insert([vendaData])
+                    .select()
+                    .single();
+                
+                if (vendaError) {
+                    console.error('❌ Erro ao registrar venda:', vendaError);
+                    throw vendaError;
+                }
+                
+                console.log('✅ Venda registrada com ID:', vendaRegistrada.id);
+                
+                // 2. INSERIR ITENS DA VENDA NA TABELA ITENS_VENDA
+                const itensVenda = carrinho.map(item => ({
+                    venda_id: vendaRegistrada.id,
+                    codigo_produto: item.codigo,
+                    nome_produto: item.nome,
+                    quantidade: item.quantidade,
+                    preco_unitario: parseFloat(item.preco),
+                    subtotal: parseFloat(item.preco) * item.quantidade
+                }));
+                
+                const { error: itensError } = await supabaseClient
+                    .from('itens_venda')
+                    .insert(itensVenda);
+                
+                if (itensError) {
+                    console.error('❌ Erro ao registrar itens da venda:', itensError);
+                    throw itensError;
+                }
+                
+                console.log('✅ Itens da venda registrados:', itensVenda.length, 'produtos');
+                
+                // 3. ATUALIZAR ESTOQUE E REGISTRAR MOVIMENTAÇÕES
                 for (const item of carrinho) {
+                    console.log(`Atualizando estoque do produto ${item.codigo}...`);
+                    
+                    // Buscar estoque atual
                     const { data: itemAtual, error: fetchError } = await supabaseClient
                         .from('itens')
                         .select('estoque')
                         .eq('codigo', item.codigo)
+                        .eq('loja_id', lojaAtual.id) // Filtro por loja
                         .single();
 
-                    if (fetchError) continue;
+                    if (fetchError) {
+                        console.error('❌ Erro ao buscar estoque:', fetchError);
+                        continue;
+                    }
 
                     const novoEstoque = itemAtual.estoque - item.quantidade;
-                    await supabaseClient
+
+                    // Atualizar estoque
+                    const { error: estoqueError } = await supabaseClient
                         .from('itens')
                         .update({ estoque: novoEstoque })
-                        .eq('codigo', item.codigo);
+                        .eq('codigo', item.codigo)
+                        .eq('loja_id', lojaAtual.id); // Filtro por loja
 
-                    await supabaseClient
+                    if (estoqueError) {
+                        console.error('❌ Erro ao atualizar estoque:', estoqueError);
+                    } else {
+                        console.log(`✅ Estoque atualizado: ${item.codigo} (${itemAtual.estoque} → ${novoEstoque})`);
+                    }
+
+                    // Registrar movimentação
+                    const { error: movError } = await supabaseClient
                         .from('movimentacoes')
                         .insert([{
                             item_codigo: item.codigo,
                             tipo: 'VENDA',
                             quantidade: -item.quantidade,
                             valor_unitario: item.preco,
-                            responsavel: 'PDV',
-                            observacao: `Venda ${tipoPagamento}`
+                            responsavel: usuarioAtual.email,
+                            observacao: `Venda #${vendaRegistrada.id} - ${tipoPagamento}`
                         }]);
+
+                    if (movError) {
+                        console.error('❌ Erro ao registrar movimentação:', movError);
+                    } else {
+                        console.log(`✅ Movimentação registrada: ${item.codigo}`);
+                    }
                 }
+                
+                console.log('=== VENDA COMPLETAMENTE REGISTRADA ===');
+                console.log('ID da Venda:', vendaRegistrada.id);
+                console.log('Total Produtos:', itensVenda.length);
+                console.log('Valor Total:', valorTotal);
+                
+                return vendaRegistrada;
+                
             } catch (error) {
-                console.error('Erro ao registrar venda:', error);
+                console.error('❌ ERRO GERAL ao registrar venda:', error);
+                throw error;
             }
         }
 
         // ==================== FINALIZAR VENDAS ====================
         async function finalizarVendaPix() {
-            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
+            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
+                return;
+            }
+
+            if (carrinho.length === 0) {
+                alert('Carrinho vazio! Adicione produtos primeiro.');
+                return;
+            }
+            
+            console.log('Iniciando pagamento PIX...');
             try {
                 const resultado = await pix();
+                
+                // Verifica se o pagamento foi bem-sucedido
                 if (resultado && resultado.resultado && resultado.resultado.data) {
-                    await registrarVenda('PIX');
-                    limparCarrinho();
-                    showToast('✅ Pagamento PIX realizado!', 'success');
+                    console.log('Pagamento PIX aprovado!');
+                    
+                    // Extrai dados do TEF
+                    const dadosTEF = {
+                        nsu: resultado.resultado.nsu || null,
+                        autorizacao: resultado.resultado.autorizacao || null,
+                        bandeira: resultado.resultado.bandeira || null,
+                        parcelas: 1
+                    };
+                    
+                    const registroVenda = await registrarVenda('PIX', dadosTEF);
+                    
+                    if (registroVenda.sucesso) {
+                        limparCarrinho(true); // Sem confirmação após venda
+                        alert(`✅ Pagamento PIX realizado com sucesso!\n\nCódigo da Venda: ${registroVenda.codigo_venda}`);
+                    } else {
+                        alert('❌ Erro ao registrar venda no sistema.');
+                    }
                 } else {
-                    showToast('❌ Pagamento PIX não aprovado.', 'error');
+                    console.error('Pagamento PIX não aprovado:', resultado);
+                    alert('❌ Erro no pagamento PIX. Tente novamente.');
                 }
             } catch (error) {
-                showToast('❌ Erro ao processar PIX.', 'error');
+                console.error('Erro ao processar PIX:', error);
+                alert('❌ Erro ao processar pagamento PIX. Tente novamente.');
             }
         }
 
         async function finalizarVendaCredito() {
-            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
+            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
+                return;
+            }
+
+            if (carrinho.length === 0) {
+                alert('Carrinho vazio! Adicione produtos primeiro.');
+                return;
+            }
+            
+            console.log('Iniciando pagamento CRÉDITO...');
             try {
                 const resultado = await credito();
+                
+                // Verifica se o pagamento foi bem-sucedido
                 if (resultado && resultado.resultado && resultado.resultado.data) {
-                    await registrarVenda('CREDITO');
-                    limparCarrinho();
-                    showToast('✅ Pagamento CRÉDITO realizado!', 'success');
+                    console.log('Pagamento CRÉDITO aprovado!');
+                    
+                    // Extrai dados do TEF
+                    const dadosTEF = {
+                        nsu: resultado.resultado.nsu || null,
+                        autorizacao: resultado.resultado.autorizacao || null,
+                        bandeira: resultado.resultado.bandeira || null,
+                        parcelas: resultado.resultado.parcelas || 1
+                    };
+                    
+                    const registroVenda = await registrarVenda('CREDITO', dadosTEF);
+                    
+                    if (registroVenda.sucesso) {
+                        limparCarrinho(true); // Sem confirmação após venda
+                        alert(`✅ Pagamento CRÉDITO realizado com sucesso!\n\nCódigo da Venda: ${registroVenda.codigo_venda}\nNSU: ${dadosTEF.nsu}`);
+                    } else {
+                        alert('❌ Erro ao registrar venda no sistema.');
+                    }
                 } else {
-                    showToast('❌ Pagamento CRÉDITO não aprovado.', 'error');
+                    console.error('Pagamento CRÉDITO não aprovado:', resultado);
+                    alert('❌ Erro no pagamento CRÉDITO. Tente novamente.');
                 }
             } catch (error) {
-                showToast('❌ Erro ao processar CRÉDITO.', 'error');
+                console.error('Erro ao processar CRÉDITO:', error);
+                alert('❌ Erro ao processar pagamento CRÉDITO. Tente novamente.');
             }
         }
 
         async function finalizarVendaDebito() {
-            if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
+            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
+                return;
+            }
+
+            if (carrinho.length === 0) {
+                alert('Carrinho vazio! Adicione produtos primeiro.');
+                return;
+            }
+            
+            console.log('Iniciando pagamento DÉBITO...');
             try {
                 const resultado = await debito();
+                
+                // Verifica se o pagamento foi bem-sucedido
                 if (resultado && resultado.resultado && resultado.resultado.data) {
-                    await registrarVenda('DEBITO');
-                    limparCarrinho();
-                    showToast('✅ Pagamento DÉBITO realizado!', 'success');
+                    console.log('Pagamento DÉBITO aprovado!');
+                    
+                    // Extrai dados do TEF
+                    const dadosTEF = {
+                        nsu: resultado.resultado.nsu || null,
+                        autorizacao: resultado.resultado.autorizacao || null,
+                        bandeira: resultado.resultado.bandeira || null,
+                        parcelas: 1
+                    };
+                    
+                    const registroVenda = await registrarVenda('DEBITO', dadosTEF);
+                    
+                    if (registroVenda.sucesso) {
+                        limparCarrinho(true); // Sem confirmação após venda
+                        alert(`✅ Pagamento DÉBITO realizado com sucesso!\n\nCódigo da Venda: ${registroVenda.codigo_venda}\nNSU: ${dadosTEF.nsu}`);
+                    } else {
+                        alert('❌ Erro ao registrar venda no sistema.');
+                    }
                 } else {
-                    showToast('❌ Pagamento DÉBITO não aprovado.', 'error');
+                    console.error('Pagamento DÉBITO não aprovado:', resultado);
+                    alert('❌ Erro no pagamento DÉBITO. Tente novamente.');
                 }
             } catch (error) {
-                showToast('❌ Erro ao processar DÉBITO.', 'error');
+                console.error('Erro ao processar DÉBITO:', error);
+                alert('❌ Erro ao processar pagamento DÉBITO. Tente novamente.');
             }
         }
 
-        // ==================== FINALIZAR VENDA DINHEIRO (NOVO) ====================
-async function finalizarVendaDinheiro() {
-    if (carrinho.length === 0) { showToast('🛒 Carrinho vazio!', 'error'); return; }
+        // ==================== FINALIZAR VENDA DINHEIRO ====================
+        async function finalizarVendaDinheiro() {
+            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
+            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
+                return;
+            }
 
-    showToast('💾 Registrando venda...', 'info', 2000);
-    
-    // Registra a venda no banco
-    await registrarVenda('DINHEIRO');
+            if (carrinho.length === 0) {
+                alert('Carrinho vazio! Adicione produtos primeiro.');
+                return;
+            }
 
-    // Abre a gaveta (agora integrada no Flask)
-    showToast('🗄️ Abrindo gaveta...', 'info', 2000);
-    const resultado = await abrirGaveta();
-    
-    if (resultado) {
-        showToast('✅ Gaveta aberta com sucesso!', 'success', 3000);
-    } else {
-        showToast('⚠️ Gaveta não abriu. Verifique configuração do Flask.', 'error', 3000);
-    }
+            const valorTotal = parseFloat(getValorTotal());
+            
+            console.log('Iniciando pagamento em DINHEIRO...');
+            
+            // Pedir valor recebido
+            const valorRecebidoStr = prompt(`💵 PAGAMENTO EM DINHEIRO\n\nValor da compra: R$ ${valorTotal.toFixed(2)}\n\nDigite o valor recebido:`);
+            
+            if (valorRecebidoStr === null) return; // Cancelou
+            
+            const valorRecebido = parseFloat(valorRecebidoStr.replace(',', '.'));
+            
+            if (isNaN(valorRecebido) || valorRecebido < valorTotal) {
+                alert('❌ Valor inválido ou insuficiente!');
+                return;
+            }
+            
+            const troco = valorRecebido - valorTotal;
+            
+            try {
+                // 1. TENTAR ABRIR GAVETA DE DINHEIRO
+                console.log('Abrindo gaveta de dinheiro...');
+                const resultadoGaveta = await abrirGaveta();
+                
+                // Verificar se gaveta abriu ou se usuário quer continuar sem ela
+                if (resultadoGaveta && !resultadoGaveta.sucesso && !resultadoGaveta.continuarVenda) {
+                    console.log('❌ Venda cancelada pelo usuário (gaveta não abriu)');
+                    return; // Usuário cancelou
+                }
+                
+                if (resultadoGaveta && !resultadoGaveta.sucesso && resultadoGaveta.continuarVenda) {
+                    console.log('⚠️ Continuando venda sem abrir gaveta (escolha do usuário)');
+                }
+                
+                // 2. REGISTRAR VENDA
+                const dadosPagamento = {
+                    valor_recebido: valorRecebido,
+                    troco: troco
+                };
+                
+                const resultado = await registrarVenda('DINHEIRO', dadosPagamento);
+                
+                if (!resultado || !resultado.sucesso) {
+                    alert('❌ Erro ao registrar venda no sistema.');
+                    return;
+                }
+                
+                // 3. LIMPAR CARRINHO AUTOMATICAMENTE (SEM CONFIRMAÇÃO)
+                limparCarrinho(true);
+                
+                // 4. MOSTRAR TROCO
+                if (troco > 0) {
+                    alert(`✅ VENDA REALIZADA COM SUCESSO!\n\n💵 Valor Recebido: R$ ${valorRecebido.toFixed(2)}\n💰 Troco: R$ ${troco.toFixed(2)}\n\n✅ Carrinho limpo automaticamente`);
+                } else {
+                    alert(`✅ VENDA REALIZADA COM SUCESSO!\n\n💵 Valor Recebido: R$ ${valorRecebido.toFixed(2)}\n✅ Sem troco\n\n✅ Carrinho limpo automaticamente`);
+                }
+                
+            } catch (error) {
+                console.error('Erro ao processar DINHEIRO:', error);
+                alert('❌ Erro ao processar pagamento em dinheiro:\n\n' + error.message);
+            }
+        }
 
-    limparCarrinho();
-    showToast('✅ Venda em DINHEIRO finalizada!', 'success', 4000);
-}
         // ==================== TOGGLE VIEW ====================
-        function toggleView(view, event) {
+        function toggleView(view) {
             const adminPanel = document.getElementById('adminPanel');
+            
             if (view === 'admin') {
                 adminPanel.classList.add('active');
             } else {
                 adminPanel.classList.remove('active');
             }
-            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('active');
+            });
             event.target.closest('.nav-item').classList.add('active');
+        }
+
+        // ==================== SISTEMA DE CAIXA ====================
+        
+        // Verificar status do caixa ao carregar
+        async function verificarStatusCaixa() {
+            console.log('Verificando status do caixa...');
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('caixas')
+                    .select('*')
+                    .eq('loja_id', lojaAtual.id)
+                    .eq('status', 'ABERTO')
+                    .order('data_abertura', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (error && error.code !== 'PGRST116') {
+                    console.error('Erro ao verificar caixa:', error);
+                    return;
+                }
+
+                if (data) {
+                    caixaAtual = data;
+                    console.log('✅ Caixa aberto encontrado:', data.id);
+                    atualizarBotaoCaixa(true);
+                } else {
+                    console.log('❌ Nenhum caixa aberto');
+                    atualizarBotaoCaixa(false);
+                }
+            } catch (error) {
+                console.error('Erro ao verificar caixa:', error);
+            }
+        }
+
+        // Atualizar visual do botão de caixa
+        function atualizarBotaoCaixa(aberto) {
+            const btn = document.getElementById('btnCaixa');
+            const icone = document.getElementById('iconeCaixa');
+            const texto = document.getElementById('textoCaixa');
+            const btnRetirada = document.getElementById('btnRetirada');
+
+            if (aberto) {
+                btn.className = 'btn-caixa aberto';
+                icone.textContent = '✅';
+                texto.textContent = 'CAIXA ABERTO';
+                btnRetirada.style.display = 'block'; // ✅ MOSTRAR BOTÃO RETIRADA
+            } else {
+                btn.className = 'btn-caixa fechado';
+                icone.textContent = '🔒';
+                texto.textContent = 'ABRIR CAIXA';
+                btnRetirada.style.display = 'none'; // ❌ OCULTAR BOTÃO RETIRADA
+            }
+        }
+
+        // Gerenciar caixa (abrir ou fechar)
+        async function gerenciarCaixa() {
+            if (caixaAtual && caixaAtual.status === 'ABERTO') {
+                fecharCaixa();
+            } else {
+                abrirCaixa();
+            }
+        }
+
+        // Abrir caixa
+        async function abrirCaixa() {
+            const valorInicial = prompt('Digite o valor inicial em caixa (R$):\n\nExemplo: 100.00');
+            
+            if (valorInicial === null) return; // Cancelou
+
+            const valor = parseFloat(valorInicial.replace(',', '.'));
+            
+            if (isNaN(valor) || valor < 0) {
+                alert('❌ Valor inválido! Digite um número positivo.');
+                return;
+            }
+
+            const observacao = prompt('Observação (opcional):') || '';
+
+            try {
+                console.log('Abrindo caixa com valor inicial:', valor);
+
+                const { data, error } = await supabaseClient
+                    .from('caixas')
+                    .insert([{
+                        usuario_abertura: usuarioAtual.id,
+                        valor_inicial: valor,
+                        observacao_abertura: observacao,
+                        status: 'ABERTO'
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                caixaAtual = data;
+                console.log('✅ Caixa aberto:', data.id);
+                
+                atualizarBotaoCaixa(true);
+                alert(`✅ Caixa aberto com sucesso!\n\nValor inicial: R$ ${valor.toFixed(2)}`);
+            } catch (error) {
+                console.error('Erro ao abrir caixa:', error);
+                alert('❌ Erro ao abrir caixa: ' + error.message);
+            }
+        }
+
+        // Fechar caixa
+        async function fecharCaixa() {
+            if (!caixaAtual) {
+                alert('Nenhum caixa aberto');
+                return;
+            }
+
+            // Calcular totais do caixa
+            const { data: vendas, error: vendasError } = await supabaseClient
+                .from('vendas')
+                .select('valor_total, metodo_pagamento')
+                .eq('loja_id', lojaAtual.id)
+                .gte('data_venda', caixaAtual.data_abertura)
+                .eq('status', 'CONCLUIDA');
+
+            if (vendasError) {
+                console.error('Erro ao buscar vendas:', vendasError);
+                alert('Erro ao calcular vendas do caixa');
+                return;
+            }
+
+            // Buscar retiradas do caixa
+            const { data: retiradas, error: retiradasError } = await supabaseClient
+                .from('retiradas_caixa')
+                .select('valor')
+                .eq('caixa_id', caixaAtual.id);
+
+            const totalRetiradas = retiradas ? retiradas.reduce((sum, r) => sum + parseFloat(r.valor), 0) : 0;
+
+            // Calcular totais por método
+            let totalGeral = 0;
+            let totalPix = 0;
+            let totalCredito = 0;
+            let totalDebito = 0;
+            let totalDinheiro = 0;
+            let qtdVendas = vendas.length;
+
+            vendas.forEach(venda => {
+                const valor = parseFloat(venda.valor_total);
+                totalGeral += valor;
+
+                switch(venda.metodo_pagamento) {
+                    case 'PIX': totalPix += valor; break;
+                    case 'CREDITO': totalCredito += valor; break;
+                    case 'DEBITO': totalDebito += valor; break;
+                    case 'DINHEIRO': totalDinheiro += valor; break;
+                }
+            });
+
+            const valorEsperado = parseFloat(caixaAtual.valor_inicial) + totalDinheiro - totalRetiradas;
+
+            const mensagem = `
+📊 RESUMO DO CAIXA
+
+💰 Valor Inicial: R$ ${parseFloat(caixaAtual.valor_inicial).toFixed(2)}
+
+📦 Vendas Realizadas: ${qtdVendas}
+💳 Total Vendas: R$ ${totalGeral.toFixed(2)}
+
+Detalhamento por método:
+• PIX: R$ ${totalPix.toFixed(2)}
+• Crédito: R$ ${totalCredito.toFixed(2)}
+• Débito: R$ ${totalDebito.toFixed(2)}
+• Dinheiro: R$ ${totalDinheiro.toFixed(2)}
+
+💸 Retiradas: R$ ${totalRetiradas.toFixed(2)}
+
+💵 Valor Esperado em Caixa: R$ ${valorEsperado.toFixed(2)}
+
+Digite o valor REAL contado no caixa:`;
+
+            const valorContado = prompt(mensagem);
+            
+            if (valorContado === null) return; // Cancelou
+
+            const valorFinal = parseFloat(valorContado.replace(',', '.'));
+            
+            if (isNaN(valorFinal) || valorFinal < 0) {
+                alert('❌ Valor inválido!');
+                return;
+            }
+
+            const diferenca = valorFinal - valorEsperado;
+            const observacaoFinal = prompt('Observação do fechamento (opcional):') || '';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('caixas')
+                    .update({
+                        status: 'FECHADO',
+                        data_fechamento: new Date().toISOString(),
+                        usuario_fechamento: usuarioAtual.id,
+                        valor_vendas: totalGeral,
+                        valor_final: valorFinal,
+                        total_vendas_pix: totalPix,
+                        total_vendas_credito: totalCredito,
+                        total_vendas_debito: totalDebito,
+                        total_vendas_dinheiro: totalDinheiro,
+                        qtd_vendas: qtdVendas,
+                        observacao_fechamento: observacaoFinal
+                    })
+                    .eq('id', caixaAtual.id);
+
+                if (error) throw error;
+
+                let mensagemFinal = `✅ CAIXA FECHADO COM SUCESSO!\n\n`;
+                mensagemFinal += `💰 Valor Esperado: R$ ${valorEsperado.toFixed(2)}\n`;
+                mensagemFinal += `💵 Valor Contado: R$ ${valorFinal.toFixed(2)}\n\n`;
+                
+                if (diferenca > 0) {
+                    mensagemFinal += `📈 Sobra: R$ ${diferenca.toFixed(2)}`;
+                } else if (diferenca < 0) {
+                    mensagemFinal += `📉 Falta: R$ ${Math.abs(diferenca).toFixed(2)}`;
+                } else {
+                    mensagemFinal += `✅ Caixa bateu certinho!`;
+                }
+
+                alert(mensagemFinal);
+                
+                caixaAtual = null;
+                atualizarBotaoCaixa(false);
+            } catch (error) {
+                console.error('Erro ao fechar caixa:', error);
+                alert('❌ Erro ao fechar caixa: ' + error.message);
+            }
+        }
+
+        // ==================== RETIRAR DINHEIRO ====================
+        async function retirarDinheiro() {
+            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+                alert('❌ Nenhum caixa aberto');
+                return;
+            }
+
+            const valor = prompt('💸 RETIRADA DE DINHEIRO\n\nDigite o valor a ser retirado (R$):');
+            
+            if (valor === null) return; // Cancelou
+
+            const valorRetirada = parseFloat(valor.replace(',', '.'));
+            
+            if (isNaN(valorRetirada) || valorRetirada <= 0) {
+                alert('❌ Valor inválido! Digite um número positivo.');
+                return;
+            }
+
+            const motivo = prompt('Motivo da retirada:\n\n(Ex: Troco, Despesa, Pagamento fornecedor)') || 'Não informado';
+            const responsavel = prompt('Quem está retirando?\n\n(Ex: Nome do funcionário)') || usuarioAtual.email;
+
+            try {
+                console.log('Registrando retirada:', valorRetirada);
+
+                const { data, error } = await supabaseClient
+                    .from('retiradas_caixa')
+                    .insert([{
+                        caixa_id: caixaAtual.id,
+                        valor: valorRetirada,
+                        motivo: motivo,
+                        responsavel: responsavel,
+                        usuario_id: usuarioAtual.id
+                    }])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                console.log('✅ Retirada registrada:', data.id);
+                
+                alert(`✅ RETIRADA REGISTRADA!\n\nValor: R$ ${valorRetirada.toFixed(2)}\nMotivo: ${motivo}\nResponsável: ${responsavel}`);
+            } catch (error) {
+                console.error('Erro ao registrar retirada:', error);
+                alert('❌ Erro ao registrar retirada: ' + error.message);
+            }
+        }
+
+        // ==================== HISTÓRICO DE VENDAS ====================
+        
+        function abrirHistoricoVendas() {
+            // Definir data de hoje como padrão
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('dataFiltro').value = hoje;
+            
+            document.getElementById('modalHistorico').classList.add('active');
+            
+            // Buscar vendas de hoje automaticamente
+            buscarVendasDia();
+        }
+
+        function fecharHistoricoVendas() {
+            document.getElementById('modalHistorico').classList.remove('active');
+        }
+
+        async function buscarVendasDia() {
+            const dataInput = document.getElementById('dataFiltro').value;
+            
+            if (!dataInput) {
+                alert('❌ Selecione uma data');
+                return;
+            }
+
+            const listaDiv = document.getElementById('listaVendas');
+            listaDiv.innerHTML = '<div class="loading-vendas">⏳ Carregando vendas...</div>';
+
+            try {
+                // Buscar vendas do dia selecionado
+                const dataInicio = new Date(dataInput + 'T00:00:00');
+                const dataFim = new Date(dataInput + 'T23:59:59');
+
+                const { data: vendas, error } = await supabaseClient
+                    .from('vendas')
+                    .select('*')
+                    .eq('loja_id', lojaAtual.id)
+                    .gte('data_venda', dataInicio.toISOString())
+                    .lte('data_venda', dataFim.toISOString())
+                    .order('data_venda', { ascending: false });
+
+                if (error) throw error;
+
+                console.log(`✅ ${vendas.length} vendas encontradas`);
+
+                if (vendas.length === 0) {
+                    listaDiv.innerHTML = `
+                        <div class="empty-vendas">
+                            <div class="empty-vendas-icon">📊</div>
+                            <p>Nenhuma venda encontrada para ${new Date(dataInput).toLocaleDateString('pt-BR')}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Buscar itens de cada venda
+                let html = '';
+                for (const venda of vendas) {
+                    const { data: itens } = await supabaseClient
+                        .from('itens_venda')
+                        .select('*')
+                        .eq('venda_id', venda.id)
+                        .order('nome_produto');
+
+                    html += renderizarVendaCard(venda, itens);
+                }
+
+                listaDiv.innerHTML = html;
+
+            } catch (error) {
+                console.error('Erro ao buscar vendas:', error);
+                listaDiv.innerHTML = `
+                    <div class="empty-vendas">
+                        <div class="empty-vendas-icon">⚠️</div>
+                        <p>Erro ao carregar vendas</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderizarVendaCard(venda, itens) {
+            const dataFormatada = new Date(venda.data_venda).toLocaleString('pt-BR');
+            const isCancelada = venda.status === 'CANCELADA';
+            
+            const metodoClass = {
+                'PIX': 'metodo-pix',
+                'CREDITO': 'metodo-credito',
+                'DEBITO': 'metodo-debito',
+                'DINHEIRO': 'metodo-dinheiro'
+            }[venda.metodo_pagamento] || 'metodo-pix';
+
+            let itensHtml = '';
+            itens.forEach(item => {
+                itensHtml += `
+                    <div class="item-venda">
+                        <div>
+                            <span class="item-nome">${item.nome_produto}</span>
+                            <span class="item-qtd"> x${item.quantidade}</span>
+                        </div>
+                        <span class="item-preco">R$ ${parseFloat(item.subtotal).toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="venda-card ${isCancelada ? 'venda-cancelada' : ''}">
+                    <div class="venda-header">
+                        <div class="venda-info">
+                            <div class="venda-id">#${venda.id}</div>
+                            <div class="venda-data">📅 ${dataFormatada}</div>
+                            <span class="venda-metodo ${metodoClass}">${venda.metodo_pagamento}</span>
+                            ${isCancelada ? '<span class="badge-cancelada">❌ CANCELADA</span>' : ''}
+                        </div>
+                        <div class="venda-total">R$ ${parseFloat(venda.valor_total).toFixed(2)}</div>
+                    </div>
+                    <div class="venda-itens">
+                        <strong style="display: block; margin-bottom: 10px; color: #6b7280;">📦 Itens da Venda:</strong>
+                        ${itensHtml}
+                    </div>
+                    <div class="venda-actions">
+                        <button 
+                            class="btn-reverter" 
+                            onclick="reverterVenda(${venda.id})"
+                            ${isCancelada ? 'disabled' : ''}
+                        >
+                            ↩️ ${isCancelada ? 'JÁ CANCELADA' : 'REVERTER VENDA'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function reverterVenda(vendaId) {
+            if (!confirm('⚠️ ATENÇÃO!\n\nReverter esta venda irá:\n\n• Cancelar a venda\n• Devolver produtos ao estoque\n• Impedir contabilização financeira\n\nDeseja continuar?')) {
+                return;
+            }
+
+            try {
+                console.log('Revertendo venda:', vendaId);
+
+                // 1. Buscar itens da venda
+                const { data: itens, error: itensError } = await supabaseClient
+                    .from('itens_venda')
+                    .select('*')
+                    .eq('venda_id', vendaId);
+
+                if (itensError) throw itensError;
+
+                console.log('Itens da venda:', itens);
+
+                // 2. Devolver estoque de cada item
+                for (const item of itens) {
+                    console.log(`Devolvendo ${item.quantidade}x ${item.nome_produto} ao estoque...`);
+
+                    // Buscar estoque atual
+                    const { data: itemAtual, error: fetchError } = await supabaseClient
+                        .from('itens')
+                        .select('estoque')
+                        .eq('codigo', item.codigo_produto)
+                        .eq('loja_id', lojaAtual.id)
+                        .single();
+
+                    if (fetchError) {
+                        console.error('Erro ao buscar item:', fetchError);
+                        continue;
+                    }
+
+                    const novoEstoque = itemAtual.estoque + item.quantidade;
+
+                    // Atualizar estoque
+                    const { error: estoqueError } = await supabaseClient
+                        .from('itens')
+                        .update({ estoque: novoEstoque })
+                        .eq('codigo', item.codigo_produto)
+                        .eq('loja_id', lojaAtual.id);
+
+                    if (estoqueError) {
+                        console.error('Erro ao atualizar estoque:', estoqueError);
+                    } else {
+                        console.log(`✅ Estoque atualizado: ${item.codigo_produto} (${itemAtual.estoque} → ${novoEstoque})`);
+                    }
+
+                    // Registrar movimentação de devolução
+                    await supabaseClient
+                        .from('movimentacoes')
+                        .insert([{
+                            item_codigo: item.codigo_produto,
+                            tipo: 'DEVOLUCAO',
+                            quantidade: item.quantidade,
+                            valor_unitario: item.preco_unitario,
+                            responsavel: usuarioAtual.email,
+                            observacao: `Devolução por cancelamento da venda #${vendaId}`
+                        }]);
+                }
+
+                // 3. Marcar venda como CANCELADA
+                const { error: vendaError } = await supabaseClient
+                    .from('vendas')
+                    .update({ 
+                        status: 'CANCELADA',
+                        observacao: (venda.observacao || '') + ` | CANCELADA em ${new Date().toLocaleString()} por ${usuarioAtual.email}`
+                    })
+                    .eq('id', vendaId)
+                    .eq('loja_id', lojaAtual.id);
+
+                if (vendaError) throw vendaError;
+
+                console.log('✅ Venda cancelada:', vendaId);
+
+                alert('✅ VENDA REVERTIDA COM SUCESSO!\n\n• Estoque devolvido\n• Venda cancelada\n• Não será contabilizada');
+
+                // Recarregar lista de vendas
+                buscarVendasDia();
+
+            } catch (error) {
+                console.error('❌ Erro ao reverter venda:', error);
+                alert('❌ Erro ao reverter venda: ' + error.message);
+            }
         }
     </script>
 
@@ -1086,8 +2197,13 @@ async function finalizarVendaDinheiro() {
         const BASE_URL = 'http://localhost:2001/tef/v1'
         const historicoVendas = []
 
-        function start() { window.location.href = 'intent://connect/start' }
-        function stop()  { window.location.href = 'intent://connect/stop'  }
+        function start() {
+            window.location.href = 'intent://connect/start'
+        }
+
+        function stop() {
+            window.location.href = 'intent://connect/stop'
+        }
 
         function configuracao() {
             sendPost('/configuracao', {
@@ -1103,66 +2219,157 @@ async function finalizarVendaDinheiro() {
 
         function ativacao() {
             const cnpj = prompt('Insira o CNPJ com pontuação')
-            sendPost('/ativacao', { cnpjCpf: cnpj })
+            sendPost('/ativacao', {
+                cnpjCpf: cnpj
+            })
         }
 
-        function reimpressao() { sendGet('/adm/reimpressao') }
-        function relatorio()   { sendGet('/adm/relatorio')   }
+        function reimpressao() {
+            sendGet('/adm/reimpressao')
+        }
+
+        function relatorio() {
+            sendGet('/adm/relatorio')
+        }
 
         async function venda() {
             const venda = await sendPost('/venda', null)
             if (!venda) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
-            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            if (venda.resultado.data !== undefined)
+                historicoVendas.push(venda)
+        }
+
+        // ==================== ABRIR GAVETA ====================
+        async function abrirGaveta() {
+            console.log('Tentando abrir gaveta de dinheiro...');
+            try {
+                // Tenta endpoint /admin/abrirgaveta (mais comum)
+                let resultado = await sendPost('/admin/abrirgaveta', null);
+                
+                if (!resultado) {
+                    // Tenta endpoint alternativo /abrirgaveta
+                    resultado = await sendPost('/abrirgaveta', null);
+                }
+                
+                if (!resultado) {
+                    // Tenta endpoint alternativo /gaveta
+                    resultado = await sendPost('/gaveta', null);
+                }
+                
+                if (resultado) {
+                    console.log('✅ Gaveta aberta com sucesso!');
+                    return { sucesso: true };
+                } else {
+                    throw new Error('Nenhum endpoint de gaveta respondeu');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao abrir gaveta:', error.message);
+                
+                // Mostrar erro e perguntar se quer continuar
+                const continuar = confirm(
+                    '⚠️ ERRO AO ABRIR GAVETA\n\n' +
+                    'Não foi possível abrir a gaveta automaticamente.\n\n' +
+                    'Possíveis causas:\n' +
+                    '• TEF não está rodando\n' +
+                    '• Gaveta não está conectada\n' +
+                    '• Endpoint não configurado\n\n' +
+                    '❓ Deseja continuar a venda SEM abrir a gaveta?'
+                );
+                
+                if (continuar) {
+                    console.log('⚠️ Usuário optou por continuar sem abrir gaveta');
+                    return { sucesso: false, continuarVenda: true };
+                } else {
+                    console.log('❌ Usuário cancelou a venda');
+                    return { sucesso: false, continuarVenda: false };
+                }
+            }
         }
 
         async function debito() {
             const valor = getValorTotal() || prompt('Insira um valor em R$ no formato (00.00)', '1.00')
-            const venda = await sendPost('/venda/debito', { valor })
-            if (!venda) { console.error('Erro: TEF não disponível'); return null; }
-            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            const venda = await sendPost('/venda/debito', {
+                valor
+            })
+            if (!venda) {
+                console.error('Erro: TEF não disponível');
+                return null;
+            }
+            if (venda.resultado.data !== undefined)
+                historicoVendas.push(venda)
             return venda;
         }
 
         async function credito() {
             const valor = getValorTotal() || prompt('Insira um valor em R$ no formato (00.00)', '1.00')
-            const venda = await sendPost('/venda/credito', { valor, parcelas: '1', financiamento: '1' })
-            if (!venda) { console.error('Erro: TEF não disponível'); return null; }
-            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            const venda = await sendPost('/venda/credito', {
+                valor,
+                parcelas: '1',
+                financiamento: '1'
+            })
+            if (!venda) {
+                console.error('Erro: TEF não disponível');
+                return null;
+            }
+            if (venda.resultado.data !== undefined)
+                historicoVendas.push(venda)
             return venda;
         }
 
         async function cancelamento() {
             const ultimaVenda = historicoVendas.pop()
             if (ultimaVenda === undefined) return alert('Primeiro realizar uma venda')
-            const nsu  = ultimaVenda.resultado.nsu.padStart(6, '0')
+
+            const nsu = ultimaVenda.resultado.nsu.padStart(6, '0')
             const data = ultimaVenda.resultado.data.split(' ')[0].replace(/\/20/g, '/')
             let { valor } = ultimaVenda.resultado
-            if (valor.indexOf('.') === -1) valor = valor + '.00'
-            const cancelamento = await sendPost('/adm/cancelamento', { nsu, valor, data })
+            if (valor.indexOf('.') === -1)
+                valor = valor + '.00'
+
+            console.log('dados resgatados', { nsu, valor, data })
+
+            const cancelamento = await sendPost('/adm/cancelamento', {
+                nsu,
+                valor,
+                data
+            })
             if (!cancelamento) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
         }
 
         async function pix() {
             const valor = getValorTotal() || prompt('Insira um valor em R$ no formato (00.00)', '1.00')
-            const venda = await sendPost('/pix', { valor })
-            if (!venda) { console.error('Erro: TEF não disponível'); return null; }
-            if (venda.resultado.data !== undefined) historicoVendas.push(venda)
+            const venda = await sendPost('/pix', {
+                valor,
+            })
+            if (!venda) {
+                console.error('Erro: TEF não disponível');
+                return null;
+            }
+            if (venda.resultado.data !== undefined)
+                historicoVendas.push(venda)
             return venda;
         }
 
         async function intpos_venda() {
             const valor = prompt('Insira um valor em R$ no formato (00.00)', '1.00')
-            await sendPost('/intpos', { 'intpos': `000-000 = CRT\n001-000 = 123\n003-000 = ${valor}\n999-999 = 0\n` })
+            await sendPost('/intpos', {
+                'intpos': `000-000 = CRT\n001-000 = 123\n003-000 = ${valor}\n999-999 = 0\n`
+            })
         }
 
         async function intpos_adm() {
-            await sendPost('/intpos', { 'intpos': '000-000 = ADM\n001-000 = 123\n999-999 = 0\n' })
+            await sendPost('/intpos', {
+                'intpos': '000-000 = ADM\n001-000 = 123\n999-999 = 0\n'
+            })
         }
 
         async function sendGet(rota) {
             try {
                 const responseData = await fetch(BASE_URL + rota, {
-                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
                     method: 'GET'
                 })
                 const data = await responseData.json()
@@ -1177,11 +2384,15 @@ async function finalizarVendaDinheiro() {
         async function sendPost(rota, body) {
             try {
                 const responseData = await fetch(BASE_URL + rota, {
-                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
                     method: 'POST',
                     body: JSON.stringify(body)
                 })
                 const data = await responseData.json()
+                // verifica se o retorno em resultado está definido e é um objeto
                 if (data.resultado !== undefined && data.resultado.indexOf('{') !== -1)
                     data.resultado = JSON.parse(data.resultado)
                 console.log('TEF Response (POST):', data)
@@ -1192,5 +2403,30 @@ async function finalizarVendaDinheiro() {
             }
         }
     </script>
+    <!-- MODAL HISTÓRICO DE VENDAS -->
+    <div class="modal-historico" id="modalHistorico">
+        <div class="modal-historico-content">
+            <div class="modal-historico-header">
+                <div class="modal-historico-title">
+                    📊 Histórico de Vendas
+                </div>
+                <button class="btn-close-modal" onclick="fecharHistoricoVendas()">✖ Fechar</button>
+            </div>
+            <div class="modal-historico-body">
+                <div class="filtro-data">
+                    <label>📅 Selecione a data:</label>
+                    <input type="date" id="dataFiltro" />
+                    <button class="btn-buscar" onclick="buscarVendasDia()">🔍 Buscar</button>
+                </div>
+                <div id="listaVendas">
+                    <div class="empty-vendas">
+                        <div class="empty-vendas-icon">📊</div>
+                        <p>Selecione uma data para ver as vendas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
