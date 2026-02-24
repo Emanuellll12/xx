@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OMG - Faça seu Pedido</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --roxo: #6c059b;
+            --roxo-escuro: #4a0470;
+            --roxo-claro: #8b2fc9;
+            --roxo-bg: #f3e8ff;
+            --creme: #f5f0e8;
+            --creme-escuro: #ede5d4;
+            --branco: #ffffff;
+            --verde: #22c55e;
+            --verde-escuro: #16a34a;
+            --amarelo: #f59e0b;
+            --vermelho: #ef4444;
+            --texto: #1a0a2e;
+            --texto-muted: #6b7280;
+            --sombra: 0 8px 32px rgba(108,5,155,0.18);
+            --sombra-card: 0 4px 16px rgba(0,0,0,0.10);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: #1a0a2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .totem-wrapper {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--creme);
+            overflow: hidden;
+            position: relative;
+        }
+        .totem-header {
+            background: linear-gradient(135deg, var(--roxo) 0%, var(--roxo-escuro) 100%);
+            padding: 18px 30px 22px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .header-logo {
+            width: 64px; height: 64px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; flex-shrink: 0;
+        }
+        .header-logo img { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
+        .header-title {
+            font-family: 'Baloo 2', cursive;
+            font-size: 42px; font-weight: 800; color: white;
+            letter-spacing: 2px; text-transform: uppercase;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.25); line-height: 1;
+        }
+        .header-wave { position: absolute; bottom: -1px; left: 0; right: 0; height: 20px; overflow: hidden; }
+        .header-wave svg { width: 100%; height: 100%; }
+        .totem-body { display: flex; flex: 1; overflow: hidden; }
+        .sidebar-cats {
+            width: 190px;
+            background: linear-gradient(180deg, var(--roxo-escuro) 0%, #2d0450 100%);
+            display: flex; flex-direction: column;
+            padding: 20px 14px; gap: 12px; flex-shrink: 0;
+        }
+        .cat-btn {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 6px; padding: 16px 10px;
+            background: rgba(255,255,255,0.12);
+            border: 2px solid transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.2s;
+            color: rgba(255,255,255,0.75);
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px; min-height: 80px;
+        }
+        .cat-btn .cat-icon { font-size: 26px; line-height: 1; }
+        .cat-btn:hover { background: rgba(255,255,255,0.2); color: white; border-color: rgba(255,255,255,0.3); transform: translateX(4px); }
+        .cat-btn.active { background: white; color: var(--roxo); border-color: white; box-shadow: 0 4px 16px rgba(0,0,0,0.25); transform: translateX(6px); }
+        .produtos-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .categoria-titulo { font-family: 'Baloo 2', cursive; font-size: 28px; font-weight: 800; color: var(--roxo); padding: 16px 24px 8px; text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0; }
+        .produtos-scroll { flex: 1; overflow-y: auto; padding: 8px 20px 20px; scrollbar-width: thin; scrollbar-color: var(--roxo-claro) transparent; }
+        .produtos-scroll::-webkit-scrollbar { width: 6px; }
+        .produtos-scroll::-webkit-scrollbar-thumb { background: var(--roxo-claro); border-radius: 3px; }
+        .produtos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .produto-card { background: white; border-radius: var(--radius); overflow: hidden; box-shadow: var(--sombra-card); border: 2px solid transparent; transition: all 0.2s; display: flex; flex-direction: column; cursor: pointer; }
+        .produto-card:hover { border-color: var(--roxo-claro); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(108,5,155,0.18); }
+        .produto-card:active { transform: scale(0.97); }
+        .produto-img-wrapper { height: 150px; background: var(--creme); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+        .produto-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .produto-img-placeholder { font-size: 64px; opacity: 0.25; position: absolute; }
+        .produto-info { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .produto-nome-card { font-size: 16px; font-weight: 800; color: var(--texto); line-height: 1.2; text-align: center; }
+        .produto-preco-card { font-size: 20px; font-weight: 900; color: var(--roxo); text-align: center; font-family: 'Baloo 2', cursive; }
+        .btn-adicionar-card { margin-top: 4px; padding: 10px; background: var(--roxo); color: white; border: none; border-radius: var(--radius-sm); font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; width: 100%; }
+        .btn-adicionar-card:hover { background: var(--roxo-escuro); transform: translateY(-1px); }
+        .btn-adicionar-card.added { background: var(--verde); animation: pulse-green 0.4s ease; }
+        @keyframes pulse-green { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .loading-state { grid-column: span 2; padding: 60px 20px; text-align: center; color: var(--roxo); }
+        .spinner { width: 48px; height: 48px; border: 5px solid var(--roxo-bg); border-top-color: var(--roxo); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .totem-footer { background: white; border-top: 3px solid var(--creme-escuro); padding: 16px 20px; display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
+        .btn-confirmar { flex: 1; padding: 18px 30px; background: var(--roxo); color: white; border: none; border-radius: var(--radius-sm); font-family: 'Baloo 2', cursive; font-size: 22px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; box-shadow: var(--sombra); }
+        .btn-confirmar:hover { background: var(--roxo-escuro); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,5,155,0.35); }
+        .btn-confirmar:disabled { background: var(--creme-escuro); color: var(--texto-muted); cursor: not-allowed; box-shadow: none; transform: none; }
+        .carrinho-total-pill { display: flex; align-items: center; gap: 12px; background: var(--creme); border: 2px solid var(--creme-escuro); border-radius: var(--radius-sm); padding: 14px 20px; min-width: 160px; }
+        .carrinho-icone { font-size: 28px; position: relative; }
+        .carrinho-badge { position: absolute; top: -8px; right: -10px; background: var(--roxo); color: white; font-size: 11px; font-weight: 800; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .carrinho-valor { font-family: 'Baloo 2', cursive; font-size: 24px; font-weight: 800; color: var(--texto); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,10,46,0.75); z-index: 1000; align-items: flex-end; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-sheet { background: white; border-radius: 24px 24px 0 0; width: 100%; max-height: 85vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-header { background: linear-gradient(135deg, var(--roxo) 0%, var(--roxo-escuro) 100%); padding: 20px 24px; border-radius: 24px 24px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-family: 'Baloo 2', cursive; font-size: 24px; font-weight: 800; color: white; letter-spacing: 1px; }
+        .btn-fechar-modal { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .btn-fechar-modal:hover { background: rgba(255,255,255,0.35); }
+        .modal-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+        .carrinho-item { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--creme-escuro); }
+        .carrinho-item:last-child { border-bottom: none; }
+        .item-info { flex: 1; }
+        .item-nome-cart { font-size: 17px; font-weight: 800; color: var(--texto); }
+        .item-preco-unit { font-size: 14px; color: var(--texto-muted); font-weight: 600; }
+        .item-subtotal { font-family: 'Baloo 2', cursive; font-size: 20px; font-weight: 800; color: var(--roxo); }
+        .qtd-ctrl { display: flex; align-items: center; gap: 12px; background: var(--creme); border-radius: 10px; padding: 6px 10px; }
+        .qtd-ctrl button { width: 32px; height: 32px; border: 2px solid var(--roxo); background: white; border-radius: 8px; font-size: 18px; font-weight: 800; color: var(--roxo); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+        .qtd-ctrl button:hover { background: var(--roxo); color: white; }
+        .qtd-ctrl span { font-size: 18px; font-weight: 800; color: var(--texto); min-width: 28px; text-align: center; }
+        .modal-footer { padding: 20px 24px; border-top: 2px solid var(--creme-escuro); background: var(--creme); }
+        .total-linha { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .total-label { font-size: 20px; font-weight: 800; color: var(--texto); }
+        .total-valor-modal { font-family: 'Baloo 2', cursive; font-size: 32px; font-weight: 800; color: var(--roxo); }
+        .pagamento-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .btn-pgto { padding: 16px; border: none; border-radius: var(--radius-sm); color: white; font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-pgto:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-pgto:active { transform: scale(0.97); }
+        .btn-pgto-pix { background: #10b981; grid-column: span 2; font-size: 18px; padding: 18px; }
+        .btn-pgto-credito { background: var(--roxo); }
+        .btn-pgto-debito { background: var(--amarelo); }
+        .btn-pgto-dividido { background: linear-gradient(135deg, var(--roxo) 0%, var(--amarelo) 100%); grid-column: span 2; }
+        .modal-pagamento { display: none; position: fixed; inset: 0; background: rgba(26,10,46,0.85); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-pagamento.active { display: flex; }
+        .pagamento-sheet { background: white; border-radius: 24px; width: 90%; max-width: 500px; overflow: hidden; animation: popIn 0.3s ease; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .pgto-header { background: linear-gradient(135deg, var(--roxo), var(--roxo-escuro)); padding: 24px 28px; text-align: center; }
+        .pgto-header-icon { font-size: 48px; margin-bottom: 8px; }
+        .pgto-header h2 { font-family: 'Baloo 2', cursive; font-size: 26px; font-weight: 800; color: white; letter-spacing: 1px; }
+        .pgto-header p { color: rgba(255,255,255,0.8); font-size: 16px; margin-top: 6px; }
+        .pgto-body { padding: 28px; }
+        .pgto-total { text-align: center; background: var(--roxo-bg); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; }
+        .pgto-total-label { font-size: 14px; color: var(--texto-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .pgto-total-valor { font-family: 'Baloo 2', cursive; font-size: 40px; font-weight: 800; color: var(--roxo); }
+        .pgto-status { text-align: center; padding: 20px; background: var(--creme); border-radius: var(--radius-sm); margin-bottom: 20px; }
+        .pgto-status p { font-size: 16px; font-weight: 700; color: var(--texto); }
+        .pgto-actions { display: flex; gap: 12px; }
+        .btn-pgto-cancelar { flex: 1; padding: 14px; background: var(--creme-escuro); border: none; border-radius: var(--radius-sm); color: var(--texto-muted); font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+        .btn-pgto-cancelar:hover { background: var(--vermelho); color: white; }
+        .modal-dividido-sheet { background: white; border-radius: 24px; width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; animation: popIn 0.3s ease; }
+        .dividido-item { background: var(--creme); border: 2px solid var(--creme-escuro); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px; }
+        .dividido-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .dividido-numero { font-weight: 800; color: var(--roxo); font-size: 16px; }
+        .btn-rm-dividido { background: var(--vermelho); color: white; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .dividido-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 800; color: var(--texto-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .form-group select, .form-group input { width: 100%; padding: 10px 12px; border: 2px solid var(--creme-escuro); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 700; color: var(--texto); background: white; outline: none; transition: border-color 0.2s; }
+        .form-group select:focus, .form-group input:focus { border-color: var(--roxo); }
+        .resumo-dividido-box { background: var(--roxo-bg); border: 2px solid var(--roxo); border-radius: var(--radius-sm); padding: 16px; margin: 16px 0; }
+        .resumo-linha { display: flex; justify-content: space-between; padding: 6px 0; font-size: 15px; font-weight: 700; }
+        .resumo-linha.total { border-top: 2px solid var(--roxo); margin-top: 8px; padding-top: 12px; font-size: 17px; font-weight: 900; color: var(--roxo); }
+        .faltante { color: var(--vermelho); font-weight: 900; }
+        .ok { color: var(--verde); font-weight: 900; }
+        .modal-sucesso { display: none; position: fixed; inset: 0; background: rgba(26,10,46,0.9); z-index: 3000; align-items: center; justify-content: center; }
+        .modal-sucesso.active { display: flex; }
+        .sucesso-sheet { background: white; border-radius: 24px; width: 85%; max-width: 440px; padding: 48px 36px; text-align: center; animation: popIn 0.4s ease; }
+        .sucesso-icone { font-size: 80px; margin-bottom: 16px; animation: bounceIn 0.6s ease 0.1s both; }
+        @keyframes bounceIn { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        .sucesso-titulo { font-family: 'Baloo 2', cursive; font-size: 30px; font-weight: 800; color: var(--roxo); margin-bottom: 8px; }
+        .sucesso-sub { font-size: 16px; color: var(--texto-muted); font-weight: 600; margin-bottom: 28px; }
+        .sucesso-codigo { background: var(--roxo-bg); border-radius: 12px; padding: 16px; margin-bottom: 28px; }
+        .sucesso-codigo-label { font-size: 13px; font-weight: 800; color: var(--texto-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .sucesso-codigo-valor { font-family: 'Baloo 2', cursive; font-size: 36px; font-weight: 800; color: var(--roxo); }
+        .btn-novo-pedido { width: 100%; padding: 18px; background: var(--roxo); color: white; border: none; border-radius: var(--radius-sm); font-family: 'Baloo 2', cursive; font-size: 22px; font-weight: 800; letter-spacing: 1.5px; cursor: pointer; transition: all 0.2s; }
+        .btn-novo-pedido:hover { background: var(--roxo-escuro); transform: translateY(-2px); }
+        #telaLogin { display: none; position: fixed; inset: 0; background: linear-gradient(135deg, var(--roxo) 0%, var(--roxo-escuro) 100%); z-index: 9999; align-items: center; justify-content: center; }
+        #telaLogin.active { display: flex; }
+        .login-box { background: white; border-radius: 24px; padding: 48px 40px; width: 90%; max-width: 400px; text-align: center; }
+        .login-logo { font-size: 64px; margin-bottom: 16px; }
+        .login-titulo { font-family: 'Baloo 2', cursive; font-size: 28px; font-weight: 800; color: var(--roxo); margin-bottom: 8px; }
+        .login-sub { color: var(--texto-muted); font-size: 15px; font-weight: 600; margin-bottom: 28px; }
+        .login-input { width: 100%; padding: 14px 18px; border: 2px solid var(--creme-escuro); border-radius: var(--radius-sm); font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 700; color: var(--texto); margin-bottom: 12px; outline: none; transition: border-color 0.2s; }
+        .login-input:focus { border-color: var(--roxo); }
+        .btn-login { width: 100%; padding: 16px; background: var(--roxo); color: white; border: none; border-radius: var(--radius-sm); font-family: 'Baloo 2', cursive; font-size: 20px; font-weight: 800; cursor: pointer; transition: all 0.2s; margin-top: 8px; }
+        .btn-login:hover { background: var(--roxo-escuro); }
+        .login-erro { color: var(--vermelho); font-size: 14px; font-weight: 700; margin-top: 10px; display: none; }
+        .empty-carrinho { text-align: center; padding: 40px 20px; color: var(--texto-muted); }
+        .empty-carrinho-icon { font-size: 56px; opacity: 0.25; margin-bottom: 12px; }
+        .empty-carrinho p { font-size: 16px; font-weight: 700; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--roxo); color: white; padding: 14px 28px; border-radius: 50px; font-size: 16px; font-weight: 800; z-index: 9000; opacity: 0; transition: all 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        @media (max-width: 600px) {
+            .header-title { font-size: 28px; }
+            .sidebar-cats { width: 140px; }
+            .cat-btn { font-size: 12px; min-height: 65px; padding: 12px 6px; }
+            .cat-btn .cat-icon { font-size: 20px; }
+            .produto-img-wrapper { height: 110px; }
+            .produto-nome-card { font-size: 13px; }
+            .produto-preco-card { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="telaLogin">
+    <div class="login-box">
+        <div class="login-logo">🍔</div>
+        <div class="login-titulo">Bem-vindo!</div>
+        <div class="login-sub">Faça login para ativar o totem</div>
+        <input class="login-input" type="email" id="loginEmail" placeholder="E-mail" autocomplete="off">
+        <input class="login-input" type="password" id="loginSenha" placeholder="Senha">
+        <button class="btn-login" onclick="fazerLogin()">ENTRAR</button>
+        <div class="login-erro" id="loginErro">E-mail ou senha incorretos</div>
+    </div>
+</div>
+
+<!-- TOTEM PRINCIPAL -->
+<div class="totem-wrapper">
+    <div class="totem-header">
+        <div class="header-logo">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgJqyi5ZaH7o5awjUXk8kJJ9Q7yfFGgw4czmB_f9b8j8C5ZOpTRGPdg4ErsmUflzswgifqIyNYtxSmlEK2yTNlRisk85q8ezoQ9-FNTJ9SRaeJaXS_Yxapff8sXVvLJEz6XoNwVldARJaMEUXKFD1p4qkxUAM0QlrGJkBkKgHSrjWudoBWRCOfZAjYZ0NJF/s16000/Generated%20Image%20February%2012,%202026%20-%201_04PM.png" alt="Logo" onerror="this.parentElement.innerHTML='🍔'">
+        </div>
+        <div class="header-title">Faça seu Pedido</div>
+        <div class="header-wave">
+            <svg viewBox="0 0 1440 20" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0,10 C240,20 480,0 720,10 C960,20 1200,0 1440,10 L1440,20 L0,20 Z" fill="#f5f0e8"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="totem-body">
+        <div class="sidebar-cats" id="sidebarCats"></div>
+        <div class="produtos-area">
+            <div class="categoria-titulo" id="categoriaTitulo">Carregando...</div>
+            <div class="produtos-scroll">
+                <div class="produtos-grid" id="produtosGrid">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Carregando cardápio...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="totem-footer">
+        <button class="btn-confirmar" id="btnConfirmar" onclick="abrirCarrinho()" disabled>
+            CONFIRMAR PEDIDO
+        </button>
+        <div class="carrinho-total-pill" onclick="abrirCarrinho()" style="cursor:pointer">
+            <div class="carrinho-icone">
+                🛒
+                <div class="carrinho-badge" id="carrinhoQtdBadge" style="display:none;position:absolute;top:-8px;right:-10px">0</div>
+            </div>
+            <div class="carrinho-valor" id="carrinhoValorFooter">R$ 00,00</div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CARRINHO -->
+<div class="modal-overlay" id="modalCarrinho">
+    <div class="modal-sheet">
+        <div class="modal-header">
+            <div class="modal-title">🛒 Seu Pedido</div>
+            <button class="btn-fechar-modal" onclick="fecharCarrinho()">✕</button>
+        </div>
+        <div class="modal-body" id="modalCarrinhoBody"></div>
+        <div class="modal-footer">
+            <div class="total-linha">
+                <span class="total-label">TOTAL</span>
+                <span class="total-valor-modal" id="totalModal">R$ 0,00</span>
+            </div>
+            <div class="pagamento-grid">
+                <button class="btn-pgto btn-pgto-pix" onclick="iniciarPagamento('PIX')">📱 PIX</button>
+                <button class="btn-pgto btn-pgto-credito" onclick="iniciarPagamento('CREDITO')">💳 Crédito</button>
+                <button class="btn-pgto btn-pgto-debito" onclick="iniciarPagamento('DEBITO')">💳 Débito</button>
+                <button class="btn-pgto btn-pgto-dividido" onclick="iniciarPagamentoDividido()">⚡ Pagamento Dividido</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PAGAMENTO -->
+<div class="modal-pagamento" id="modalPagamento">
+    <div class="pagamento-sheet">
+        <div class="pgto-header">
+            <div class="pgto-header-icon" id="pgtoIcone">💳</div>
+            <h2 id="pgtoTitulo">PROCESSANDO</h2>
+            <p id="pgtoSubtitulo">Aguarde...</p>
+        </div>
+        <div class="pgto-body">
+            <div class="pgto-total">
+                <div class="pgto-total-label">Total a Pagar</div>
+                <div class="pgto-total-valor" id="pgtoValor">R$ 0,00</div>
+            </div>
+            <div class="pgto-status" id="pgtoStatus">
+                <p>🔄 Aguardando processamento...</p>
+            </div>
+            <div class="pgto-actions">
+                <button class="btn-pgto-cancelar" onclick="cancelarPagamento()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DIVIDIDO -->
+<div class="modal-pagamento" id="modalDividido">
+    <div class="modal-dividido-sheet">
+        <div class="pgto-header">
+            <div class="pgto-header-icon">⚡</div>
+            <h2>PAGAMENTO DIVIDIDO</h2>
+            <p id="valorTotalDivididoLabel">Total: R$ 0,00</p>
+        </div>
+        <div class="pgto-body">
+            <div id="listaPagamentosDivididos"></div>
+            <button class="btn-pgto btn-pgto-pix" style="width:100%;margin-bottom:12px;border-radius:10px" onclick="adicionarParcelaDividida()" id="btnAddParcela">
+                + Adicionar Forma de Pagamento
+            </button>
+            <div class="resumo-dividido-box">
+                <div class="resumo-linha"><span>Total</span><span id="resumoTotalDiv">R$ 0,00</span></div>
+                <div class="resumo-linha"><span>Pago</span><span id="resumoPagoDiv">R$ 0,00</span></div>
+                <div class="resumo-linha total"><span>Restante</span><span id="resumoRestanteDiv" class="faltante">R$ 0,00</span></div>
+            </div>
+            <div class="pgto-actions">
+                <button class="btn-pgto-cancelar" onclick="fecharDividido()">Cancelar</button>
+                <button class="btn-pgto btn-pgto-pix" style="flex:2;border-radius:10px" onclick="finalizarDividido()">CONFIRMAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL SUCESSO -->
+<div class="modal-sucesso" id="modalSucesso">
+    <div class="sucesso-sheet">
+        <div class="sucesso-icone">🎉</div>
+        <div class="sucesso-titulo">Pedido Confirmado!</div>
+        <div class="sucesso-sub">Seu pedido foi registrado com sucesso</div>
+        <div class="sucesso-codigo">
+            <div class="sucesso-codigo-label">Número do Pedido</div>
+            <div class="sucesso-codigo-valor" id="sucessoCodigo">#0000</div>
+        </div>
+        <button class="btn-novo-pedido" onclick="novoPedido()">🍔 FAZER NOVO PEDIDO</button>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== CONFIGURAÇÃO SUPABASE ====================
+        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+        
+let supabaseClient;
+let lojaAtual = null;
+let usuarioAtual = null;
+
+try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} catch(e) { console.error('Erro Supabase:', e); }
+
+// ==================== ESTADO GLOBAL ====================
+let carrinho = [];
+let produtosTodos = [];
+let categoriaAtiva = '';
+let caixaAtual = null;
+const historicoVendas = [];
+
+// ==================== INICIALIZAÇÃO ====================
+document.addEventListener('DOMContentLoaded', async () => {
+    const autenticado = await verificarAutenticacao();
+    if (!autenticado) {
+        document.getElementById('telaLogin').classList.add('active');
+        return;
+    }
+    await verificarOuCriarCaixa();
+    carregarProdutos();
+});
+
+// ==================== AUTENTICAÇÃO ====================
+async function verificarAutenticacao() {
+    try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (error || !session?.user) return false;
+        usuarioAtual = session.user;
+        const { data: usuarioLoja } = await supabaseClient
+            .from('usuarios_loja')
+            .select('loja_id, cargo')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+        if (!usuarioLoja?.loja_id) return false;
+        const { data: lojaInfo } = await supabaseClient
+            .from('lojas')
+            .select('*')
+            .eq('id', usuarioLoja.loja_id)
+            .single();
+        if (!lojaInfo || lojaInfo.status !== 'ATIVO') return false;
+        lojaAtual = lojaInfo;
+        return true;
+    } catch(e) {
+        console.error('Erro auth:', e);
+        return false;
+    }
+}
+
+async function fazerLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+    const erroEl = document.getElementById('loginErro');
+    erroEl.style.display = 'none';
+    if (!email || !senha) { erroEl.textContent = 'Preencha e-mail e senha'; erroEl.style.display = 'block'; return; }
+    try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        if (error) { erroEl.textContent = 'E-mail ou senha incorretos'; erroEl.style.display = 'block'; return; }
+        const autenticado = await verificarAutenticacao();
+        if (!autenticado) { erroEl.textContent = 'Usuário sem loja associada'; erroEl.style.display = 'block'; return; }
+        document.getElementById('telaLogin').classList.remove('active');
+        await verificarOuCriarCaixa();
+        carregarProdutos();
+    } catch(e) {
+        erroEl.textContent = 'Erro ao fazer login'; erroEl.style.display = 'block';
+    }
+}
+
+// ==================== CAIXA ====================
+async function verificarOuCriarCaixa() {
+    try {
+        const { data } = await supabaseClient
+            .from('caixas')
+            .select('*')
+            .eq('loja_id', lojaAtual.id)
+            .eq('status', 'ABERTO')
+            .order('data_abertura', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (data) {
+            caixaAtual = data;
+        } else {
+            const { data: novoCaixa } = await supabaseClient
+                .from('caixas')
+                .insert([{
+                    usuario_abertura: usuarioAtual.id,
+                    valor_inicial: 0,
+                    observacao_abertura: 'Caixa aberto automaticamente pelo Totem',
+                    status: 'ABERTO'
+                }])
+                .select()
+                .single();
+            caixaAtual = novoCaixa;
+        }
+    } catch(e) {
+        console.error('Erro ao verificar caixa:', e);
+    }
+}
+
+// ==================== CARREGAR PRODUTOS ====================
+async function carregarProdutos() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('itens')
+            .select('codigo, nome, categoria, preco_venda, estoque, unidade, loja_id, foto_url')
+            .eq('ativo', true)
+            .eq('loja_id', lojaAtual.id)
+            .gt('estoque', 0)
+            .order('nome');
+        if (error) throw error;
+        produtosTodos = data || [];
+        renderizarSidebar(produtosTodos);
+    } catch(e) {
+        console.error('Erro ao carregar produtos:', e);
+        document.getElementById('produtosGrid').innerHTML = '<div class="loading-state"><p>⚠️ Erro ao carregar cardápio</p></div>';
+    }
+}
+
+// ==================== SIDEBAR CATEGORIAS ====================
+const CATEGORIAS_CONFIG = {
+    'Sorvetes': { icon: '🍦', filtro: p => p.codigo.toUpperCase().startsWith('X') },
+    'Salgados': { icon: '🍔', filtro: p => p.categoria === 'Salgados' && !p.codigo.toUpperCase().startsWith('X') },
+    'Bebidas':  { icon: '🥤', filtro: p => p.categoria === 'Bebidas' && !p.codigo.toUpperCase().startsWith('X') },
+    'Combos':   { icon: '🍟', filtro: p => p.categoria === 'Combos' && !p.codigo.toUpperCase().startsWith('X') },
+    'Outros':   { icon: '🍰', filtro: p => p.categoria === 'Outros' && !p.codigo.toUpperCase().startsWith('X') },
+};
+
+function renderizarSidebar(produtos) {
+    const sidebar = document.getElementById('sidebarCats');
+    sidebar.innerHTML = '';
+    let primeiraCategoria = null;
+    Object.entries(CATEGORIAS_CONFIG).forEach(([nome, cfg]) => {
+        const count = produtos.filter(cfg.filtro).length;
+        if (count === 0) return;
+        if (!primeiraCategoria) primeiraCategoria = nome;
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.dataset.cat = nome;
+        btn.innerHTML = `<span class="cat-icon">${cfg.icon}</span><span>${nome.toUpperCase()}</span>`;
+        btn.onclick = () => selecionarCategoria(nome);
+        sidebar.appendChild(btn);
+    });
+    if (primeiraCategoria) selecionarCategoria(primeiraCategoria);
+}
+
+function selecionarCategoria(nome) {
+    categoriaAtiva = nome;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`[data-cat="${nome}"]`);
+    if (btn) btn.classList.add('active');
+    document.getElementById('categoriaTitulo').textContent = nome.toUpperCase();
+    const cfg = CATEGORIAS_CONFIG[nome];
+    const produtos = produtosTodos.filter(cfg.filtro);
+    renderizarProdutos(produtos);
+}
+
+// ==================== RENDERIZAR PRODUTOS ====================
+function renderizarProdutos(produtos) {
+    const grid = document.getElementById('produtosGrid');
+    if (produtos.length === 0) {
+        grid.innerHTML = '<div class="loading-state"><p>📦 Nenhum produto disponível</p></div>';
+        return;
+    }
+    window.produtosRenderizados = [];
+    grid.innerHTML = produtos.map((p, index) => {
+        const temFoto = p.foto_url && p.foto_url.trim() !== '';
+        window.produtosRenderizados[index] = p;
+        return `
+        <div class="produto-card" onclick="adicionarPorIndex(${index})">
+            <div class="produto-img-wrapper">
+                ${temFoto ?
+                    `<img src="${p.foto_url}" alt="${escapeHtml(p.nome)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                     <span class="produto-img-placeholder" style="display:none;">${getCategoriaEmoji(p.categoria, p.codigo)}</span>` :
+                    `<span class="produto-img-placeholder">${getCategoriaEmoji(p.categoria, p.codigo)}</span>`
+                }
+            </div>
+            <div class="produto-info">
+                <div class="produto-nome-card">${escapeHtml(p.nome)}</div>
+                <div class="produto-preco-card">R$ ${parseFloat(p.preco_venda).toFixed(2).replace('.', ',')}</div>
+                <button class="btn-adicionar-card" onclick="event.stopPropagation(); adicionarPorIndex(${index})">
+                    ADICIONAR
+                </button>
+            </div>
+        </div>
+    `}).join('');
+}
+
+function adicionarPorIndex(index) {
+    if (!window.produtosRenderizados) { mostrarToast('❌ Erro ao adicionar produto'); return; }
+    const produto = window.produtosRenderizados[index];
+    if (produto) {
+        adicionarAoCarrinhoTotem(produto);
+    } else {
+        mostrarToast('❌ Produto não encontrado');
+    }
+}
+
+function getCategoriaEmoji(cat, codigo) {
+    if (codigo && codigo.toUpperCase().startsWith('X')) return '🍦';
+    const map = { 'Salgados': '🍔', 'Bebidas': '🥤', 'Combos': '🍟', 'Outros': '🍰', 'Sorvetes': '🍦' };
+    return map[cat] || '🍽️';
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ==================== CARRINHO ====================
+function adicionarAoCarrinhoTotem(produto) {
+    const existente = carrinho.find(i => i.codigo === produto.codigo);
+    if (existente) {
+        if (existente.quantidade >= produto.estoque) { mostrarToast('⚠️ Estoque esgotado!'); return; }
+        existente.quantidade++;
+    } else {
+        carrinho.push({ codigo: produto.codigo, nome: produto.nome, preco: produto.preco_venda, quantidade: 1, estoque: produto.estoque });
+    }
+    atualizarFooterCarrinho();
+    mostrarToast(`✅ ${produto.nome} adicionado!`);
+    const btns = document.querySelectorAll('.btn-adicionar-card');
+    btns.forEach(b => {
+        if (b.closest('.produto-card')?.querySelector('.produto-nome-card')?.textContent === produto.nome) {
+            b.classList.add('added');
+            b.textContent = '✓ ADICIONADO';
+            setTimeout(() => { b.classList.remove('added'); b.textContent = 'ADICIONAR'; }, 1200);
+        }
+    });
+}
+
+function atualizarFooterCarrinho() {
+    const total = carrinho.reduce((s, i) => s + (parseFloat(i.preco) * i.quantidade), 0);
+    const qtd = carrinho.reduce((s, i) => s + i.quantidade, 0);
+    document.getElementById('carrinhoValorFooter').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    const badge = document.getElementById('carrinhoQtdBadge');
+    if (qtd > 0) { badge.style.display = 'flex'; badge.textContent = qtd; badge.style.position = 'absolute'; }
+    else { badge.style.display = 'none'; }
+    document.getElementById('btnConfirmar').disabled = qtd === 0;
+}
+
+function getValorTotal() {
+    return carrinho.reduce((s, i) => s + (parseFloat(i.preco) * i.quantidade), 0);
+}
+
+// ==================== MODAL CARRINHO ====================
+function abrirCarrinho() {
+    if (carrinho.length === 0) return;
+    renderizarModalCarrinho();
+    document.getElementById('modalCarrinho').classList.add('active');
+}
+
+function fecharCarrinho() {
+    document.getElementById('modalCarrinho').classList.remove('active');
+}
+
+function renderizarModalCarrinho() {
+    const body = document.getElementById('modalCarrinhoBody');
+    const totalEl = document.getElementById('totalModal');
+    if (carrinho.length === 0) {
+        body.innerHTML = `<div class="empty-carrinho"><div class="empty-carrinho-icon">🛒</div><p>Carrinho vazio</p></div>`;
+        totalEl.textContent = 'R$ 0,00';
+        return;
+    }
+    body.innerHTML = carrinho.map((item, idx) => `
+        <div class="carrinho-item">
+            <div class="item-info">
+                <div class="item-nome-cart">${escapeHtml(item.nome)}</div>
+                <div class="item-preco-unit">R$ ${parseFloat(item.preco).toFixed(2).replace('.', ',')} cada</div>
+            </div>
+            <div class="qtd-ctrl">
+                <button onclick="alterarQtdCarrinho(${idx}, -1)">−</button>
+                <span>${item.quantidade}</span>
+                <button onclick="alterarQtdCarrinho(${idx}, 1)">+</button>
+            </div>
+            <div class="item-subtotal">R$ ${(parseFloat(item.preco) * item.quantidade).toFixed(2).replace('.', ',')}</div>
+        </div>
+    `).join('');
+    totalEl.textContent = `R$ ${getValorTotal().toFixed(2).replace('.', ',')}`;
+}
+
+function alterarQtdCarrinho(idx, delta) {
+    const item = carrinho[idx];
+    const nova = item.quantidade + delta;
+    if (nova <= 0) { carrinho.splice(idx, 1); }
+    else if (nova > item.estoque) { mostrarToast('⚠️ Estoque esgotado!'); return; }
+    else { item.quantidade = nova; }
+    atualizarFooterCarrinho();
+    renderizarModalCarrinho();
+    if (carrinho.length === 0) fecharCarrinho();
+}
+
+// ==================== INICIAR PAGAMENTO ====================
+async function iniciarPagamento(metodo) {
+    fecharCarrinho();
+    const iconMap = { 'PIX': '📱', 'CREDITO': '💳', 'DEBITO': '💳' };
+    const nomeMap = { 'PIX': 'PIX', 'CREDITO': 'CARTÃO DE CRÉDITO', 'DEBITO': 'CARTÃO DE DÉBITO' };
+    document.getElementById('pgtoIcone').textContent = iconMap[metodo];
+    document.getElementById('pgtoTitulo').textContent = nomeMap[metodo];
+    document.getElementById('pgtoSubtitulo').textContent = 'Aproxime ou insira seu cartão no terminal';
+    document.getElementById('pgtoValor').textContent = `R$ ${getValorTotal().toFixed(2).replace('.', ',')}`;
+    document.getElementById('pgtoStatus').innerHTML = '<p>🔄 Aguardando processamento no terminal...</p>';
+    document.getElementById('modalPagamento').classList.add('active');
+
+    try {
+        let resultado = null;
+        if (metodo === 'PIX') resultado = await pix();
+        else if (metodo === 'CREDITO') resultado = await credito();
+        else if (metodo === 'DEBITO') resultado = await debito();
+
+        if (resultado && resultado.resultado && resultado.resultado.data) {
+            document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>';
+            const dadosTEF = {
+                nsu: resultado.resultado.nsu || null,
+                autorizacao: resultado.resultado.autorizacao || null,
+                bandeira: resultado.resultado.bandeira || null,
+                parcelas: resultado.resultado.parcelas || 1
+            };
+            const reg = await registrarVendaTotem(metodo, dadosTEF);
+            document.getElementById('modalPagamento').classList.remove('active');
+            if (reg?.sucesso) {
+                mostrarSucesso(reg.codigo_venda);
+            } else {
+                alert('❌ Erro ao registrar venda no sistema.');
+            }
+        } else {
+            document.getElementById('pgtoStatus').innerHTML = '<p>❌ Pagamento não aprovado. Tente novamente.</p>';
+        }
+    } catch(e) {
+        console.error('Erro pagamento:', e);
+        document.getElementById('pgtoStatus').innerHTML = `<p>❌ Erro: ${e.message}</p>`;
+    }
+}
+
+function cancelarPagamento() {
+    document.getElementById('modalPagamento').classList.remove('active');
+    abrirCarrinho();
+}
+
+// ==================== PAGAMENTO DIVIDIDO ====================
+let parcelasDivididas = [];
+let contadorParcelas = 0;
+
+function iniciarPagamentoDividido() {
+    fecharCarrinho();
+    parcelasDivididas = [];
+    contadorParcelas = 0;
+    const total = getValorTotal();
+    document.getElementById('valorTotalDivididoLabel').textContent = `Total: R$ ${total.toFixed(2).replace('.', ',')}`;
+    document.getElementById('resumoTotalDiv').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    adicionarParcelaDividida();
+    document.getElementById('modalDividido').classList.add('active');
+}
+
+function fecharDividido() {
+    document.getElementById('modalDividido').classList.remove('active');
+    abrirCarrinho();
+}
+
+function adicionarParcelaDividida() {
+    if (parcelasDivididas.length >= 4) { mostrarToast('Máximo de 4 formas de pagamento'); return; }
+    contadorParcelas++;
+    parcelasDivididas.push({ id: contadorParcelas, metodo: 'DINHEIRO', valor: 0 });
+    renderizarParcelasDivididas();
+}
+
+function removerParcelaDividida(id) {
+    parcelasDivididas = parcelasDivididas.filter(p => p.id !== id);
+    renderizarParcelasDivididas();
+}
+
+function atualizarParcelaDividida(id, campo, valor) {
+    const p = parcelasDivididas.find(x => x.id === id);
+    if (p) { p[campo] = valor; calcularResumoDividido(); }
+}
+
+function renderizarParcelasDivididas() {
+    const lista = document.getElementById('listaPagamentosDivididos');
+    lista.innerHTML = parcelasDivididas.map((p, idx) => `
+        <div class="dividido-item">
+            <div class="dividido-item-header">
+                <span class="dividido-numero">Pagamento ${idx + 1}</span>
+                ${parcelasDivididas.length > 1 ? `<button class="btn-rm-dividido" onclick="removerParcelaDividida(${p.id})">🗑️ Remover</button>` : ''}
+            </div>
+            <div class="dividido-row">
+                <div class="form-group">
+                    <label>Forma</label>
+                    <select onchange="atualizarParcelaDividida(${p.id}, 'metodo', this.value)">
+                        <option value="DINHEIRO" ${p.metodo==='DINHEIRO'?'selected':''}>💵 Dinheiro</option>
+                        <option value="PIX" ${p.metodo==='PIX'?'selected':''}>📱 PIX</option>
+                        <option value="DEBITO" ${p.metodo==='DEBITO'?'selected':''}>💳 Débito</option>
+                        <option value="CREDITO" ${p.metodo==='CREDITO'?'selected':''}>💳 Crédito</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Valor (R$)</label>
+                    <input type="number" step="0.01" min="0" value="${p.valor}"
+                        onchange="atualizarParcelaDividida(${p.id}, 'valor', parseFloat(this.value)||0)"
+                        placeholder="0,00">
+                </div>
+            </div>
+        </div>
+    `).join('');
+    const btnAdd = document.getElementById('btnAddParcela');
+    if (btnAdd) btnAdd.style.display = parcelasDivididas.length >= 4 ? 'none' : 'block';
+    calcularResumoDividido();
+}
+
+function calcularResumoDividido() {
+    const total = getValorTotal();
+    const pago = parcelasDivididas.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
+    const restante = total - pago;
+    document.getElementById('resumoPagoDiv').textContent = `R$ ${pago.toFixed(2).replace('.', ',')}`;
+    const restEl = document.getElementById('resumoRestanteDiv');
+    if (Math.abs(restante) < 0.01) { restEl.textContent = '✅ COMPLETO'; restEl.className = 'ok'; }
+    else if (restante > 0) { restEl.textContent = `R$ ${restante.toFixed(2).replace('.', ',')}`;  restEl.className = 'faltante'; }
+    else { restEl.textContent = `R$ ${Math.abs(restante).toFixed(2).replace('.', ',')} excedente`; restEl.className = 'faltante'; }
+}
+
+async function finalizarDividido() {
+    const total = getValorTotal();
+    const pago = parcelasDivididas.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
+    if (Math.abs(total - pago) > 0.01) { mostrarToast('⚠️ O valor pago não bate com o total!'); return; }
+    document.getElementById('modalDividido').classList.remove('active');
+
+    for (let i = 0; i < parcelasDivididas.length; i++) {
+        const parcela = parcelasDivididas[i];
+        document.getElementById('pgtoIcone').textContent = parcela.metodo === 'PIX' ? '📱' : '💳';
+        document.getElementById('pgtoTitulo').textContent = `PAGAMENTO ${i + 1}/${parcelasDivididas.length}`;
+        document.getElementById('pgtoSubtitulo').textContent = `${parcela.metodo} — R$ ${parseFloat(parcela.valor).toFixed(2).replace('.', ',')}`;
+        document.getElementById('pgtoValor').textContent = `R$ ${parseFloat(parcela.valor).toFixed(2).replace('.', ',')}`;
+        document.getElementById('pgtoStatus').innerHTML = '<p>🔄 Aguardando terminal...</p>';
+        document.getElementById('modalPagamento').classList.add('active');
+
+        try {
+            let resultado = null;
+            // usa funções TEF originais no fluxo dividido
+            if (parcela.metodo === 'PIX') resultado = await pix();
+            else if (parcela.metodo === 'CREDITO') resultado = await credito();
+            else if (parcela.metodo === 'DEBITO') resultado = await debito();
+            else resultado = { resultado: { data: true } }; // dinheiro sempre ok
+
+            if (!resultado?.resultado?.data && parcela.metodo !== 'DINHEIRO') {
+                document.getElementById('pgtoStatus').innerHTML = '<p>❌ Pagamento não aprovado</p>';
+                await new Promise(r => setTimeout(r, 2000));
+                document.getElementById('modalPagamento').classList.remove('active');
+                mostrarToast('❌ Pagamento não aprovado. Tente novamente.');
+                abrirCarrinho();
+                return;
+            }
+            document.getElementById('pgtoStatus').innerHTML = `<p>✅ Pagamento ${i + 1} aprovado!</p>`;
+            await new Promise(r => setTimeout(r, 1000));
+        } catch(e) {
+            document.getElementById('modalPagamento').classList.remove('active');
+            mostrarToast('❌ Erro no pagamento');
+            abrirCarrinho();
+            return;
+        }
+    }
+
+    document.getElementById('modalPagamento').classList.remove('active');
+    const reg = await registrarVendaTotem('DIVIDIDO', {});
+    if (reg?.sucesso) { mostrarSucesso(reg.codigo_venda); }
+    else { alert('❌ Erro ao registrar venda.'); }
+}
+
+// ==================== REGISTRAR VENDA ====================
+async function registrarVendaTotem(tipoPagamento, dadosTEF) {
+    if (carrinho.length === 0) return { sucesso: false };
+    try {
+        const valorTotal = getValorTotal();
+        const qtdItens = carrinho.reduce((s, i) => s + i.quantidade, 0);
+        const { data: vendaRegistrada, error: vendaError } = await supabaseClient
+            .from('vendas')
+            .insert([{
+                valor_total: valorTotal,
+                metodo_pagamento: tipoPagamento,
+                quantidade_itens: qtdItens,
+                status: 'CONCLUIDA',
+                usuario: usuarioAtual.email,
+                nsu_tef: dadosTEF?.nsu || null,
+                chave_tef: dadosTEF?.chave || null,
+                observacao: `Venda via Totem - ${tipoPagamento} - Loja: ${lojaAtual.nome}`
+            }])
+            .select()
+            .single();
+        if (vendaError) throw vendaError;
+
+        const itensVenda = carrinho.map(item => ({
+            venda_id: vendaRegistrada.id,
+            codigo_produto: item.codigo,
+            nome_produto: item.nome,
+            quantidade: item.quantidade,
+            preco_unitario: parseFloat(item.preco),
+            subtotal: parseFloat(item.preco) * item.quantidade
+        }));
+        await supabaseClient.from('itens_venda').insert(itensVenda);
+
+        for (const item of carrinho) {
+            const { data: itemAtual } = await supabaseClient
+                .from('itens')
+                .select('estoque')
+                .eq('codigo', item.codigo)
+                .eq('loja_id', lojaAtual.id)
+                .single();
+            if (itemAtual) {
+                await supabaseClient
+                    .from('itens')
+                    .update({ estoque: itemAtual.estoque - item.quantidade })
+                    .eq('codigo', item.codigo)
+                    .eq('loja_id', lojaAtual.id);
+            }
+            await supabaseClient.from('movimentacoes').insert([{
+                item_codigo: item.codigo,
+                tipo: 'VENDA',
+                quantidade: -item.quantidade,
+                valor_unitario: item.preco,
+                responsavel: usuarioAtual.email,
+                observacao: `Venda Totem #${vendaRegistrada.id} - ${tipoPagamento}`
+            }]);
+        }
+
+        const sorvetes = carrinho.filter(i => String(i.codigo).toUpperCase().startsWith('X'));
+        if (sorvetes.length > 0) {
+            notificarVendaSorveteTotem(carrinho, vendaRegistrada.id, valorTotal).catch(console.error);
+        }
+
+        return { sucesso: true, codigo_venda: vendaRegistrada.id };
+    } catch(e) {
+        console.error('Erro registro venda:', e);
+        return { sucesso: false, erro: e.message };
+    }
+}
+
+// ==================== NOTIFICAÇÃO TELEGRAM ====================
+async function notificarVendaSorveteTotem(itens, vendaId, valorTotal) {
+    const token = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
+    const chatId = '-5010685791';
+    const sorvetes = itens.filter(i => String(i.codigo).toUpperCase().startsWith('X'));
+    if (!sorvetes.length) return;
+    let lista = '';
+    let totalSorvetes = 0;
+    sorvetes.forEach(i => {
+        const sub = parseFloat(i.preco) * i.quantidade;
+        totalSorvetes += sub;
+        lista += `• ${i.nome} (${i.codigo})\n  Qtd: ${i.quantidade} | R$ ${sub.toFixed(2)}\n`;
+    });
+    const mensagem = `🍦 *VENDA DE SORVETE (TOTEM)*\n\n🏪 *Loja:* ${lojaAtual.nome}\n🆔 *Venda:* #${vendaId}\n\n*Sorvetes:*\n${lista}\n💰 *Total Sorvetes:* R$ ${totalSorvetes.toFixed(2)}\n💵 *Total Venda:* R$ ${valorTotal.toFixed(2)}\n⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR')}\n\n_Via Totem Autoatendimento_`;
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: mensagem, parse_mode: 'Markdown' })
+    });
+}
+
+// ==================== MODAL SUCESSO ====================
+function mostrarSucesso(codigoVenda) {
+    document.getElementById('sucessoCodigo').textContent = `#${String(codigoVenda).slice(-6).padStart(6, '0')}`;
+    document.getElementById('modalSucesso').classList.add('active');
+    carregarProdutos();
+}
+
+function novoPedido() {
+    carrinho = [];
+    atualizarFooterCarrinho();
+    document.getElementById('modalSucesso').classList.remove('active');
+}
+
+// ==================== TOAST ====================
+let toastTimeout;
+function mostrarToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ==================== FUNÇÕES TEF (código de referência original) ====================
+
+const BASE_URL = 'http://localhost:2001/tef/v1'
+
+async function pix() {
+    const valor = getValorTotal().toFixed(2)
+    const venda = await sendPost('/pix', {
+        valor,
+    })
+    if (!venda) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
+    if (venda.resultado.data !== undefined)
+        historicoVendas.push(venda)
+    return venda
+}
+
+async function credito() {
+    const valor = getValorTotal().toFixed(2)
+    const venda = await sendPost('/venda/credito', {
+        valor,
+        parcelas: '1',
+        financiamento: '1'
+    })
+    if (!venda) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
+    if (venda.resultado.data !== undefined)
+        historicoVendas.push(venda)
+    return venda
+}
+
+async function debito() {
+    const valor = getValorTotal().toFixed(2)
+    const venda = await sendPost('/venda/debito', {
+        valor
+    })
+    if (!venda) return alert('Antes de realizar uma venda\nativar o IDH se Android ou GP se Windows/Linux')
+    if (venda.resultado.data !== undefined)
+        historicoVendas.push(venda)
+    return venda
+}
+
+async function sendPost(rota, body) {
+    try {
+        const responseData = await fetch(BASE_URL + rota, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            body: JSON.stringify(body)
+        })
+
+        const data = await responseData.json()
+
+        // verifica se o retorno em resultado está definido e é um objeto
+        if (data.resultado !== undefined && typeof data.resultado === 'string' && data.resultado.indexOf('{') !== -1)
+            data.resultado = JSON.parse(data.resultado)
+
+        console.log('data json post', data)
+        return data
+    } catch (err) {
+        console.error('deu errooo', err)
+        return null
+    }
+}
+
+async function sendGet(rota) {
+    try {
+        const responseData = await fetch(BASE_URL + rota, {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            method: 'GET'
+        })
+        const data = await responseData.json()
+        console.log('data json get', data)
+        return data
+    } catch (err) {
+        console.error('deu errooo', err)
+        return null
+    }
+}
+</script>
+</body>
+</html>
