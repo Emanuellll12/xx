@@ -245,7 +245,7 @@
 <div class="totem-wrapper">
     <div class="totem-header">
         <div class="header-logo">
-            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEicwcsRBSnq-S7UwvMfICYnDKjz8TNnmdkd0habprGywh_uGT2hqIRM2_HLDjlm1w97IkioGNJZVOCCCwWJxMggiz1nMzSrQSOWpj157mP2kun4XlAJNy_xKwo9wBawIMDPhnR4dL_1NncFU5mG_q1tduaVKh4zQBtAnSxIOULrY1WJHAUG_QWDkMMA9-ve/s320/ChatGPT%20Image%2024%20de%20fev.%20de%202026,%2017_04_52.png" alt="Logo" onerror="this.parentElement.innerHTML='🍔'">
+            <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgJqyi5ZaH7o5awjUXk8kJJ9Q7yfFGgw4czmB_f9b8j8C5ZOpTRGPdg4ErsmUflzswgifqIyNYtxSmlEK2yTNlRisk85q8ezoQ9-FNTJ9SRaeJaXS_Yxapff8sXVvLJEz6XoNwVldARJaMEUXKFD1p4qkxUAM0QlrGJkBkKgHSrjWudoBWRCOfZAjYZ0NJF/s16000/Generated%20Image%20February%2012,%202026%20-%201_04PM.png" alt="Logo" onerror="this.parentElement.innerHTML='🍔'">
         </div>
         <div class="header-title">Faça seu Pedido</div>
         <div class="header-wave">
@@ -375,9 +375,9 @@
 
 <script>
 // ==================== CONFIGURAÇÃO SUPABASE ====================
-        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
-        
+const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+
 let supabaseClient;
 let lojaAtual = null;
 let usuarioAtual = null;
@@ -395,13 +395,10 @@ const historicoVendas = [];
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    const autenticado = await verificarAutenticacao();
-    if (!autenticado) {
-        document.getElementById('telaLogin').classList.add('active');
-        return;
-    }
-    await verificarOuCriarCaixa();
-    carregarProdutos();
+    // Totem sempre exige login a cada abertura — limpa sessão anterior
+    await supabaseClient.auth.signOut();
+
+    document.getElementById('telaLogin').classList.add('active');
 });
 
 // ==================== AUTENTICAÇÃO ====================
@@ -410,18 +407,22 @@ async function verificarAutenticacao() {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error || !session?.user) return false;
         usuarioAtual = session.user;
-        const { data: usuarioLoja } = await supabaseClient
+        const { data: usuariosLoja, error: erroUsuLoja } = await supabaseClient
             .from('usuarios_loja')
             .select('loja_id, cargo')
             .eq('user_id', session.user.id)
-            .maybeSingle();
-        if (!usuarioLoja?.loja_id) return false;
-        const { data: lojaInfo } = await supabaseClient
+            .limit(1);
+        const usuarioLoja = usuariosLoja?.[0] ?? null;
+        if (erroUsuLoja) { console.error('Erro ao buscar usuario_loja:', erroUsuLoja); return false; }
+        if (!usuarioLoja?.loja_id) { console.warn('Usuário sem loja associada'); return false; }
+        const { data: lojaInfo, error: erroLoja } = await supabaseClient
             .from('lojas')
             .select('*')
             .eq('id', usuarioLoja.loja_id)
-            .single();
-        if (!lojaInfo || lojaInfo.status !== 'ATIVO') return false;
+            .maybeSingle();
+        if (erroLoja) { console.error('Erro ao buscar loja:', erroLoja); return false; }
+        if (!lojaInfo) { console.warn('Loja não encontrada para id:', usuarioLoja.loja_id); return false; }
+        if (lojaInfo.status !== 'ATIVO') { console.warn('Loja inativa:', lojaInfo.status); return false; }
         lojaAtual = lojaInfo;
         return true;
     } catch(e) {
@@ -435,17 +436,67 @@ async function fazerLogin() {
     const senha = document.getElementById('loginSenha').value;
     const erroEl = document.getElementById('loginErro');
     erroEl.style.display = 'none';
-    if (!email || !senha) { erroEl.textContent = 'Preencha e-mail e senha'; erroEl.style.display = 'block'; return; }
+
+    if (!email || !senha) {
+        erroEl.textContent = 'Preencha e-mail e senha';
+        erroEl.style.display = 'block';
+        return;
+    }
+
     try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-        if (error) { erroEl.textContent = 'E-mail ou senha incorretos'; erroEl.style.display = 'block'; return; }
-        const autenticado = await verificarAutenticacao();
-        if (!autenticado) { erroEl.textContent = 'Usuário sem loja associada'; erroEl.style.display = 'block'; return; }
+        const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        if (loginError || !loginData?.user) {
+            erroEl.textContent = 'E-mail ou senha incorretos';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        usuarioAtual = loginData.user;
+
+        // Busca loja associada ao usuário (aceita múltiplas linhas)
+        const { data: usuariosLoja, error: erroUsu } = await supabaseClient
+            .from('usuarios_loja')
+            .select('loja_id, cargo')
+            .eq('user_id', usuarioAtual.id)
+            .limit(1);
+
+        if (erroUsu || !usuariosLoja || usuariosLoja.length === 0) {
+            erroEl.textContent = 'Usuário sem loja associada';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        const loja_id = usuariosLoja[0].loja_id;
+
+        const { data: lojaInfo, error: erroLoja } = await supabaseClient
+            .from('lojas')
+            .select('*')
+            .eq('id', loja_id)
+            .maybeSingle();
+
+        if (erroLoja || !lojaInfo) {
+            erroEl.textContent = 'Loja não encontrada';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        if (lojaInfo.status !== 'ATIVO') {
+            erroEl.textContent = 'Loja inativa. Contate o suporte.';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        lojaAtual = lojaInfo;
+
+        // Tudo ok — esconde login e carrega totem
         document.getElementById('telaLogin').classList.remove('active');
         await verificarOuCriarCaixa();
         carregarProdutos();
+
     } catch(e) {
-        erroEl.textContent = 'Erro ao fazer login'; erroEl.style.display = 'block';
+        console.error('Erro login:', e);
+        erroEl.textContent = 'Erro ao fazer login: ' + e.message;
+        erroEl.style.display = 'block';
     }
 }
 
@@ -463,7 +514,7 @@ async function verificarOuCriarCaixa() {
         if (data) {
             caixaAtual = data;
         } else {
-            const { data: novoCaixa } = await supabaseClient
+            const { data: novoCaixa, error: erroCaixa } = await supabaseClient
                 .from('caixas')
                 .insert([{
                     usuario_abertura: usuarioAtual.id,
@@ -472,7 +523,8 @@ async function verificarOuCriarCaixa() {
                     status: 'ABERTO'
                 }])
                 .select()
-                .single();
+                .maybeSingle();
+            if (erroCaixa) { console.error('Erro ao criar caixa:', erroCaixa); return; }
             caixaAtual = novoCaixa;
         }
     } catch(e) {
@@ -865,8 +917,9 @@ async function registrarVendaTotem(tipoPagamento, dadosTEF) {
                 observacao: `Venda via Totem - ${tipoPagamento} - Loja: ${lojaAtual.nome}`
             }])
             .select()
-            .single();
+            .maybeSingle();
         if (vendaError) throw vendaError;
+        if (!vendaRegistrada) throw new Error('Venda não registrada — retorno vazio do Supabase');
 
         const itensVenda = carrinho.map(item => ({
             venda_id: vendaRegistrada.id,
@@ -884,7 +937,7 @@ async function registrarVendaTotem(tipoPagamento, dadosTEF) {
                 .select('estoque')
                 .eq('codigo', item.codigo)
                 .eq('loja_id', lojaAtual.id)
-                .single();
+                .maybeSingle();
             if (itemAtual) {
                 await supabaseClient
                     .from('itens')
