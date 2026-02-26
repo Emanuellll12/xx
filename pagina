@@ -643,25 +643,94 @@ function alterarQtdCarrinho(idx, delta) {
 
 async function sendPost(rota, body) {
     try {
-        const responseData = await fetch(BASE_URL + rota, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, method: 'POST', body: JSON.stringify(body) });
+        const responseData = await fetch(BASE_URL + rota, {
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            method: 'POST',
+            body: JSON.stringify(body)
+        });
         const data = await responseData.json();
-        if (data.resultado !== undefined && typeof data.resultado === 'string' && data.resultado.indexOf('{') !== -1) data.resultado = JSON.parse(data.resultado);
         console.log('TEF response:', data);
         return data;
-    } catch (err) { console.error('TEF error:', err); return null; }
+    } catch (err) {
+        console.error('TEF error:', err);
+        return null;
+    }
+}
+
+// Extrai o objeto resultado independente se vem em data.resultado ou data.dados.resultado
+function extrairResultado(venda) {
+    if (!venda) return null;
+    // Estrutura nova: { dados: { resultado: { ... } } }
+    if (venda.dados && venda.dados.resultado) return venda.dados.resultado;
+    // Estrutura antiga: { resultado: { ... } }
+    if (venda.resultado && typeof venda.resultado === 'object') return venda.resultado;
+    // resultado como string JSON
+    if (venda.resultado && typeof venda.resultado === 'string' && venda.resultado.includes('{')) {
+        try { return JSON.parse(venda.resultado); } catch(e) {}
+    }
+    return null;
 }
 
 function tefAprovado(venda) {
     if (!venda) return false;
-    const r = venda.resultado;
-    if (!r || typeof r !== "object") return false;
-    if (!r.tef) return false;
-    return (r.tef.mensagemResultado || "") === "TRANSAC APROVADA";
+    const r = extrairResultado(venda);
+    console.log('[TEF] extrairResultado =>', JSON.stringify(r));
+    if (!r) { console.log('[TEF] resultado nulo'); return false; }
+
+    // Estrutura nova Elgin: dados.resultado.mensagem === "Sucesso" e codigo === 0
+    const codigoNum = Number(r.codigo);
+    const msg = String(r.mensagem || '').trim();
+    console.log('[TEF] mensagem=' + msg + ' codigo=' + codigoNum);
+
+    if (msg === 'Sucesso' && codigoNum === 0) {
+        console.log('[TEF] APROVADO via Sucesso/0');
+        return true;
+    }
+    // Estrutura antiga: tef.mensagemResultado
+    if (r.tef && r.tef.mensagemResultado === 'TRANSAC APROVADA') {
+        console.log('[TEF] APROVADO via TRANSAC APROVADA');
+        return true;
+    }
+    console.log('[TEF] NAO APROVADO - msg=' + msg + ' codigo=' + codigoNum);
+    return false;
 }
 
-async function tefPix(valor) { const v = await sendPost('/pix', { valor }); if (!v) return null; if (tefAprovado(v)) historicoVendas.push(v); return v; }
-async function tefCredito(valor) { const v = await sendPost('/venda/credito', { valor, parcelas: '1', financiamento: '1' }); if (!v) return null; if (tefAprovado(v)) historicoVendas.push(v); return v; }
-async function tefDebito(valor) { const v = await sendPost('/venda/debito', { valor }); if (!v) return null; if (tefAprovado(v)) historicoVendas.push(v); return v; }
+// Envia confirmação quando requer_confirmacao=1
+async function tefConfirmar(venda, confirmado) {
+    try {
+        const r = extrairResultado(venda);
+        if (!r || r.requer_confirmacao !== "1") return; // não precisa confirmar
+        const acao = confirmado ? "confirmar" : "desfazer";
+        console.log('TEF confirmação:', acao);
+        await sendPost('/confirmar', { acao });
+    } catch(e) {
+        console.error('Erro ao confirmar TEF:', e);
+    }
+}
+
+async function tefPix(valor) {
+    const v = await sendPost('/pix', { valor });
+    if (!v) return null;
+    if (tefAprovado(v)) { historicoVendas.push(v); await tefConfirmar(v, true); }
+    else { await tefConfirmar(v, false); }
+    return v;
+}
+
+async function tefCredito(valor) {
+    const v = await sendPost('/venda/credito', { valor, parcelas: '1', financiamento: '1' });
+    if (!v) return null;
+    if (tefAprovado(v)) { historicoVendas.push(v); await tefConfirmar(v, true); }
+    else { await tefConfirmar(v, false); }
+    return v;
+}
+
+async function tefDebito(valor) {
+    const v = await sendPost('/venda/debito', { valor });
+    if (!v) return null;
+    if (tefAprovado(v)) { historicoVendas.push(v); await tefConfirmar(v, true); }
+    else { await tefConfirmar(v, false); }
+    return v;
+}
 
 async function iniciarPagamento(metodo) {
     fecharCarrinho();
@@ -688,7 +757,7 @@ async function iniciarPagamento(metodo) {
         if (tefAprovado(resultado)) {
             document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>';
             document.getElementById('btnCancelarPgto').disabled = true;
-            const tef = resultado.resultado?.tef || {};
+            const r = extrairResultado(resultado); const tef = (r && r.tef) ? r.tef : {};
             const dadosTEF = { nsu: tef.nsuTerminal || tef.nsuTransacao || null, data_tef: tef.dataHoraTransacao || null, autorizacao: tef.codigoAutorizacao || null, bandeira: tef.nomeBandeira || tef.codigoBandeira || null, parcelas: tef.parcelas || 1 };
             const reg = await registrarVendaTotem(metodo, dadosTEF);
             document.getElementById('modalPagamento').classList.remove('active');
@@ -700,7 +769,7 @@ async function iniciarPagamento(metodo) {
                 alert('❌ Pagamento aprovado no TEF, mas erro ao salvar no sistema.\nNSU: ' + (dadosTEF.nsu || 'N/A'));
             }
         } else {
-            const msg = resultado?.resultado?.tef?.mensagemResultado || resultado?.resultado?.mensagem || resultado?.mensagem || 'Transação não aprovada';
+            const _r = extrairResultado(resultado); const msg = (_r && _r.tef && _r.tef.mensagemResultado) || (_r && _r.mensagem) || resultado?.mensagem || 'Transação não aprovada';
             document.getElementById('pgtoStatus').innerHTML = `<p>❌ ${msg}</p>`;
             document.getElementById('btnCancelarPgto').disabled = false;
         }
@@ -812,7 +881,7 @@ async function finalizarDividido() {
             else if (parcela.metodo === 'CREDITO') resultado = await tefCredito(valor);
             else if (parcela.metodo === 'DEBITO') resultado = await tefDebito(valor);
             if (!tefAprovado(resultado)) {
-                const msg = resultado?.resultado?.tef?.mensagemResultado || resultado?.resultado?.mensagem || resultado?.mensagem || 'Transação não aprovada';
+                const _r = extrairResultado(resultado); const msg = (_r && _r.tef && _r.tef.mensagemResultado) || (_r && _r.mensagem) || resultado?.mensagem || 'Transação não aprovada';
                 document.getElementById('pgtoStatus').innerHTML = `<p>❌ ${msg}</p>`;
                 await new Promise(r => setTimeout(r, 2500));
                 document.getElementById('modalPagamento').classList.remove('active');
