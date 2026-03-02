@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2563EB">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>OMG Parking</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#2563EB;--primary-dark:#1E40AF;--success:#10B981;--warning:#F59E0B;
+  --danger:#EF4444;--purple:#8B5CF6;--bg:#F8FAFC;--card:#FFFFFF;--card2:#F1F5F9;
+  --text:#1E293B;--text2:#334155;--muted:#64748B;--border:#E2E8F0;
+  --shadow:0 2px 12px rgba(37,99,235,.08);--shadow-lg:0 6px 24px rgba(37,99,235,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#2563EB,#1E40AF);color:#fff;padding:.8rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 4px 20px rgba(37,99,235,.25)}
+.hdr-logo{display:flex;align-items:center;gap:.6rem;font-size:1.1rem;font-weight:900}
+.hdr-logo .ico{width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900}
+.bt-pill{display:flex;align-items:center;gap:.4rem;padding:.32rem .7rem;border-radius:20px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);font-size:.68rem;font-weight:700;cursor:pointer;color:#fff;transition:all .2s}
+.bt-pill.on{border-color:#10B981;background:rgba(16,185,129,.25)}
+.bt-pill.blink{animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.45}}
+.bt-dot{width:7px;height:7px;border-radius:50%;background:#EF4444;flex-shrink:0}
+.bt-dot.g{background:#10B981}.bt-dot.y{background:#F59E0B}
+
+/* SCROLL */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+.scroll::-webkit-scrollbar{width:3px}
+.scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* PAGES */
+.page{display:none;padding:1rem;padding-bottom:85px}
+.page.active{display:block}
+
+/* BOTTOM NAV */
+.bnav{display:flex;background:#fff;border-top:2px solid var(--border);flex-shrink:0;box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.12rem;padding:.5rem .2rem;cursor:pointer;font-size:.58rem;font-weight:700;color:var(--muted);border:none;background:transparent;transition:all .2s;font-family:'Poppins',sans-serif}
+.bni i{font-size:1.15rem}
+.bni.active{color:var(--primary)}
+
+/* CARDS */
+.card{background:#fff;border-radius:16px;padding:1.1rem;margin-bottom:.85rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+.card-t{font-size:.82rem;font-weight:800;color:var(--primary);margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem;text-transform:uppercase;letter-spacing:.5px}
+.card-t i{font-size:.9rem}
+
+/* FORM */
+.fg{margin-bottom:.75rem}
+label{display:block;font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.5px}
+input,select{width:100%;padding:.72rem .9rem;border:2px solid var(--border);border-radius:11px;font-size:.88rem;font-family:'Poppins',sans-serif;font-weight:600;background:var(--bg);color:var(--text);transition:all .2s;-webkit-appearance:none}
+input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.placa-inp{text-transform:uppercase;font-size:1.6rem!important;font-weight:900!important;letter-spacing:4px;text-align:center;padding:1rem!important;border-color:var(--primary)!important}
+
+/* BUTTONS */
+.btn{width:100%;padding:.8rem;border:none;border-radius:11px;font-size:.88rem;font-weight:700;font-family:'Poppins',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:all .15s;margin-bottom:.5rem}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-primary{background:linear-gradient(135deg,#2563EB,#1E40AF);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.28)}
+.btn-success{background:linear-gradient(135deg,#10B981,#059669);color:#fff;box-shadow:0 4px 14px rgba(16,185,129,.25)}
+.btn-danger{background:linear-gradient(135deg,#EF4444,#DC2626);color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.22)}
+.btn-warning{background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;box-shadow:0 4px 14px rgba(245,158,11,.22)}
+.btn-outline{background:transparent;border:2px solid var(--border);color:var(--text2)}
+.btn-wpp{background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.2)}
+.btn-sm{padding:.48rem .8rem;font-size:.73rem;border-radius:9px;width:auto;margin:0}
+
+/* TIPO SELECTOR */
+.tipo-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.65rem}
+.tipo-btn{background:#fff;border:2px solid var(--border);border-radius:14px;padding:1.15rem .75rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.45rem;transition:all .2s;font-family:'Poppins',sans-serif;box-shadow:var(--shadow)}
+.tipo-btn:active{transform:scale(.95)}
+.tipo-btn .ti{font-size:2rem}
+.tipo-btn .tl{font-size:.8rem;font-weight:800;color:var(--text)}
+.tipo-btn .ts{font-size:.63rem;color:var(--muted);margin-top:.05rem}
+.tipo-btn.mensalista{border-color:var(--purple);background:rgba(139,92,246,.04)}
+.tipo-btn.mensalista .tl{color:var(--purple)}
+.tipo-btn.diarista{border-color:var(--success);background:rgba(16,185,129,.04)}
+.tipo-btn.diarista .tl{color:var(--success)}
+
+/* ALERTS */
+.alert{padding:.7rem .95rem;border-radius:11px;font-size:.78rem;font-weight:600;display:flex;align-items:flex-start;gap:.5rem;margin:.5rem 0;line-height:1.55}
+.a-s{background:rgba(16,185,129,.08);color:#047857;border:1.5px solid rgba(16,185,129,.3)}
+.a-e{background:rgba(239,68,68,.08);color:#B91C1C;border:1.5px solid rgba(239,68,68,.25)}
+.a-w{background:rgba(245,158,11,.08);color:#B45309;border:1.5px solid rgba(245,158,11,.25)}
+.a-i{background:rgba(37,99,235,.07);color:#1D4ED8;border:1.5px solid rgba(37,99,235,.2)}
+.a-p{background:rgba(139,92,246,.08);color:#6D28D9;border:1.5px solid rgba(139,92,246,.25)}
+
+/* PLACA DISPLAY */
+.placa-big{font-size:2rem;font-weight:900;color:var(--primary);text-align:center;letter-spacing:5px;padding:.65rem;background:var(--bg);border-radius:11px;margin-bottom:.8rem;border:2px dashed var(--border)}
+
+/* INFO ROWS */
+.irow{display:flex;justify-content:space-between;align-items:center;padding:.45rem 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.irow:last-child{border:none}
+.ilabel{color:var(--muted)}.ival{font-weight:700;color:var(--text)}
+
+/* PRICE */
+.price-box{text-align:center;padding:1rem;background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(5,150,105,.06));border:1.5px solid rgba(16,185,129,.25);border-radius:13px;margin:.75rem 0}
+.price-lbl{font-size:.7rem;color:var(--muted);margin-bottom:.2rem;font-weight:700;text-transform:uppercase}
+.price-val{font-size:2.1rem;font-weight:900;color:#059669}
+
+/* =============================================
+   STATUS MENSALISTA — CARD COMPLETO
+   ============================================= */
+.mens-card{border-radius:16px;padding:1.25rem;margin-bottom:.75rem;text-align:center}
+.mens-card.ok{background:linear-gradient(145deg,#ECFDF5,#D1FAE5);border:2px solid rgba(16,185,129,.35)}
+.mens-card.atrasado{background:linear-gradient(145deg,#FEF2F2,#FEE2E2);border:2px solid rgba(239,68,68,.3)}
+.mens-card.novo{background:linear-gradient(145deg,#EEF2FF,#E0E7FF);border:2px solid rgba(139,92,246,.3)}
+.mens-status-icon{font-size:3rem;margin-bottom:.5rem;display:block}
+.mens-status-title{font-size:1.05rem;font-weight:800;margin-bottom:.3rem}
+.mens-status-title.ok{color:#065F46}.mens-status-title.d{color:#991B1B}.mens-status-title.p{color:#4C1D95}
+.dias-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 1rem;border-radius:50px;font-size:.82rem;font-weight:800;margin:.35rem 0}
+.dias-badge.ok{background:rgba(16,185,129,.18);color:#047857}
+.dias-badge.d{background:rgba(239,68,68,.18);color:#B91C1C}
+.dias-badge.w{background:rgba(245,158,11,.18);color:#B45309}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(5px);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.modal-ov.active{display:flex}
+.modal{background:#fff;border-radius:22px 22px 0 0;padding:1.25rem;width:100%;max-width:480px;max-height:93vh;overflow-y:auto;animation:slideUp .3s ease;border-top:1px solid var(--border);box-shadow:0 -8px 40px rgba(0,0,0,.12)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhandle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:0 auto .85rem}
+.mtitle{font-size:1rem;font-weight:800;color:var(--primary);margin-bottom:1rem;text-align:center}
+
+/* HISTORY */
+.hist-item{display:flex;align-items:center;gap:.75rem;padding:.8rem;background:var(--bg);border-radius:11px;margin-bottom:.5rem;border:1px solid var(--border)}
+.hist-placa{font-weight:800;font-size:.88rem;color:var(--text)}
+.hist-info{font-size:.65rem;color:var(--muted);margin-top:.1rem}
+.hist-re{margin-left:auto;padding:.35rem .65rem;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;flex-shrink:0}
+
+/* FINANCEIRO */
+.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-bottom:.85rem}
+.fin-card{background:var(--bg);border-radius:13px;padding:.9rem;border:1px solid var(--border);text-align:center;box-shadow:var(--shadow)}
+.fin-card .fc-lbl{font-size:.62rem;color:var(--muted);margin-bottom:.25rem;font-weight:700;text-transform:uppercase}
+.fin-card .fc-val{font-size:1.2rem;font-weight:900;color:#059669}
+
+/* PAYMENT OPTIONS */
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.65rem 0}
+.pay-opt{background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:.85rem .5rem;cursor:pointer;text-align:center;transition:all .2s;font-family:'Poppins',sans-serif}
+.pay-opt.sel{border-color:var(--primary);background:rgba(37,99,235,.07)}
+.pay-opt .po-ico{font-size:1.4rem;margin-bottom:.25rem}
+.pay-opt .po-lbl{font-size:.72rem;font-weight:700;color:var(--text2)}
+
+/* MENSALISTA LIST */
+.ml-card{background:#fff;border-radius:13px;padding:.9rem;margin-bottom:.65rem;border:1px solid var(--border);box-shadow:var(--shadow)}
+.ml-card.atrasado{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.025)}
+.ml-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.6rem;gap:.5rem}
+.ml-nome{font-weight:800;font-size:.9rem;color:var(--text)}
+.ml-placa{font-size:.7rem;color:var(--muted);margin-top:.1rem}
+.ml-badge{padding:.22rem .65rem;border-radius:20px;font-size:.63rem;font-weight:800;flex-shrink:0}
+.ml-badge.ok{background:rgba(16,185,129,.12);color:#047857}
+.ml-badge.d{background:rgba(239,68,68,.12);color:#B91C1C}
+.ml-actions{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.65rem}
+.ml-actions .btn{flex:1;min-width:0;margin:0;padding:.5rem .4rem;font-size:.7rem}
+
+/* TABS */
+.tab-row{display:flex;gap:.5rem;margin-bottom:.85rem}
+.tab-b{flex:1;padding:.52rem;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--muted);font-size:.72rem;font-weight:700;cursor:pointer;text-align:center;font-family:'Poppins',sans-serif;transition:all .2s}
+.tab-b.active{border-color:var(--primary);color:var(--primary);background:rgba(37,99,235,.06)}
+
+/* SWITCH */
+.sw-row{display:flex;justify-content:space-between;align-items:center;padding:.65rem 0;border-bottom:1px solid var(--border)}
+.sw-lbl{font-size:.82rem;font-weight:700;color:var(--text)}
+.sw{width:42px;height:23px;background:var(--border);border-radius:12px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.sw.on{background:var(--success)}.sw::after{content:'';position:absolute;width:17px;height:17px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.sw.on::after{transform:translateX(19px)}
+
+/* MISC */
+.spin{width:18px;height:18px;border:2px solid rgba(37,99,235,.2);border-top-color:var(--primary);border-radius:50%;animation:rot .7s linear infinite;display:inline-block}
+@keyframes rot{to{transform:rotate(360deg)}}
+.toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);padding:.6rem 1.2rem;border-radius:50px;font-size:.76rem;font-weight:700;z-index:9999;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.15);animation:tIn .3s ease;max-width:90vw;text-align:center}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.toast.s{background:#059669;color:#fff}.toast.e{background:#DC2626;color:#fff}.toast.w{background:#D97706;color:#fff}
+.prev-box{background:var(--bg);border:2px dashed var(--border);border-radius:11px;padding:1rem;font-family:'Courier New',monospace;font-size:.72rem;text-align:center;line-height:1.8;color:var(--text2)}
+.prev-placa{font-size:1.4rem;font-weight:900;letter-spacing:3px;color:var(--primary);margin:.3rem 0}
+.prev-div{border-top:1px dashed var(--border);margin:.4rem 0}
+.empty{text-align:center;padding:2rem 1rem;color:var(--muted)}
+.empty i{font-size:2.5rem;margin-bottom:.75rem;opacity:.3;display:block}
+.empty p{font-size:.8rem}
+.veiculo-wrap{background:linear-gradient(145deg,#EFF6FF,#DBEAFE);border:2px solid rgba(37,99,235,.2);border-radius:14px;padding:1rem;margin-top:.75rem}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="ico">&#937;</div>
+    OMG Parking
+  </div>
+  <div class="bt-pill" id="btPill" onclick="toggleBt()">
+    <div class="bt-dot" id="btDot"></div>
+    <span id="btTxt">Impressora</span>
+    <i class="fas fa-bluetooth-b" style="font-size:.65rem"></i>
+  </div>
+</div>
+
+<!-- SCROLL -->
+<div class="scroll">
+
+  <!-- ===== ENTRADA ===== -->
+  <div class="page active" id="pg-entrada">
+    <div class="card">
+      <div class="card-t"><i class="fas fa-sign-in-alt"></i> Registrar Entrada</div>
+      <div class="fg">
+        <label><i class="fas fa-id-card" style="font-size:.65rem"></i> Placa do Veículo</label>
+        <input type="text" id="inp-placa" class="placa-inp" placeholder="ABC1234" maxlength="8"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+      <div class="fg">
+        <label><i class="fas fa-car" style="font-size:.65rem"></i> Tipo de Veículo</label>
+        <select id="inp-vtype">
+          <option value="carro">🚗 Carro</option>
+          <option value="moto">🏍️ Moto</option>
+        </select>
+      </div>
+      <label style="margin-bottom:.5rem;display:block"><i class="fas fa-tags" style="font-size:.65rem"></i> Categoria</label>
+      <div class="tipo-grid">
+        <div class="tipo-btn mensalista" onclick="entradaMensalista()">
+          <div class="ti">📅</div>
+          <div class="tl">MENSALISTA</div>
+          <div class="ts">Verificar / Cadastrar</div>
+        </div>
+        <div class="tipo-btn diarista" onclick="entradaDiarista()">
+          <div class="ti">🅿️</div>
+          <div class="tl">DIARISTA</div>
+          <div class="ts">Registrar + Imprimir</div>
+        </div>
+      </div>
+      <div id="msg-entrada"></div>
+    </div>
+
+    <div class="card" id="card-prev" style="display:none">
+      <div class="card-t"><i class="fas fa-receipt"></i> Última Comanda</div>
+      <div class="prev-box" id="prev-box"></div>
+      <button class="btn btn-primary" onclick="reimprimirUlt()" style="margin-top:.75rem">
+        <i class="fas fa-redo"></i> Reimprimir
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== SAÍDA ===== -->
+  <div class="page" id="pg-saida">
+    <div class="card">
+      <div class="card-t"><i class="fas fa-sign-out-alt"></i> Registrar Saída</div>
+      <div class="fg">
+        <label><i class="fas fa-search" style="font-size:.65rem"></i> Placa do Veículo</label>
+        <input type="text" id="inp-placa-saida" class="placa-inp" placeholder="ABC1234" maxlength="8"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      </div>
+      <button class="btn btn-primary" onclick="buscarSaida()">
+        <i class="fas fa-search"></i> Buscar Veículo
+      </button>
+      <div id="cont-saida"></div>
+    </div>
+  </div>
+
+  <!-- ===== FINANCEIRO ===== -->
+  <div class="page" id="pg-financeiro">
+    <div class="card">
+      <div class="card-t"><i class="fas fa-dollar-sign"></i> Financeiro</div>
+      <div class="tab-row">
+        <div class="tab-b active" id="tab-mens-f" onclick="showFinTab('mens')">📅 Mensalistas</div>
+        <div class="tab-b" id="tab-caixa-f" onclick="showFinTab('caixa')">💰 Caixa do Dia</div>
+      </div>
+      <div id="fin-mens">
+        <div style="display:flex;gap:.5rem;margin-bottom:.65rem">
+          <button class="btn btn-primary btn-sm" onclick="loadMens('todos')" style="flex:1">Todos</button>
+          <button class="btn btn-danger btn-sm" onclick="loadMens('atrasados')" style="flex:1">⚠️ Atrasados</button>
+          <button class="btn btn-success btn-sm" onclick="loadMens('em_dia')" style="flex:1">✅ Em dia</button>
+        </div>
+        <div class="fg">
+          <input type="text" id="inp-busca-mens" placeholder="🔍 Buscar por placa ou nome..."
+            oninput="filtrarMens()">
+        </div>
+        <div id="lista-mens"></div>
+      </div>
+      <div id="fin-caixa" style="display:none">
+        <div class="fin-grid" id="fin-totais"></div>
+        <div id="fin-trans"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HISTÓRICO ===== -->
+  <div class="page" id="pg-historico">
+    <div class="card">
+      <div class="card-t"><i class="fas fa-history"></i> Histórico</div>
+      <div class="fg">
+        <input type="text" id="inp-busca-hist" placeholder="🔍 Buscar por placa..." oninput="filtrarHist()">
+      </div>
+      <div id="lista-hist"></div>
+    </div>
+  </div>
+
+  <!-- ===== CONFIG ===== -->
+  <div class="page" id="pg-config">
+    <div class="card">
+      <div class="card-t"><i class="fas fa-bluetooth"></i> Impressora Bluetooth</div>
+      <div class="alert a-i" style="margin-bottom:.75rem">
+        <i class="fas fa-info-circle"></i>
+        <div><b>Tomate MTI-773</b> · 58mm · ESC/POS<br>Pareie primeiro (senha: 0000), depois conecte.</div>
+      </div>
+      <div id="bt-conn-info" style="display:none">
+        <div class="alert a-s" id="bt-conn-nome"><i class="fas fa-check-circle"></i> Conectado</div>
+      </div>
+      <button class="btn btn-primary" id="btn-conn" onclick="conectarBt()">
+        <i class="fas fa-bluetooth"></i> Conectar MTI-773
+      </button>
+      <button class="btn btn-danger" id="btn-disc" onclick="desconectarBt()" style="display:none">
+        <i class="fas fa-times"></i> Desconectar
+      </button>
+      <button class="btn btn-warning" onclick="testePrint()">
+        <i class="fas fa-vial"></i> Imprimir Página de Teste
+      </button>
+    </div>
+    <div class="card">
+      <div class="card-t"><i class="fas fa-database"></i> Supabase</div>
+      <div class="fg"><label>URL do Projeto</label><input type="text" id="cfg-url" placeholder="https://xxx.supabase.co"></div>
+      <div class="fg"><label>Anon Key</label><input type="text" id="cfg-key" placeholder="eyJ..."></div>
+    </div>
+    <div class="card">
+      <div class="card-t"><i class="fas fa-cog"></i> Configurações</div>
+      <div class="fg"><label>Nome do Estabelecimento</label><input type="text" id="cfg-nome" value="OMG Parking"></div>
+      <div class="fg"><label>Valor Hora — Carro (R$)</label><input type="number" id="cfg-carro" value="5.00" step="0.50"></div>
+      <div class="fg"><label>Valor Hora — Moto (R$)</label><input type="number" id="cfg-moto" value="3.00" step="0.50"></div>
+      <div class="fg"><label>Total de Vagas</label><input type="number" id="cfg-vagas" value="50"></div>
+      <div class="sw-row"><div><div class="sw-lbl">Imprimir ao registrar entrada</div></div><div class="sw on" id="sw-auto" onclick="this.classList.toggle('on')"></div></div>
+      <div class="sw-row" style="border:none"><div><div class="sw-lbl">Imprimir comprovante na saída</div></div><div class="sw on" id="sw-saida" onclick="this.classList.toggle('on')"></div></div>
+      <button class="btn btn-success" onclick="salvarCfg()" style="margin-top:.75rem"><i class="fas fa-save"></i> Salvar Configurações</button>
+    </div>
+    <div class="card" style="text-align:center">
+      <p style="font-size:.72rem;color:var(--muted);line-height:1.9">
+        <b style="color:var(--text2)">OMG Parking v2.1</b><br>
+        ESC/POS · BLE · Supabase<br>
+        <em>Chrome Android → Menu ⋮ → Adicionar à tela inicial</em>
+      </p>
+    </div>
+  </div>
+
+</div><!-- /scroll -->
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="bni active" id="nav-entrada" onclick="goPage('entrada')"><i class="fas fa-sign-in-alt"></i>Entrada</button>
+  <button class="bni" id="nav-saida" onclick="goPage('saida')"><i class="fas fa-sign-out-alt"></i>Saída</button>
+  <button class="bni" id="nav-financeiro" onclick="goPage('financeiro')"><i class="fas fa-dollar-sign"></i>Financeiro</button>
+  <button class="bni" id="nav-historico" onclick="goPage('historico')"><i class="fas fa-history"></i>Histórico</button>
+  <button class="bni" id="nav-config" onclick="goPage('config')"><i class="fas fa-cog"></i>Config</button>
+</div>
+
+<!-- MODAL MENSALISTA STATUS -->
+<div class="modal-ov" id="modal-mens">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="mm-title">Mensalista</div>
+    <div id="mm-body"></div>
+  </div>
+</div>
+
+<!-- MODAL PAGAMENTO MENSALIDADE -->
+<div class="modal-ov" id="modal-pgto">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">💳 Pagar Mensalidade</div>
+    <div id="mp-body"></div>
+  </div>
+</div>
+
+<!-- MODAL CADASTRO MENSALISTA -->
+<div class="modal-ov" id="modal-cad">
+  <div class="modal">
+    <div class="mhandle"></div>
+    <div class="mtitle">👤 Cadastrar Novo Mensalista</div>
+    <div class="alert a-p" style="margin-bottom:.85rem">
+      <i class="fas fa-info-circle"></i> Placa não encontrada. Preencha os dados para cadastrar.
+    </div>
+    <div class="fg"><label>Nome Completo</label><input type="text" id="cad-nome" placeholder="João da Silva"></div>
+    <div class="fg"><label>WhatsApp</label><input type="tel" id="cad-tel" placeholder="(38) 99999-9999"></div>
+    <div class="fg"><label>Placa</label><input type="text" id="cad-placa" style="text-transform:uppercase;font-weight:800;text-align:center;font-size:1.2rem;letter-spacing:3px"></div>
+    <div class="fg"><label>Tipo</label><select id="cad-tipo"><option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option></select></div>
+    <div class="fg"><label>Valor da Mensalidade (R$)</label><input type="number" id="cad-valor" step="10" placeholder="150.00"></div>
+    <div class="fg"><label>Dia de Vencimento (1–31)</label><input type="number" id="cad-dia" min="1" max="31" placeholder="10"></div>
+    <button class="btn btn-success" onclick="cadastrarMens()"><i class="fas fa-save"></i> Cadastrar e Liberar Entrada</button>
+    <button class="btn btn-outline" onclick="fecharMod('modal-cad')">Cancelar</button>
+  </div>
+</div>
+
+<script>
+/* ── ESTADO ── */
+var btDevice=null,btChar=null,db=null,lastBytes=null,veicSaida=null;
+var mensAll=[],histAll=[],finTab='mens',mensFilter='todos',payAtual='credito',payMensAtual='credito';
+var cfg={url:'',key:'',nome:'OMG Parking',carro:5,moto:3,vagas:50,autoImp:true,impSaida:true};
+
+/* ── INIT ── */
+window.onload=function(){
+  try{var s=localStorage.getItem('omgp2');if(s)cfg=Object.assign({},cfg,JSON.parse(s));}catch(e){}
+  document.getElementById('cfg-url').value=cfg.url||'';
+  document.getElementById('cfg-key').value=cfg.key||'';
+  document.getElementById('cfg-nome').value=cfg.nome||'OMG Parking';
+  document.getElementById('cfg-carro').value=cfg.carro||5;
+  document.getElementById('cfg-moto').value=cfg.moto||3;
+  document.getElementById('cfg-vagas').value=cfg.vagas||50;
+  if(!cfg.autoImp)document.getElementById('sw-auto').classList.remove('on');
+  if(!cfg.impSaida)document.getElementById('sw-saida').classList.remove('on');
+  initDb();goPage('entrada');
+};
+
+function salvarCfg(){
+  cfg.url=document.getElementById('cfg-url').value.trim();
+  cfg.key=document.getElementById('cfg-key').value.trim();
+  cfg.nome=document.getElementById('cfg-nome').value;
+  cfg.carro=parseFloat(document.getElementById('cfg-carro').value)||5;
+  cfg.moto=parseFloat(document.getElementById('cfg-moto').value)||3;
+  cfg.vagas=parseInt(document.getElementById('cfg-vagas').value)||50;
+  cfg.autoImp=document.getElementById('sw-auto').classList.contains('on');
+  cfg.impSaida=document.getElementById('sw-saida').classList.contains('on');
+  localStorage.setItem('omgp2',JSON.stringify(cfg));
+  initDb();toast('✅ Configurações salvas!','s');
+}
+
+function initDb(){
+  try{if(cfg.url&&cfg.key)db=window.supabase.createClient(cfg.url,cfg.key);}catch(e){}
+}
+
+/* ── NAVEGAR ── */
+function goPage(p){
+  document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
+  document.querySelectorAll('.bni').forEach(function(x){x.classList.remove('active');});
+  document.getElementById('pg-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+  document.querySelector('.scroll').scrollTop=0;
+  if(p==='historico')loadHist();
+  if(p==='financeiro'){loadMens(mensFilter);loadCaixa();}
+}
+
+/* ── BLUETOOTH ── */
+async function toggleBt(){if(btChar)desconectarBt();else{goPage('config');setTimeout(conectarBt,200);}}
+
+async function conectarBt(){
+  if(!navigator.bluetooth){toast('Use Chrome Android com BLE','e');return;}
+  setBt('blink','Conectando...');
+  var btn=document.getElementById('btn-conn');
+  btn.disabled=true;btn.innerHTML='<div class="spin"></div> Aguardando...';
+  try{
+    await new Promise(function(r){setTimeout(r,150);});
+    btDevice=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:['000018f0-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455','0000ff00-0000-1000-8000-00805f9b34fb','e7810a71-73ae-499d-8c15-faa9aef0c3f2','0000ffe0-0000-1000-8000-00805f9b34fb']
+    });
+    btDevice.addEventListener('gattserverdisconnected',onBtDisc);
+    var server=await btDevice.gatt.connect();
+    var services=await server.getPrimaryServices();
+    var ch=null;
+    for(var i=0;i<services.length&&!ch;i++){
+      try{var cs=await services[i].getCharacteristics();
+        for(var j=0;j<cs.length;j++){if(cs[j].properties.write||cs[j].properties.writeWithoutResponse){ch=cs[j];break;}}
+      }catch(e){}
+    }
+    if(!ch)throw new Error('Característica não encontrada. Verifique se a impressora está pareada.');
+    btChar=ch;
+    setBt('on',btDevice.name||'MTI-773');
+    document.getElementById('btn-disc').style.display='flex';
+    document.getElementById('bt-conn-info').style.display='block';
+    document.getElementById('bt-conn-nome').innerHTML='<i class="fas fa-check-circle"></i> Conectado: '+(btDevice.name||'MTI-773');
+    toast('✅ Impressora conectada!','s');
+  }catch(e){
+    setBt('off','Impressora');
+    if(!e.message.toLowerCase().includes('cancel'))toast('Erro: '+e.message,'e');
+    else toast('Cancelado','w');
+  }
+  btn.disabled=false;btn.innerHTML='<i class="fas fa-bluetooth"></i> Conectar MTI-773';
+}
+
+function desconectarBt(){
+  try{if(btDevice&&btDevice.gatt.connected)btDevice.gatt.disconnect();}catch(e){}
+  btChar=null;btDevice=null;setBt('off','Impressora');
+  document.getElementById('btn-disc').style.display='none';
+  document.getElementById('bt-conn-info').style.display='none';
+  toast('Impressora desconectada','w');
+}
+function onBtDisc(){btChar=null;setBt('off','Impressora');toast('Impressora desconectada','w');}
+function setBt(st,txt){
+  var p=document.getElementById('btPill'),d=document.getElementById('btDot'),t=document.getElementById('btTxt');
+  p.className='bt-pill'+(st==='on'?' on':st==='blink'?' blink':'');
+  d.className='bt-dot'+(st==='on'?' g':st==='blink'?' y':'');
+  t.textContent=txt.length>12?txt.slice(0,12)+'...':txt;
+}
+
+/* ── ESC/POS ── */
+var ESC=0x1B,GS=0x1D,LF=0x0A;
+function P(){this.b=[];}
+P.prototype={
+  ini:function(){this.b.push(ESC,0x40);return this;},
+  cut:function(){this.b.push(GS,0x56,0x41,0x10);return this;},
+  feed:function(n){for(var i=0;i<(n||1);i++)this.b.push(LF);return this;},
+  bold:function(v){this.b.push(ESC,0x45,v===false?0:1);return this;},
+  align:function(a){this.b.push(ESC,0x61,a==='c'?1:a==='r'?2:0);return this;},
+  sz:function(w,h){this.b.push(GS,0x21,(((h||1)-1)&7)|((((w||1)-1)&7)<<4));return this;},
+  txt:function(s){var e=encL(s);for(var i=0;i<e.length;i++)this.b.push(e[i]);this.b.push(LF);return this;},
+  div:function(c,n){var e=encL((c||'-').repeat(n||32));for(var i=0;i<e.length;i++)this.b.push(e[i]);this.b.push(LF);return this;},
+  row:function(l,r,w){w=w||32;var a=w-r.length;var s=(l.slice(0,a)).padEnd(a)+r;var e=encL(s);for(var i=0;i<e.length;i++)this.b.push(e[i]);this.b.push(LF);return this;},
+  bytes:function(){return new Uint8Array(this.b);}
+};
+function encL(s){
+  var m={'á':97,'à':97,'ã':97,'â':97,'é':101,'è':101,'ê':101,'í':105,'î':105,'ó':111,'õ':111,'ô':111,'ú':117,'û':117,'ü':117,'ç':99,'Á':65,'À':65,'Ã':65,'Â':65,'É':69,'È':69,'Ê':69,'Í':73,'Ó':79,'Õ':79,'Ô':79,'Ú':85,'Ç':67};
+  return s.split('').map(function(c){var code=c.charCodeAt(0);return code<128?code:(m[c]||63);});
+}
+async function enviar(bytes){
+  if(!btChar){toast('Impressora não conectada!','w');return false;}
+  try{
+    for(var i=0;i<bytes.length;i+=512){
+      var chunk=bytes.slice(i,i+512);
+      if(btChar.properties.writeWithoutResponse)await btChar.writeValueWithoutResponse(chunk);
+      else await btChar.writeValue(chunk);
+      await new Promise(function(r){setTimeout(r,60);});
+    }
+    return true;
+  }catch(e){toast('Erro impressão: '+e.message,'e');return false;}
+}
+
+/* ── COMANDAS ── */
+function cmdEntrada(v){
+  var n=new Date();
+  return new P().ini()
+    .align('c').bold().sz(1,1).txt('================================')
+    .sz(2,2).txt(cfg.nome.toUpperCase())
+    .sz(1,1).bold(false).txt('ENTRADA - DIARISTA')
+    .txt('================================').feed(1)
+    .sz(2,2).bold().txt(v.placa)
+    .sz(1,1).bold(false).feed(1)
+    .align('l')
+    .row('TIPO:',(v.tipo==='carro'?'CARRO':'MOTO'))
+    .row('DATA:',n.toLocaleDateString('pt-BR'))
+    .row('HORA:',n.toLocaleTimeString('pt-BR'))
+    .div('.')
+    .align('c').txt('Guarde este cupom!').txt('Apresente na saida.')
+    .feed(1).bold()
+    .row('HORA CARRO:','R$'+cfg.carro.toFixed(2))
+    .row('HORA MOTO:','R$'+cfg.moto.toFixed(2))
+    .bold(false).div('.')
+    .align('c').txt('Obrigado pela preferencia!')
+    .txt('********************************')
+    .txt('********************************')
+    .feed(5).cut().bytes();
+}
+function cmdSaida(v,total,met){
+  var agora=new Date(),ent=new Date(v.entrada),diff=agora-ent;
+  var h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
+  var mets={credito:'CREDITO',debito:'DEBITO',pix:'PIX',dinheiro:'DINHEIRO'};
+  return new P().ini()
+    .align('c').bold().txt('================================')
+    .sz(2,2).txt(cfg.nome.toUpperCase())
+    .sz(1,1).bold(false).txt('COMPROVANTE DE SAIDA')
+    .txt('================================').feed(1)
+    .sz(2,2).bold().txt(v.placa)
+    .sz(1,1).bold(false).feed(1)
+    .align('l')
+    .row('TIPO:',(v.tipo==='carro'?'CARRO':'MOTO'))
+    .row('ENTRADA:',ent.toLocaleTimeString('pt-BR'))
+    .row('SAIDA:',agora.toLocaleTimeString('pt-BR'))
+    .row('TEMPO:',h+'h '+m+'min')
+    .div('.')
+    .row('PAGAMENTO:',mets[met]||met.toUpperCase())
+    .bold().sz(2,1).align('c').txt('TOTAL: R$'+total.toFixed(2))
+    .sz(1,1).bold(false).div('.')
+    .align('c').txt('Volte sempre!').feed(3).cut().bytes();
+}
+function cmdTeste(){
+  return new P().ini()
+    .align('c').sz(2,2).bold().txt('OMG PARKING')
+    .sz(1,1).bold(false).feed(1).txt('PAGINA DE TESTE')
+    .div().align('l').txt('Impressora: OK').txt('Bluetooth: OK').txt('ESC/POS: OK')
+    .row('Papel:','58mm').row('Colunas:','32')
+    .div().align('c').bold().txt('TESTE OK!')
+    .bold(false).feed(3).cut().bytes();
+}
+async function testePrint(){if(!btChar){toast('Conecte a impressora!','w');return;}toast('Imprimindo...','s');await enviar(cmdTeste());}
+async function reimprimirUlt(){if(!lastBytes){toast('Nenhuma comanda','w');return;}if(!btChar){toast('Conecte a impressora!','w');return;}await enviar(lastBytes);toast('Reimpresso!','s');}
+
+/* ── ENTRADA ── */
+function getPlaca(){var p=document.getElementById('inp-placa').value.trim();if(p.length<7){toast('Placa inválida (ex: ABC1234)','w');return null;}return p;}
+function getTipo(){return document.getElementById('inp-vtype').value;}
+
+async function entradaDiarista(){
+  var placa=getPlaca();if(!placa)return;
+  var tipo=getTipo();
+  if(!db){toast('Configure o Supabase','e');return;}
+  clearMsg();bloqBtns(true);
+  try{
+    var r1=await db.from('veiculos').select('id').eq('placa',placa).is('saida',null).maybeSingle();
+    if(r1.data){toast('Veículo já está no estacionamento!','w');bloqBtns(false);return;}
+    var r2=await db.from('veiculos').insert({placa:placa,tipo:tipo,entrada:new Date().toISOString(),mensalista:false}).select().single();
+    if(r2.error)throw r2.error;
+    atualizarPreview(r2.data);
+    var bytes=cmdEntrada(r2.data);lastBytes=bytes;
+    if(cfg.autoImp&&btChar){await enviar(bytes);showMsg('✅ Entrada registrada e cupom impresso!','a-s');}
+    else showMsg('✅ Entrada registrada!'+(btChar?'':' — impressora desconectada'),'a-s');
+    document.getElementById('inp-placa').value='';
+  }catch(e){showMsg('❌ Erro: '+e.message,'a-e');}
+  bloqBtns(false);
+}
+
+async function entradaMensalista(){
+  var placa=getPlaca();if(!placa)return;
+  var tipo=getTipo();
+  if(!db){toast('Configure o Supabase','e');return;}
+  clearMsg();bloqBtns(true);
+  try{
+    var r1=await db.from('veiculos').select('id').eq('placa',placa).is('saida',null).maybeSingle();
+    if(r1.data){toast('Veículo já está no estacionamento!','w');bloqBtns(false);return;}
+    var r2=await db.from('mensalistas').select('*').eq('placa',placa).eq('ativo',true).maybeSingle();
+    if(r2.data){mostrarStatusMensalista(r2.data,tipo);}
+    else{abrirCadMensalista(placa,tipo);}
+  }catch(e){showMsg('❌ Erro: '+e.message,'a-e');}
+  bloqBtns(false);
+}
+
+/* ── STATUS MENSALISTA NO MODAL ── */
+function mostrarStatusMensalista(m,tipo){
+  var hoje=new Date();
+  var venc=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+  // Se já passou do dia de vencimento neste mês
+  var atrasado=hoje>venc&&!m.pagamento_em_dia;
+  var diasAtraso=atrasado?Math.floor((hoje-venc)/86400000):0;
+  // Dias que faltam para o próximo vencimento (se em dia)
+  var proximoVenc=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+  if(hoje>=proximoVenc)proximoVenc=new Date(hoje.getFullYear(),hoje.getMonth()+1,m.dia_vencimento);
+  var diasFaltam=Math.ceil((proximoVenc-hoje)/86400000);
+
+  document.getElementById('mm-title').textContent=atrasado?'⚠️ Mensalidade Atrasada':'✅ Mensalista em Dia';
+
+  var statusHtml='';
+  if(atrasado){
+    statusHtml='<div class="mens-card atrasado">'
+      +'<span class="mens-status-icon">⚠️</span>'
+      +'<div class="mens-status-title d">PAGAMENTO ATRASADO</div>'
+      +'<div class="dias-badge d"><i class="fas fa-clock"></i> '+diasAtraso+' dia'+(diasAtraso!==1?'s':'')+' de atraso</div>'
+      +'</div>';
+  }else{
+    statusHtml='<div class="mens-card ok">'
+      +'<span class="mens-status-icon">✅</span>'
+      +'<div class="mens-status-title ok">MENSALIDADE EM DIA</div>'
+      +'<div class="dias-badge ok"><i class="fas fa-calendar-check"></i> Vence em '+diasFaltam+' dia'+(diasFaltam!==1?'s':'')+' (dia '+m.dia_vencimento+')</div>'
+      +'</div>';
+  }
+
+  var infoHtml='<div class="card" style="margin-bottom:.75rem">'
+    +'<div class="irow"><span class="ilabel">👤 Nome</span><span class="ival">'+m.nome+'</span></div>'
+    +'<div class="irow"><span class="ilabel">🚗 Placa</span><span class="ival">'+m.placa+'</span></div>'
+    +'<div class="irow"><span class="ilabel">🚘 Tipo</span><span class="ival">'+(m.tipo==='carro'?'🚗 Carro':'🏍️ Moto')+'</span></div>'
+    +'<div class="irow"><span class="ilabel">💰 Mensalidade</span><span class="ival">R$ '+parseFloat(m.valor_mensalidade).toFixed(2)+'</span></div>'
+    +'<div class="irow"><span class="ilabel">📅 Vencimento</span><span class="ival">Todo dia '+m.dia_vencimento+'</span></div>'
+    +'<div class="irow"><span class="ilabel">📞 WhatsApp</span><span class="ival">'+m.telefone+'</span></div>'
+    +'</div>';
+
+  var botoesHtml='';
+  botoesHtml+='<button class="btn btn-success" onclick="liberarEntradaMensalista(\''+m.placa+'\',\''+(m.tipo||tipo)+'\')"><i class="fas fa-check-circle"></i> Liberar Entrada</button>';
+
+  // Botão de cobrança — SEMPRE aparece (pode cobrar preventivamente ou por atraso)
+  if(atrasado){
+    botoesHtml+='<button class="btn btn-wpp" onclick="cobrarWpp('+m.id+',true)"><i class="fab fa-whatsapp"></i> Cobrar Mensalidade Atrasada</button>';
+  }else{
+    botoesHtml+='<button class="btn btn-wpp" onclick="cobrarWpp('+m.id+',false)"><i class="fab fa-whatsapp"></i> Lembrete de Vencimento no WhatsApp</button>';
+  }
+
+  botoesHtml+='<button class="btn btn-outline" onclick="fecharMod(\'modal-mens\')">Fechar</button>';
+
+  document.getElementById('mm-body').innerHTML=statusHtml+infoHtml+botoesHtml;
+  document.getElementById('modal-mens').classList.add('active');
+}
+
+async function liberarEntradaMensalista(placa,tipo){
+  fecharMod('modal-mens');
+  if(!db)return;
+  try{
+    var r=await db.from('veiculos').insert({placa:placa,tipo:tipo,entrada:new Date().toISOString(),mensalista:true}).select().single();
+    if(r.error)throw r.error;
+    toast('✅ Entrada de mensalista liberada!','s');
+    document.getElementById('inp-placa').value='';clearMsg();
+  }catch(e){toast('Erro: '+e.message,'e');}
+}
+
+function abrirCadMensalista(placa,tipo){
+  document.getElementById('cad-placa').value=placa;
+  document.getElementById('cad-tipo').value=tipo||'carro';
+  document.getElementById('cad-nome').value='';
+  document.getElementById('cad-tel').value='';
+  document.getElementById('cad-valor').value='';
+  document.getElementById('cad-dia').value='';
+  document.getElementById('modal-cad').classList.add('active');
+}
+
+async function cadastrarMens(){
+  var nome=document.getElementById('cad-nome').value.trim();
+  var tel=document.getElementById('cad-tel').value.trim();
+  var placa=document.getElementById('cad-placa').value.trim().toUpperCase();
+  var tipo=document.getElementById('cad-tipo').value;
+  var valor=parseFloat(document.getElementById('cad-valor').value);
+  var dia=parseInt(document.getElementById('cad-dia').value);
+  if(!nome||!tel||!placa||!valor||!dia){toast('Preencha todos os campos','w');return;}
+  if(!db){toast('Configure o Supabase','e');return;}
+  try{
+    var r=await db.from('mensalistas').insert({nome:nome,telefone:tel,placa:placa,tipo:tipo,valor_mensalidade:valor,dia_vencimento:dia,ativo:true,pagamento_em_dia:false,historico_pagamentos:[]});
+    if(r.error)throw r.error;
+    await db.from('veiculos').insert({placa:placa,tipo:tipo,entrada:new Date().toISOString(),mensalista:true});
+    fecharMod('modal-cad');
+    toast('✅ Mensalista cadastrado e entrada liberada!','s');
+    document.getElementById('inp-placa').value='';clearMsg();
+  }catch(e){toast('Erro: '+e.message,'e');}
+}
+
+/* ── SAÍDA ── */
+async function buscarSaida(){
+  var placa=document.getElementById('inp-placa-saida').value.trim();
+  if(placa.length<7){toast('Placa inválida','w');return;}
+  var cont=document.getElementById('cont-saida');
+  cont.innerHTML='<div class="alert a-i"><div class="spin"></div> Buscando...</div>';
+  if(!db){cont.innerHTML='<div class="alert a-e">Configure o Supabase</div>';return;}
+  try{
+    var r=await db.from('veiculos').select('*').eq('placa',placa).is('saida',null).maybeSingle();
+    var v=r.data;
+    if(!v){cont.innerHTML='<div class="alert a-e"><i class="fas fa-times-circle"></i> Veículo não encontrado ou já saiu.</div>';return;}
+
+    if(v.mensalista){
+      var rm=await db.from('mensalistas').select('*').eq('placa',placa).eq('ativo',true).maybeSingle();
+      var m=rm.data;
+      var hoje=new Date(),atrasado=false,diasFaltam=null,diasAtraso=0;
+      if(m){
+        var venc=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+        atrasado=hoje>venc&&!m.pagamento_em_dia;
+        diasAtraso=atrasado?Math.floor((hoje-venc)/86400000):0;
+        var proxV=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+        if(hoje>=proxV)proxV=new Date(hoje.getFullYear(),hoje.getMonth()+1,m.dia_vencimento);
+        diasFaltam=Math.ceil((proxV-hoje)/86400000);
+      }
+      cont.innerHTML='<div class="veiculo-wrap">'
+        +'<div class="placa-big">'+v.placa+'</div>'
+        +'<div class="alert a-i"><i class="fas fa-calendar-alt"></i> <b>Mensalista</b> — sem cobrança na saída</div>'
+        +(m&&atrasado?'<div class="alert a-e"><i class="fas fa-exclamation-triangle"></i> Mensalidade atrasada: <b>'+diasAtraso+' dia(s) de atraso</b></div>':'')
+        +(m&&!atrasado&&diasFaltam!==null?'<div class="alert a-s"><i class="fas fa-check-circle"></i> Em dia — vence em <b>'+diasFaltam+' dia(s)</b> (dia '+m.dia_vencimento+')</div>':'')
+        +(m?'<div class="irow"><span class="ilabel">Próxima cobrança</span><span class="ival">Dia '+m.dia_vencimento+' — R$ '+parseFloat(m.valor_mensalidade).toFixed(2)+'</span></div>':'')
+        +'<button class="btn btn-success" onclick="confirmarSaidaMensalista('+v.id+')"><i class="fas fa-sign-out-alt"></i> Registrar Saída</button>'
+        +(m&&atrasado?'<button class="btn btn-wpp" onclick="cobrarWpp('+m.id+',true)"><i class="fab fa-whatsapp"></i> Cobrar Mensalidade Atrasada</button>':'')
+        +'</div>';
+      return;
+    }
+
+    // DIARISTA
+    var agora=new Date(),ent=new Date(v.entrada),diff=agora-ent;
+    var hTot=diff/3600000,hDisp=Math.floor(hTot),mDisp=Math.floor((diff%3600000)/60000);
+    var vHora=v.tipo==='carro'?cfg.carro:cfg.moto;
+    var totalEstac=parseFloat((hTot*vHora).toFixed(2));
+    var lavs=(v.lavagens||[]).reduce(function(s,l){return s+parseFloat(l.valor);},0);
+    var total=totalEstac+lavs;
+    veicSaida={v:v,total:total};
+
+    cont.innerHTML='<div class="veiculo-wrap">'
+      +'<div class="placa-big">'+v.placa+'</div>'
+      +'<div class="irow"><span class="ilabel">🚗 Tipo</span><span class="ival">'+v.tipo+'</span></div>'
+      +'<div class="irow"><span class="ilabel">⏰ Entrada</span><span class="ival">'+ent.toLocaleTimeString('pt-BR')+'</span></div>'
+      +'<div class="irow"><span class="ilabel">⏱ Tempo</span><span class="ival">'+hDisp+'h '+mDisp+'min</span></div>'
+      +(lavs>0?'<div class="irow"><span class="ilabel">🚿 Lavagens</span><span class="ival">R$ '+lavs.toFixed(2)+'</span></div>':'')
+      +'<div class="price-box"><div class="price-lbl">Total a Pagar</div><div class="price-val">R$ '+total.toFixed(2)+'</div></div>'
+      +'<label style="margin-bottom:.4rem;display:block">Forma de Pagamento</label>'
+      +'<div class="pay-grid" id="pay-grid-saida">'
+      +'<div class="pay-opt sel" onclick="selPay(this,\'credito\')"><div class="po-ico">💳</div><div class="po-lbl">Crédito</div></div>'
+      +'<div class="pay-opt" onclick="selPay(this,\'debito\')"><div class="po-ico">💳</div><div class="po-lbl">Débito</div></div>'
+      +'<div class="pay-opt" onclick="selPay(this,\'pix\')"><div class="po-ico">📱</div><div class="po-lbl">PIX</div></div>'
+      +'<div class="pay-opt" onclick="selPay(this,\'dinheiro\')"><div class="po-ico">💵</div><div class="po-lbl">Dinheiro</div></div>'
+      +'</div>'
+      +'<div id="troco-wrap" style="display:none">'
+      +'<div class="fg"><label>Valor Recebido (R$)</label>'
+      +'<input type="number" id="inp-recebido" step="0.50" oninput="calcTroco('+total+')">'
+      +'<div id="troco-res" style="margin-top:.4rem"></div></div></div>'
+      +'<button class="btn btn-success" onclick="confirmarSaida()"><i class="fas fa-check-circle"></i> Confirmar Pagamento e Imprimir</button>'
+      +'</div>';
+    payAtual='credito';
+  }catch(e){cont.innerHTML='<div class="alert a-e">Erro: '+e.message+'</div>';}
+}
+
+function selPay(el,met){
+  payAtual=met;
+  document.querySelectorAll('#pay-grid-saida .pay-opt').forEach(function(x){x.classList.remove('sel');});
+  el.classList.add('sel');
+  document.getElementById('troco-wrap').style.display=met==='dinheiro'?'block':'none';
+}
+function calcTroco(total){
+  var rec=parseFloat(document.getElementById('inp-recebido').value)||0;
+  var t=rec-total;
+  document.getElementById('troco-res').innerHTML='<div class="alert '+(t>=0?'a-s':'a-e')+'">'+(t>=0?'💰 Troco: R$ '+t.toFixed(2):'⚠️ Valor insuficiente!')+'</div>';
+}
+async function confirmarSaida(){
+  if(!veicSaida)return;
+  var v=veicSaida.v,total=veicSaida.total,met=payAtual;
+  if(met==='dinheiro'){var rec=parseFloat((document.getElementById('inp-recebido')||{}).value)||0;if(rec<total){toast('Valor insuficiente!','w');return;}}
+  if(!db)return;
+  try{
+    var r=await db.from('veiculos').update({saida:new Date().toISOString(),valor:total,pago:true,pagamento:{metodo:met}}).eq('id',v.id);
+    if(r.error)throw r.error;
+    if(cfg.impSaida&&btChar){var bytes=cmdSaida(v,total,met);lastBytes=bytes;await enviar(bytes);toast('✅ Pago e cupom impresso!','s');}
+    else toast('✅ Pagamento confirmado!','s');
+    document.getElementById('inp-placa-saida').value='';
+    document.getElementById('cont-saida').innerHTML='';
+    veicSaida=null;
+  }catch(e){toast('Erro: '+e.message,'e');}
+}
+async function confirmarSaidaMensalista(id){
+  if(!db)return;
+  try{
+    await db.from('veiculos').update({saida:new Date().toISOString(),valor:0,pago:true,pagamento:{metodo:'mensalidade'}}).eq('id',id);
+    toast('✅ Saída registrada!','s');
+    document.getElementById('inp-placa-saida').value='';
+    document.getElementById('cont-saida').innerHTML='';
+  }catch(e){toast('Erro: '+e.message,'e');}
+}
+
+/* ── FINANCEIRO MENSALISTAS ── */
+async function loadMens(filtro){
+  mensFilter=filtro;
+  var cont=document.getElementById('lista-mens');
+  if(!db){cont.innerHTML='<div class="alert a-e">Configure o Supabase</div>';return;}
+  cont.innerHTML='<div class="alert a-i"><div class="spin"></div> Carregando...</div>';
+  try{
+    var r=await db.from('mensalistas').select('*').eq('ativo',true).order('nome');
+    if(r.error)throw r.error;
+    mensAll=r.data||[];renderMens(filtro);
+  }catch(e){cont.innerHTML='<div class="alert a-e">Erro: '+e.message+'</div>';}
+}
+function filtrarMens(){
+  var q=document.getElementById('inp-busca-mens').value.toUpperCase();
+  var f=mensAll.filter(function(m){return m.nome.toUpperCase().includes(q)||m.placa.toUpperCase().includes(q);});
+  renderMensLista(f);
+}
+function renderMens(filtro){
+  var hoje=new Date();
+  var lista=mensAll.filter(function(m){
+    var venc=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+    var at=hoje>venc&&!m.pagamento_em_dia;
+    if(filtro==='atrasados')return at;
+    if(filtro==='em_dia')return !at;
+    return true;
+  });
+  renderMensLista(lista);
+}
+function renderMensLista(lista){
+  var cont=document.getElementById('lista-mens');
+  var hoje=new Date();
+  if(!lista||lista.length===0){cont.innerHTML='<div class="empty"><i class="fas fa-users"></i><p>Nenhum mensalista encontrado.</p></div>';return;}
+  cont.innerHTML=lista.map(function(m){
+    var venc=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+    var at=hoje>venc&&!m.pagamento_em_dia;
+    var dias=Math.abs(Math.floor((hoje-venc)/86400000));
+    var proxV=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+    if(hoje>=proxV)proxV=new Date(hoje.getFullYear(),hoje.getMonth()+1,m.dia_vencimento);
+    var diasFaltam=Math.ceil((proxV-hoje)/86400000);
+    return '<div class="ml-card '+(at?'atrasado':'')+'">'
+      +'<div class="ml-top">'
+      +'<div><div class="ml-nome">'+(at?'⚠️ ':'')+m.nome+'</div><div class="ml-placa">'+m.placa+' · '+(m.tipo==='carro'?'🚗':'🏍️')+'</div></div>'
+      +'<div class="ml-badge '+(at?'d':'ok')+'">'+(at?dias+'d atraso':'Em dia')+'</div>'
+      +'</div>'
+      +'<div class="irow"><span class="ilabel">💰 Mensalidade</span><span class="ival">R$ '+parseFloat(m.valor_mensalidade).toFixed(2)+'</span></div>'
+      +'<div class="irow"><span class="ilabel">📅 Vencimento</span><span class="ival">Dia '+m.dia_vencimento+(at?' ('+dias+'d atraso)':' (em '+diasFaltam+'d)')+'</span></div>'
+      +'<div class="irow"><span class="ilabel">📞 WhatsApp</span><span class="ival">'+m.telefone+'</span></div>'
+      +'<div class="ml-actions">'
+      +'<button class="btn btn-success btn-sm" onclick="abrirPgtoMens('+m.id+',\''+m.nome+'\',\''+m.telefone+'\','+m.valor_mensalidade+',\''+m.placa+'\')">💰 Pagar</button>'
+      +'<button class="btn btn-wpp btn-sm" onclick="cobrarWpp('+m.id+','+(at?'true':'false')+')"><i class="fab fa-whatsapp"></i> '+(at?'Cobrar':'Lembrete')+'</button>'
+      +'<button class="btn btn-outline btn-sm" onclick="desativarMens('+m.id+')">Desativar</button>'
+      +'</div></div>';
+  }).join('');
+}
+
+/* Pagamento mensalidade */
+function abrirPgtoMens(id,nome,tel,valor,placa){
+  var html='<div class="card" style="margin-bottom:.75rem">'
+    +'<div class="placa-big">'+placa+'</div>'
+    +'<div class="irow"><span class="ilabel">Cliente</span><span class="ival">'+nome+'</span></div>'
+    +'</div>'
+    +'<div class="price-box"><div class="price-lbl">Mensalidade a Pagar</div><div class="price-val">R$ '+parseFloat(valor).toFixed(2)+'</div></div>'
+    +'<label style="margin-bottom:.4rem;display:block">Forma de Pagamento</label>'
+    +'<div class="pay-grid" id="pay-grid-mens">'
+    +'<div class="pay-opt sel" onclick="selPayMens(this,\'credito\')"><div class="po-ico">💳</div><div class="po-lbl">Crédito</div></div>'
+    +'<div class="pay-opt" onclick="selPayMens(this,\'debito\')"><div class="po-ico">💳</div><div class="po-lbl">Débito</div></div>'
+    +'<div class="pay-opt" onclick="selPayMens(this,\'pix\')"><div class="po-ico">📱</div><div class="po-lbl">PIX</div></div>'
+    +'<div class="pay-opt" onclick="selPayMens(this,\'dinheiro\')"><div class="po-ico">💵</div><div class="po-lbl">Dinheiro</div></div>'
+    +'</div>'
+    +'<button class="btn btn-success" onclick="confirmarPgtoMens('+id+','+valor+',\''+nome+'\')" style="margin-top:.75rem"><i class="fas fa-check-circle"></i> Confirmar Pagamento</button>'
+    +'<button class="btn btn-outline" onclick="fecharMod(\'modal-pgto\')">Cancelar</button>';
+  document.getElementById('mp-body').innerHTML=html;
+  document.getElementById('modal-pgto').classList.add('active');
+  payMensAtual='credito';
+}
+function selPayMens(el,met){
+  payMensAtual=met;
+  document.querySelectorAll('#pay-grid-mens .pay-opt').forEach(function(x){x.classList.remove('sel');});
+  el.classList.add('sel');
+}
+async function confirmarPgtoMens(id,valor,nome){
+  if(!db)return;
+  try{
+    var r=await db.from('mensalistas').select('historico_pagamentos').eq('id',id).single();
+    if(r.error)throw r.error;
+    var hist=r.data.historico_pagamentos||[];
+    hist.push({data:new Date().toISOString(),valor:valor,metodo:payMensAtual});
+    var r2=await db.from('mensalistas').update({pagamento_em_dia:true,historico_pagamentos:hist}).eq('id',id);
+    if(r2.error)throw r2.error;
+    fecharMod('modal-pgto');
+    toast('✅ Mensalidade de '+nome+' paga!','s');
+    loadMens(mensFilter);
+  }catch(e){toast('Erro: '+e.message,'e');}
+}
+async function desativarMens(id){
+  if(!confirm('Desativar este mensalista?'))return;
+  if(!db)return;
+  try{await db.from('mensalistas').update({ativo:false}).eq('id',id);toast('Mensalista desativado','w');loadMens(mensFilter);}catch(e){toast('Erro','e');}
+}
+
+/* ── CAIXA DO DIA ── */
+function showFinTab(t){
+  finTab=t;
+  document.getElementById('fin-mens').style.display=t==='mens'?'block':'none';
+  document.getElementById('fin-caixa').style.display=t==='caixa'?'block':'none';
+  document.getElementById('tab-mens-f').classList.toggle('active',t==='mens');
+  document.getElementById('tab-caixa-f').classList.toggle('active',t==='caixa');
+  if(t==='caixa')loadCaixa();
+}
+async function loadCaixa(){
+  var cont=document.getElementById('fin-totais'),contT=document.getElementById('fin-trans');
+  if(!db){cont.innerHTML='<div class="alert a-e" style="grid-column:span 2">Configure o Supabase</div>';return;}
+  try{
+    var hoje=new Date();
+    var ini=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate()).toISOString();
+    var fim=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate(),23,59,59).toISOString();
+    var rv=await db.from('veiculos').select('*').gte('saida',ini).lte('saida',fim).eq('pago',true).neq('mensalista',true);
+    var rm=await db.from('mensalistas').select('historico_pagamentos');
+    var veics=rv.data||[];
+    var totDin=0,totCart=0,totPix=0,totMens=0;
+    veics.forEach(function(v){
+      var val=parseFloat(v.valor)||0;
+      if(v.pagamento){
+        if(v.pagamento.metodo==='dinheiro')totDin+=val;
+        else if(v.pagamento.metodo==='pix')totPix+=val;
+        else totCart+=val;
+      }
+    });
+    var hj=hoje.toISOString().slice(0,10);
+    (rm.data||[]).forEach(function(m){(m.historico_pagamentos||[]).forEach(function(p){if(p.data&&p.data.startsWith(hj))totMens+=parseFloat(p.valor)||0;});});
+    var total=totDin+totCart+totPix+totMens;
+    cont.innerHTML='<div class="fin-card"><div class="fc-lbl">💵 Dinheiro</div><div class="fc-val">R$ '+totDin.toFixed(2)+'</div></div>'
+      +'<div class="fin-card"><div class="fc-lbl">💳 Cartões</div><div class="fc-val">R$ '+totCart.toFixed(2)+'</div></div>'
+      +'<div class="fin-card"><div class="fc-lbl">📱 PIX</div><div class="fc-val">R$ '+totPix.toFixed(2)+'</div></div>'
+      +'<div class="fin-card"><div class="fc-lbl">📅 Mensalidades</div><div class="fc-val">R$ '+totMens.toFixed(2)+'</div></div>';
+    contT.innerHTML='<div class="price-box"><div class="price-lbl">Total do Dia ('+veics.length+' saídas)</div><div class="price-val">R$ '+total.toFixed(2)+'</div></div>'
+      +(veics.length?'<div style="margin-top:.75rem">'+veics.map(function(v){var met=v.pagamento?v.pagamento.metodo:'?';return '<div class="hist-item"><div style="font-size:1.2rem">🚗</div><div><div class="hist-placa">'+v.placa+'</div><div class="hist-info">'+met.toUpperCase()+' · R$ '+parseFloat(v.valor).toFixed(2)+'</div></div></div>';}).join('')+'</div>':'');
+  }catch(e){cont.innerHTML='<div class="alert a-e" style="grid-column:span 2">Erro: '+e.message+'</div>';}
+}
+
+/* ── HISTÓRICO ── */
+async function loadHist(){
+  var cont=document.getElementById('lista-hist');
+  if(!db){cont.innerHTML='<div class="alert a-e">Configure o Supabase</div>';return;}
+  cont.innerHTML='<div class="alert a-i"><div class="spin"></div> Carregando...</div>';
+  try{
+    var r=await db.from('veiculos').select('*').order('entrada',{ascending:false}).limit(50);
+    if(r.error)throw r.error;
+    histAll=r.data||[];renderHist(histAll);
+  }catch(e){cont.innerHTML='<div class="alert a-e">Erro: '+e.message+'</div>';}
+}
+function filtrarHist(){
+  var q=document.getElementById('inp-busca-hist').value.toUpperCase();
+  renderHist(q?histAll.filter(function(v){return v.placa.includes(q);}):histAll);
+}
+function renderHist(lista){
+  var cont=document.getElementById('lista-hist');
+  if(!lista||lista.length===0){cont.innerHTML='<div class="empty"><i class="fas fa-parking"></i><p>Nenhum registro.</p></div>';return;}
+  cont.innerHTML=lista.map(function(v){
+    var ent=new Date(v.entrada),ativo=!v.saida;
+    return '<div class="hist-item">'
+      +'<div style="font-size:1.25rem;flex-shrink:0">'+(ativo?'🟢':'🔴')+'</div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div class="hist-placa">'+v.placa+(v.mensalista?' 📅':'')+'</div>'
+      +'<div class="hist-info">'+ent.toLocaleDateString('pt-BR')+' '+ent.toLocaleTimeString('pt-BR')+(v.valor?' · R$'+parseFloat(v.valor).toFixed(2):'')+'</div>'
+      +'</div>'
+      +(ativo&&!v.mensalista?'<button class="hist-re" onclick="reimpHist(\''+v.placa+'\',\''+v.tipo+'\',\''+v.entrada+'\')">🖨️</button>':'')
+      +'</div>';
+  }).join('');
+}
+async function reimpHist(placa,tipo,entrada){
+  if(!btChar){toast('Conecte a impressora!','w');return;}
+  await enviar(cmdEntrada({placa:placa,tipo:tipo,entrada:entrada}));toast('Reimpresso!','s');
+}
+
+/* ── WHATSAPP ── */
+async function cobrarWpp(id,atrasado){
+  if(!db)return;
+  try{
+    var r=await db.from('mensalistas').select('*').eq('id',id).single();
+    var m=r.data;
+    var hoje=new Date();
+    var venc=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+    var proxV=new Date(hoje.getFullYear(),hoje.getMonth(),m.dia_vencimento);
+    if(hoje>=proxV)proxV=new Date(hoje.getFullYear(),hoje.getMonth()+1,m.dia_vencimento);
+    var diasFaltam=Math.ceil((proxV-hoje)/86400000);
+    var diasAtraso=atrasado?Math.floor((hoje-venc)/86400000):0;
+    var msg='';
+    if(atrasado){
+      msg='Olá, '+m.nome+'! 👋\n\n'
+        +'Passamos para informar que sua mensalidade no *'+cfg.nome+'* está em atraso.\n\n'
+        +'📋 *Detalhes:*\n'
+        +'• Placa: *'+m.placa+'*\n'
+        +'• Valor: *R$ '+parseFloat(m.valor_mensalidade).toFixed(2)+'*\n'
+        +'• Dia de vencimento: '+m.dia_vencimento+'\n'
+        +'• Dias em atraso: *'+diasAtraso+' dia(s)*\n\n'
+        +'Por favor, regularize assim que possível. Estamos à disposição! 🙏\n\n'
+        +'_'+cfg.nome+'_';
+    }else{
+      msg='Olá, '+m.nome+'! 👋\n\n'
+        +'Passamos para lembrar que sua mensalidade no *'+cfg.nome+'* vence em breve.\n\n'
+        +'📋 *Detalhes:*\n'
+        +'• Placa: *'+m.placa+'*\n'
+        +'• Valor: *R$ '+parseFloat(m.valor_mensalidade).toFixed(2)+'*\n'
+        +'• Vence em: *'+diasFaltam+' dia(s)* (dia '+m.dia_vencimento+')\n\n'
+        +'Qualquer dúvida, estamos à disposição! 😊\n\n'
+        +'_'+cfg.nome+'_';
+    }
+    var tel=m.telefone.replace(/\D/g,'');
+    if(tel.length===11)tel='55'+tel;
+    window.open('https://wa.me/'+tel+'?text='+encodeURIComponent(msg),'_blank');
+  }catch(e){toast('Erro: '+e.message,'e');}
+}
+
+/* ── PREVIEW ── */
+function atualizarPreview(v){
+  var agora=new Date();
+  document.getElementById('card-prev').style.display='block';
+  document.getElementById('prev-box').innerHTML=
+    '<div class="prev-placa">'+v.placa+'</div>'
+    +'<div class="prev-div"></div>'
+    +'<div><b>DIARISTA · ENTRADA</b></div>'
+    +'<div>'+agora.toLocaleDateString('pt-BR')+' '+agora.toLocaleTimeString('pt-BR')+'</div>'
+    +'<div>'+(v.tipo==='carro'?'🚗 Carro':'🏍️ Moto')+'</div>'
+    +'<div class="prev-div"></div>'
+    +'<small style="color:var(--muted)">Guarde este cupom · Apresente na saída</small>';
+}
+
+/* ── UTILS ── */
+function bloqBtns(v){
+  document.querySelectorAll('.tipo-btn').forEach(function(b){b.style.pointerEvents=v?'none':'auto';b.style.opacity=v?'.5':'1';});
+}
+function showMsg(txt,cls){
+  document.getElementById('msg-entrada').innerHTML='<div class="alert '+cls+'">'+txt+'</div>';
+  setTimeout(function(){document.getElementById('msg-entrada').innerHTML='';},5000);
+}
+function clearMsg(){document.getElementById('msg-entrada').innerHTML='';}
+function fecharMod(id){document.getElementById(id).classList.remove('active');}
+document.querySelectorAll('.modal-ov').forEach(function(el){
+  el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('active');});
+});
+var _tt=null;
+function toast(t,type){
+  var e=document.querySelector('.toast');if(e)e.remove();
+  if(_tt)clearTimeout(_tt);
+  var d=document.createElement('div');d.className='toast '+(type||'s');d.textContent=t;
+  document.body.appendChild(d);_tt=setTimeout(function(){d.remove();},3000);
+}
+</script>
+</body>
+</html>
