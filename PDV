@@ -482,27 +482,34 @@
         }
 
         /* ÁREA PRINCIPAL */
-        .main-content {
-            margin-left: 226px;
-            margin-right: 420px;
-            margin-top: 80px;
-            padding: 30px;
-            min-height: calc(100vh - 80px);
-        }
+.main-content {
+    margin-left: 226px;
+    margin-right: 420px;
+    margin-top: 80px;
+    padding: 30px;
+    height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+}
 
-        /* GRID DE CATEGORIAS */
-        .categorias-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
+.categorias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+}
 
-        .categoria-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
+.categoria-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
 
         .categoria-header {
             padding: 20px;
@@ -531,12 +538,12 @@
         .categoria-header.outros {
             background: #6c059b;
         }
-
-        .categoria-produtos {
-            padding: 15px;
-            max-height: 600px;
-            overflow-y: auto;
-        }
+.categoria-produtos {
+    padding: 15px;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
 
         /* PRODUTO ITEM - NOVO LAYOUT */
         .produto-item {
@@ -2144,14 +2151,14 @@
                 const resultado = await pix();
                 
                 // Verifica se o pagamento foi bem-sucedido
-                if (resultado && resultado.resultado && resultado.resultado.data) {
+                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
                     console.log('Pagamento PIX aprovado!');
                     
                     // Extrai dados do TEF
                     const dadosTEF = {
-                        nsu: resultado.resultado.nsu || null,
-                        autorizacao: resultado.resultado.autorizacao || null,
-                        bandeira: resultado.resultado.bandeira || null,
+                        nsu: resultado.resultado.id || null,
+                        autorizacao: resultado.resultado.tef.codigoAutorizacao || null,
+                        bandeira: resultado.resultado.tef.codigoBandeira || null,
                         parcelas: 1
                     };
                     
@@ -2165,7 +2172,7 @@
                     }
                 } else {
                     console.error('Pagamento PIX não aprovado:', resultado);
-                    alert('❌ Erro no pagamento PIX. Tente novamente.');
+                    alert('❌ PIX NAO APROVADO\nMotivo: '+(resultado&&resultado.resultado&&resultado.resultado.tef?resultado.resultado.tef.mensagemResultado||'Sem motivo':'TEF offline'));
                 }
             } catch (error) {
                 console.error('Erro ao processar PIX:', error);
@@ -2190,15 +2197,15 @@
                 const resultado = await credito();
                 
                 // Verifica se o pagamento foi bem-sucedido
-                if (resultado && resultado.resultado && resultado.resultado.data) {
+                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
                     console.log('Pagamento CRÉDITO aprovado!');
                     
                     // Extrai dados do TEF
                     const dadosTEF = {
-                        nsu: resultado.resultado.nsu || null,
-                        autorizacao: resultado.resultado.autorizacao || null,
-                        bandeira: resultado.resultado.bandeira || null,
-                        parcelas: resultado.resultado.parcelas || 1
+                        nsu: resultado.resultado.id || null,
+                        autorizacao: resultado.resultado.tef.codigoAutorizacao || null,
+                        bandeira: resultado.resultado.tef.codigoBandeira || null,
+                        parcelas: resultado.resultado.tef.numeroParcelas || 1
                     };
                     
                     const registroVenda = await registrarVenda('CREDITO', dadosTEF);
@@ -2211,7 +2218,7 @@
                     }
                 } else {
                     console.error('Pagamento CRÉDITO não aprovado:', resultado);
-                    alert('❌ Erro no pagamento CRÉDITO. Tente novamente.');
+                    alert('❌ CREDITO NAO APROVADO\nMotivo: '+(resultado&&resultado.resultado&&resultado.resultado.tef?resultado.resultado.tef.mensagemResultado||'Sem motivo':'TEF offline'));
                 }
             } catch (error) {
                 console.error('Erro ao processar CRÉDITO:', error);
@@ -2236,14 +2243,14 @@
                 const resultado = await debito();
                 
                 // Verifica se o pagamento foi bem-sucedido
-                if (resultado && resultado.resultado && resultado.resultado.data) {
+                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
                     console.log('Pagamento DÉBITO aprovado!');
                     
                     // Extrai dados do TEF
                     const dadosTEF = {
-                        nsu: resultado.resultado.nsu || null,
-                        autorizacao: resultado.resultado.autorizacao || null,
-                        bandeira: resultado.resultado.bandeira || null,
+                        nsu: resultado.resultado.id || null,
+                        autorizacao: resultado.resultado.tef.codigoAutorizacao || null,
+                        bandeira: resultado.resultado.tef.codigoBandeira || null,
                         parcelas: 1
                     };
                     
@@ -2257,7 +2264,7 @@
                     }
                 } else {
                     console.error('Pagamento DÉBITO não aprovado:', resultado);
-                    alert('❌ Erro no pagamento DÉBITO. Tente novamente.');
+                    alert('❌ DEBITO NAO APROVADO\nMotivo: '+(resultado&&resultado.resultado&&resultado.resultado.tef?resultado.resultado.tef.mensagemResultado||'Sem motivo':'TEF offline'));
                 }
             } catch (error) {
                 console.error('Erro ao processar DÉBITO:', error);
@@ -3509,48 +3516,14 @@ Digite o valor REAL contado no caixa:`;
 
         // ==================== ABRIR GAVETA ====================
         async function abrirGaveta() {
-            console.log('Tentando abrir gaveta de dinheiro...');
             try {
-                // Tenta endpoint /admin/abrirgaveta (mais comum)
-                let resultado = await sendPost('/admin/abrirgaveta', null);
-                
-                if (!resultado) {
-                    // Tenta endpoint alternativo /abrirgaveta
-                    resultado = await sendPost('/abrirgaveta', null);
-                }
-                
-                if (!resultado) {
-                    // Tenta endpoint alternativo /gaveta
-                    resultado = await sendPost('/gaveta', null);
-                }
-                
-                if (resultado) {
-                    console.log('✅ Gaveta aberta com sucesso!');
-                    return { sucesso: true };
-                } else {
-                    throw new Error('Nenhum endpoint de gaveta respondeu');
-                }
-            } catch (error) {
-                console.error('❌ Erro ao abrir gaveta:', error.message);
-                
-                // Mostrar erro e perguntar se quer continuar
-                const continuar = confirm(
-                    '⚠️ ERRO AO ABRIR GAVETA\n\n' +
-                    'Não foi possível abrir a gaveta automaticamente.\n\n' +
-                    'Possíveis causas:\n' +
-                    '• TEF não está rodando\n' +
-                    '• Gaveta não está conectada\n' +
-                    '• Endpoint não configurado\n\n' +
-                    '❓ Deseja continuar a venda SEM abrir a gaveta?'
-                );
-                
-                if (continuar) {
-                    console.log('⚠️ Usuário optou por continuar sem abrir gaveta');
-                    return { sucesso: false, continuarVenda: true };
-                } else {
-                    console.log('❌ Usuário cancelou a venda');
-                    return { sucesso: false, continuarVenda: false };
-                }
+                const _r=await fetch('http://localhost:5000/abrir-gaveta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'abrir'}),signal:AbortSignal.timeout(5000)});
+                const _d=await _r.json();
+                if(_d.sucesso) return {sucesso:true};
+                throw new Error(_d.erro||'Gaveta nao abriu');
+            } catch(e){
+                const ok=confirm('⚠️ ERRO GAVETA\nContinuar SEM gaveta?');
+                return {sucesso:false,continuarVenda:ok};
             }
         }
 
