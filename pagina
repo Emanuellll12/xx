@@ -656,7 +656,7 @@
         <div class="bv-logo-ring">
             <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijIxmSiMuWAtAUoqsx0CBMnEHEqEWBVgcUJ1KrH1MscmYpfOSVrOEO4KiQVhfyGWix6V5RCzdx1-1_b2jMHJdL3R4knnp-F_KjO9eMfOIxKgqToM5yFYtAS5KHjDnG_7FQNfAlxGs9_0q-BFvFbFIjuNDO_9ii1nwRFlqWb4i4wy-t-kFoQ-bRGG2bm_nC/s16000/ChatGPT%20Image%2025%20de%20fev.%20de%202026,%2012_11_35.png" alt="Logo" onerror="this.parentElement.innerHTML='🍔'">
         </div>
-        <div class="bv-pill">Autoatendimento</div>
+        <div class="bv-pill">AutoatendimentoOO</div>
         <div class="bv-nome-loja">Casa do Salgado</div>
         <div class="bv-subtitulo">Faça seu pedido aqui</div>
         <div class="bv-divider"></div>
@@ -1125,7 +1125,7 @@ async function sendPost(rota, body) {
 
 function tefAprovado(venda) {
     if (!venda) return false;
-    const r = venda.resultado;
+    const r = (venda.dados || venda).resultado;
     if (!r || typeof r !== "object") return false;
     if (!r.tef) return false;
     return (r.mensagem || "") === "Sucesso";
@@ -1160,7 +1160,7 @@ async function iniciarPagamento(metodo) {
         if (tefAprovado(resultado)) {
             document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>';
             document.getElementById('btnCancelarPgto').disabled = true;
-            const tef = resultado.resultado?.tef || {};
+            const tef = (resultado.dados || resultado).resultado?.tef || {};
             const dadosTEF = { nsu: tef.nsuTerminal || tef.nsuTransacao || null, data_tef: tef.dataHoraTransacao || null, autorizacao: tef.codigoAutorizacao || null, bandeira: tef.nomeBandeira || tef.codigoBandeira || null, parcelas: tef.parcelas || 1 };
             const reg = await registrarVendaTotem(metodo, dadosTEF);
             document.getElementById('modalPagamento').classList.remove('active');
@@ -1171,7 +1171,7 @@ async function iniciarPagamento(metodo) {
                 alert('❌ Pagamento aprovado no TEF, mas erro ao salvar no sistema.\nNSU: ' + (dadosTEF.nsu || 'N/A'));
             }
         } else {
-            const msg = resultado?.resultado?.tef?.mensagemResultado || resultado?.resultado?.mensagem || resultado?.mensagem || 'Transação não aprovada';
+            const msg = (resultado?.dados || resultado)?.resultado?.mensagem || 'Transação não aprovada';
             document.getElementById('pgtoStatus').innerHTML = `<p>❌ ${msg}</p>`;
             document.getElementById('btnCancelarPgto').disabled = false;
         }
@@ -1281,7 +1281,7 @@ async function finalizarDividido() {
             else if (parcela.metodo === 'CREDITO') resultado = await tefCredito(valor);
             else if (parcela.metodo === 'DEBITO') resultado = await tefDebito(valor);
             if (!tefAprovado(resultado)) {
-                const msg = resultado?.resultado?.tef?.mensagemResultado || resultado?.resultado?.mensagem || resultado?.mensagem || 'Transação não aprovada';
+                const msg = (resultado?.dados || resultado)?.resultado?.mensagem || 'Transação não aprovada';
                 document.getElementById('pgtoStatus').innerHTML = `<p>❌ ${msg}</p>`;
                 await new Promise(r => setTimeout(r, 2500));
                 document.getElementById('modalPagamento').classList.remove('active');
