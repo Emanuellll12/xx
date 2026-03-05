@@ -636,6 +636,33 @@
             order: -1;
             border-left: 3px solid #f59e0b;
         }
+        .produto-item.estoque-baixo {
+            background: #af4b2c;
+            border-color: #f97316;
+            animation: pulseLaranja 2s ease-in-out infinite;
+        }
+        .produto-item.estoque-baixo:hover {
+            border-color: #ea580c;
+            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+        }
+        .produto-item.estoque-baixo .produto-nome { color: #ffffff; }
+        @keyframes pulseLaranja {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+            50%       { box-shadow: 0 0 0 4px rgba(249,115,22,0.2); }
+        }
+        .badge-estoque-baixo {
+            display: inline-block;
+            background: #f97316;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
         .categoria-produtos {
             display: flex;
             flex-direction: column;
@@ -1134,6 +1161,63 @@
         .popup-resultado-err { background: rgba(239,68,68,0.15);  color: #ef4444; font-size:18px; font-weight:700; padding:12px 24px; border-radius:12px; margin-top:8px; }
         .popup-btn-fechar { margin-top:20px; background:#6c059b; color:#fff; border:none; padding:12px 32px; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; }
         .popup-btn-fechar:hover { background:#4a0470; }
+        .popup-btn-manual { margin-top:10px; background:linear-gradient(135deg,#d97706,#f59e0b); color:#fff; border:none; padding:13px 32px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; width:100%; display:none; }
+        .popup-btn-manual:hover { background:linear-gradient(135deg,#b45309,#d97706); transform:translateY(-1px); }
+        .popup-btn-manual-aviso { font-size:11px; color:#f59e0b; margin-top:6px; opacity:0.85; display:none; }
+
+        /* MODAL DINHEIRO / TROCO */
+        .modal-dinheiro {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.78); z-index: 99998;
+            align-items: center; justify-content: center;
+        }
+        .modal-dinheiro.active { display: flex; }
+        .modal-dinheiro-box {
+            background: #1a1a2e; border: 2px solid #22c55e;
+            border-radius: 24px; padding: 36px 44px;
+            text-align: center; min-width: 360px; max-width: 460px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            animation: popupEntrar 0.25s ease;
+        }
+        .modal-dinheiro-icone { font-size: 48px; margin-bottom: 10px; }
+        .modal-dinheiro-titulo { font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+        .modal-dinheiro-total { font-size: 34px; font-weight: 900; color: #4ade80; margin-bottom: 24px; }
+        .modal-dinheiro-label { font-size: 12px; color: #4ade80; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .modal-dinheiro-input {
+            width: 100%; padding: 16px; font-size: 32px; font-weight: 800;
+            text-align: center; border-radius: 14px;
+            border: 2px solid #22c55e; background: #0f0f23; color: #fff;
+            outline: none; box-sizing: border-box; margin-bottom: 20px;
+        }
+        .modal-dinheiro-input:focus { border-color: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,0.2); }
+        .modal-dinheiro-troco-box {
+            background: #0f0f23; border-radius: 16px;
+            padding: 18px 24px; margin-bottom: 24px;
+            border: 2px solid transparent; transition: border-color 0.2s;
+        }
+        .modal-dinheiro-troco-box.tem-troco { border-color: #f59e0b; }
+        .modal-dinheiro-troco-box.sem-troco { border-color: #22c55e; }
+        .modal-dinheiro-troco-label { font-size: 13px; color: #888; margin-bottom: 6px; }
+        .modal-dinheiro-troco-valor { font-size: 38px; font-weight: 900; color: #888; transition: color 0.2s; }
+        .modal-dinheiro-troco-valor.tem-troco { color: #fbbf24; }
+        .modal-dinheiro-troco-valor.sem-troco { color: #4ade80; }
+        .modal-dinheiro-troco-msg { font-size: 13px; margin-top: 4px; color: #888; }
+        .modal-dinheiro-btns { display: flex; gap: 12px; }
+        .modal-dinheiro-btn-ok {
+            background: linear-gradient(135deg, #166534, #22c55e);
+            color: #fff; border: none; padding: 16px 0;
+            border-radius: 14px; font-size: 16px; font-weight: 800;
+            cursor: pointer; flex: 1; transition: opacity 0.2s;
+        }
+        .modal-dinheiro-btn-ok:disabled { opacity: 0.35; cursor: not-allowed; }
+        .modal-dinheiro-btn-ok:not(:disabled):hover { opacity: 0.9; }
+        .modal-dinheiro-btn-cancel {
+            background: #2d2d44; color: #aaa; border: none;
+            padding: 16px 24px; border-radius: 14px;
+            font-size: 16px; cursor: pointer;
+        }
+        .modal-dinheiro-btn-cancel:hover { background: #3d3d54; }
 
         /* MODAL PAGAMENTO DIVIDIDO */
         .modal-dividido {
@@ -1765,9 +1849,10 @@
                             ${ordenados.map(produto => {
                                 const isFav = favs.includes(produto.codigo);
                                 const lojaId = lojaAtual ? lojaAtual.id : '';
+                                const estoqueBaixo = produto.estoque <= 1;
                                 return `
-                                <div class="produto-item${isFav ? ' favorito' : ''}">
-                                    <div class="produto-nome">${produto.nome}</div>
+                                <div class="produto-item${isFav ? ' favorito' : ''}${estoqueBaixo ? ' estoque-baixo' : ''}">
+                                    <div class="produto-nome">${produto.nome}${estoqueBaixo ? '<span class="badge-estoque-baixo">⚠️ Estoque baixo</span>' : ''}</div>
                                     <div class="produto-codigo">Cód: ${produto.codigo} | Estoque: ${produto.estoque}</div>
                                     <div class="produto-footer">
                                         <div class="produto-preco">R$ ${parseFloat(produto.preco_venda).toFixed(2)}</div>
@@ -2573,7 +2658,10 @@
         }
 
         // ==================== POPUP STATUS PAGAMENTO ====================
+        let _pagamentoManualTipo = null; // 'CREDITO' ou 'DEBITO'
+
         function abrirPopupPagamento(tipo, valor) {
+            _pagamentoManualTipo = tipo === 'CRÉDITO' ? 'CREDITO' : 'DEBITO';
             const el = (id) => document.getElementById(id);
             el('popupIcone').textContent  = tipo === 'CRÉDITO' ? '💳' : '💳';
             el('popupTitulo').textContent = `Processando ${tipo}...`;
@@ -2582,6 +2670,8 @@
             el('popupSpinner').style.display   = 'block';
             el('popupResultado').style.display = 'none';
             el('popupBtnFechar').style.display = 'none';
+            el('popupBtnManual').style.display = 'none';
+            el('popupBtnManualAviso').style.display = 'none';
             el('popupResultado').className     = '';
             el('popupResultado').textContent   = '';
             document.getElementById('popupPagamento').classList.add('active');
@@ -2597,6 +2687,8 @@
             el('popupTitulo').textContent      = aprovado ? 'Pagamento Aprovado!' : 'Pagamento Negado';
             if (!aprovado) {
                 el('popupBtnFechar').style.display = 'block';
+                el('popupBtnManual').style.display = 'block';
+                el('popupBtnManualAviso').style.display = 'block';
             }
             // Se aprovado, fecha automaticamente após 2s
             if (aprovado) {
@@ -2606,6 +2698,34 @@
 
         function fecharPopupPagamento() {
             document.getElementById('popupPagamento').classList.remove('active');
+            _pagamentoManualTipo = null;
+        }
+
+        // ==================== FINALIZAR MANUALMENTE (SEM MAQUININHA) ====================
+        async function finalizarManualmente() {
+            if (!_pagamentoManualTipo) return;
+
+            const tipo = _pagamentoManualTipo;
+            const confirmado = confirm(
+                `⚠️ FINALIZAR MANUALMENTE — ${tipo}\n\n` +
+                `A venda será registrada no sistema SEM código de autorização da maquininha.\n\n` +
+                `Use apenas quando:\n` +
+                `• A maquininha aprovou o pagamento fisicamente\n` +
+                `• Mas houve erro de comunicação com o sistema\n\n` +
+                `Deseja continuar?`
+            );
+
+            if (!confirmado) return;
+
+            const registroVenda = await registrarVenda(tipo, { manual: true, autorizacao: 'MANUAL', nsu: null, bandeira: null, parcelas: 1 });
+
+            if (registroVenda && registroVenda.sucesso) {
+                fecharPopupPagamento();
+                limparCarrinho(true);
+                showVendaSucesso(`${tipo} MANUAL • Cód. ${registroVenda.codigo_venda}`);
+            } else {
+                alert('❌ Erro ao registrar venda manualmente:\n' + (registroVenda?.erro || 'Erro desconhecido'));
+            }
         }
 
         // ==================== FINALIZAR VENDA PIX ====================
@@ -2715,73 +2835,107 @@
 
         // ==================== FINALIZAR VENDA DINHEIRO ====================
         async function finalizarVendaDinheiro() {
-            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
             if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
                 alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
                 return;
             }
-
             if (carrinho.length === 0) {
                 alert('Carrinho vazio! Adicione produtos primeiro.');
                 return;
             }
+            abrirModalDinheiro();
+        }
 
-            const valorTotal = parseFloat(getValorTotal());
-            
-            console.log('Iniciando pagamento em DINHEIRO...');
-            
-            // Pedir valor recebido
-            const valorRecebidoStr = prompt(`💵 PAGAMENTO EM DINHEIRO\n\nValor da compra: R$ ${valorTotal.toFixed(2)}\n\nDigite o valor recebido:`);
-            
-            if (valorRecebidoStr === null) return; // Cancelou
-            
-            const valorRecebido = parseFloat(valorRecebidoStr.replace(',', '.'));
-            
-            if (isNaN(valorRecebido) || valorRecebido < valorTotal) {
-                alert('❌ Valor inválido ou insuficiente!');
+        // ==================== MODAL DINHEIRO / TROCO ====================
+        let _dinheiroValorTotal = 0;
+
+        function abrirModalDinheiro() {
+            _dinheiroValorTotal = parseFloat(getValorTotal());
+            document.getElementById('mdTotal').textContent = 'R$ ' + _dinheiroValorTotal.toFixed(2).replace('.', ',');
+            document.getElementById('mdInput').value = '';
+            _atualizarTroco();
+            document.getElementById('modalDinheiro').classList.add('active');
+            setTimeout(() => document.getElementById('mdInput').focus(), 80);
+        }
+
+        function fecharModalDinheiro() {
+            document.getElementById('modalDinheiro').classList.remove('active');
+        }
+
+        function _atualizarTroco() {
+            const inputVal = document.getElementById('mdInput').value.replace(',', '.');
+            const recebido = parseFloat(inputVal);
+            const trocoBox = document.getElementById('mdTrocoBox');
+            const trocoValor = document.getElementById('mdTrocoValor');
+            const trocoMsg = document.getElementById('mdTrocoMsg');
+            const btnOk = document.getElementById('mdBtnOk');
+
+            if (isNaN(recebido) || recebido <= 0) {
+                trocoBox.className = 'modal-dinheiro-troco-box';
+                trocoValor.className = 'modal-dinheiro-troco-valor';
+                trocoValor.textContent = '—';
+                trocoMsg.textContent = '';
+                btnOk.disabled = true;
                 return;
             }
-            
-            const troco = valorRecebido - valorTotal;
-            
+
+            const troco = recebido - _dinheiroValorTotal;
+
+            if (troco < 0) {
+                trocoBox.className = 'modal-dinheiro-troco-box';
+                trocoValor.className = 'modal-dinheiro-troco-valor';
+                trocoValor.textContent = '— insuficiente';
+                trocoMsg.textContent = `Falta R$ ${Math.abs(troco).toFixed(2).replace('.', ',')}`;
+                btnOk.disabled = true;
+            } else if (troco === 0) {
+                trocoBox.className = 'modal-dinheiro-troco-box sem-troco';
+                trocoValor.className = 'modal-dinheiro-troco-valor sem-troco';
+                trocoValor.textContent = 'Sem troco ✅';
+                trocoMsg.textContent = 'Valor exato!';
+                btnOk.disabled = false;
+            } else {
+                trocoBox.className = 'modal-dinheiro-troco-box tem-troco';
+                trocoValor.className = 'modal-dinheiro-troco-valor tem-troco';
+                trocoValor.textContent = 'R$ ' + troco.toFixed(2).replace('.', ',');
+                trocoMsg.textContent = `Recebido: R$ ${recebido.toFixed(2).replace('.', ',')}`;
+                btnOk.disabled = false;
+            }
+        }
+
+        function mdKeyDown(e) {
+            if (e.key === 'Enter') {
+                const btn = document.getElementById('mdBtnOk');
+                if (!btn.disabled) confirmarDinheiro();
+            }
+            if (e.key === 'Escape') fecharModalDinheiro();
+        }
+
+        async function confirmarDinheiro() {
+            const inputVal = document.getElementById('mdInput').value.replace(',', '.');
+            const valorRecebido = parseFloat(inputVal);
+            if (isNaN(valorRecebido) || valorRecebido < _dinheiroValorTotal) return;
+
+            const troco = valorRecebido - _dinheiroValorTotal;
+            fecharModalDinheiro();
+
             try {
-                // 1. TENTAR ABRIR GAVETA DE DINHEIRO
-                console.log('Abrindo gaveta de dinheiro...');
                 const resultadoGaveta = await abrirGaveta();
-                
-                // Verificar se gaveta abriu ou se usuário quer continuar sem ela
-                if (resultadoGaveta && !resultadoGaveta.sucesso && !resultadoGaveta.continuarVenda) {
-                    console.log('❌ Venda cancelada pelo usuário (gaveta não abriu)');
-                    return; // Usuário cancelou
-                }
-                
-                if (resultadoGaveta && !resultadoGaveta.sucesso && resultadoGaveta.continuarVenda) {
-                    console.log('⚠️ Continuando venda sem abrir gaveta (escolha do usuário)');
-                }
-                
-                // 2. REGISTRAR VENDA
-                const dadosPagamento = {
-                    valor_recebido: valorRecebido,
-                    troco: troco
-                };
-                
+                if (resultadoGaveta && !resultadoGaveta.sucesso && !resultadoGaveta.continuarVenda) return;
+
+                const dadosPagamento = { valor_recebido: valorRecebido, troco: troco };
                 const resultado = await registrarVenda('DINHEIRO', dadosPagamento);
-                
+
                 if (!resultado || !resultado.sucesso) {
                     alert('❌ Erro ao registrar venda no sistema.');
                     return;
                 }
-                
-                // 3. LIMPAR CARRINHO AUTOMATICAMENTE (SEM CONFIRMAÇÃO)
+
                 limparCarrinho(true);
-                
-                // 4. MOSTRAR TROCO
                 if (troco > 0) {
                     showVendaSucesso(`DINHEIRO • Troco: R$ ${troco.toFixed(2).replace('.', ',')}`);
                 } else {
                     showVendaSucesso('DINHEIRO • Sem troco');
                 }
-                
             } catch (error) {
                 console.error('Erro ao processar DINHEIRO:', error);
                 alert('❌ Erro ao processar pagamento em dinheiro:\n\n' + error.message);
@@ -3270,12 +3424,137 @@
             }
         }
 
+        // ==================== HELPERS DIVIDIDO — PROMISE-BASED ====================
+
+        // Aguarda o popup TEF do dividido ser resolvido (aprovado ou manual)
+        // Retorna: { aprovado: true, autorizacao, nsu, bandeira, parcelas } | { manual: true } | { cancelado: true }
+        function _aguardarPopupTEFDividido(tipo, valorParcela) {
+            return new Promise((resolve) => {
+                // Configura o popup
+                _pagamentoManualTipo = tipo; // reutiliza a variável do popup normal
+                const el = (id) => document.getElementById(id);
+                el('popupIcone').textContent  = '💳';
+                el('popupTitulo').textContent = `Processando ${tipo === 'CREDITO' ? 'Crédito' : 'Débito'}... (${_dividido_parcelaAtual}/${_dividido_totalParcelas})`;
+                el('popupValor').textContent  = `R$ ${valorParcela.toFixed(2).replace('.', ',')}`;
+                el('popupMsg').textContent    = 'Passe o cartão na maquininha PagBank';
+                el('popupSpinner').style.display      = 'block';
+                el('popupResultado').style.display    = 'none';
+                el('popupBtnFechar').style.display    = 'none';
+                el('popupBtnManual').style.display    = 'none';
+                el('popupBtnManualAviso').style.display = 'none';
+                el('popupResultado').className        = '';
+                el('popupResultado').textContent      = '';
+                document.getElementById('popupPagamento').classList.add('active');
+
+                // Sobrescreve os callbacks dos botões para este contexto
+                el('popupBtnFechar').onclick = () => {
+                    document.getElementById('popupPagamento').classList.remove('active');
+                    resolve({ cancelado: true });
+                };
+                el('popupBtnManual').onclick = () => {
+                    document.getElementById('popupPagamento').classList.remove('active');
+                    resolve({ manual: true });
+                };
+
+                // Dispara a chamada TEF
+                const fnTEF = tipo === 'CREDITO' ? credito : debito;
+                fnTEF().then(resultado => {
+                    el('popupSpinner').style.display = 'none';
+                    el('popupMsg').textContent = '';
+
+                    const tef = resultado?.resultado?.tef;
+                    if (tef && tef.codigoAutorizacao) {
+                        // APROVADO
+                        el('popupResultado').style.display = 'block';
+                        el('popupResultado').className = 'popup-resultado-ok';
+                        el('popupResultado').textContent = `✅ ${tipo === 'CREDITO' ? 'Crédito' : 'Débito'} aprovado!`;
+                        el('popupTitulo').textContent = 'Pagamento Aprovado!';
+                        setTimeout(() => {
+                            document.getElementById('popupPagamento').classList.remove('active');
+                            resolve({
+                                aprovado: true,
+                                autorizacao: tef.codigoAutorizacao,
+                                nsu:      tef.nsu          || null,
+                                bandeira: tef.codigoBandeira || null,
+                                parcelas: tef.numeroParcelas || 1
+                            });
+                        }, 1200);
+                    } else {
+                        // NEGADO — mostra botões fechar + finalizar manualmente
+                        const motivo = tef?.mensagemResultado || 'Sem resposta da maquininha';
+                        el('popupResultado').style.display = 'block';
+                        el('popupResultado').className = 'popup-resultado-err';
+                        el('popupResultado').textContent = `❌ ${motivo}`;
+                        el('popupTitulo').textContent = 'Pagamento Negado';
+                        el('popupBtnFechar').style.display = 'block';
+                        el('popupBtnManual').style.display = 'block';
+                        el('popupBtnManualAviso').style.display = 'block';
+                    }
+                }).catch(err => {
+                    console.error('Erro TEF dividido:', err);
+                    el('popupSpinner').style.display = 'none';
+                    el('popupResultado').style.display = 'block';
+                    el('popupResultado').className = 'popup-resultado-err';
+                    el('popupResultado').textContent = '❌ Erro de comunicação com a maquininha';
+                    el('popupTitulo').textContent = 'Erro de Comunicação';
+                    el('popupBtnFechar').style.display = 'block';
+                    el('popupBtnManual').style.display = 'block';
+                    el('popupBtnManualAviso').style.display = 'block';
+                });
+            });
+        }
+
+        // Aguarda o modal de dinheiro do dividido — seta o valor fixo da parcela como mínimo
+        function _aguardarModalDinheiroDividido(valorParcela) {
+            return new Promise((resolve) => {
+                _dinheiroValorTotal = valorParcela; // usa a mesma variável do modal normal
+                document.getElementById('mdTotal').textContent = 'R$ ' + valorParcela.toFixed(2).replace('.', ',');
+                document.getElementById('mdInput').value = '';
+                _atualizarTroco();
+                document.getElementById('modalDinheiro').classList.add('active');
+                setTimeout(() => document.getElementById('mdInput').focus(), 80);
+
+                // Sobrescreve confirmar e cancelar para este contexto
+                document.getElementById('mdBtnOk').onclick = async () => {
+                    const inputVal = document.getElementById('mdInput').value.replace(',', '.');
+                    const valorRecebido = parseFloat(inputVal);
+                    if (isNaN(valorRecebido) || valorRecebido < valorParcela) return;
+                    const troco = valorRecebido - valorParcela;
+                    document.getElementById('modalDinheiro').classList.remove('active');
+                    // Abre gaveta antes de resolver
+                    const resGaveta = await abrirGaveta();
+                    if (resGaveta && !resGaveta.sucesso && !resGaveta.continuarVenda) {
+                        resolve({ cancelado: true });
+                        return;
+                    }
+                    resolve({ aprovado: true, valorRecebido, troco });
+                };
+                document.getElementById('mdInput').onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        const btn = document.getElementById('mdBtnOk');
+                        if (!btn.disabled) btn.click();
+                    }
+                    if (e.key === 'Escape') {
+                        document.getElementById('modalDinheiro').classList.remove('active');
+                        resolve({ cancelado: true });
+                    }
+                };
+                // botão cancelar
+                document.querySelector('.modal-dinheiro-btn-cancel').onclick = () => {
+                    document.getElementById('modalDinheiro').classList.remove('active');
+                    resolve({ cancelado: true });
+                };
+            });
+        }
+
+        let _dividido_parcelaAtual = 0;
+        let _dividido_totalParcelas = 0;
+
         async function finalizarPagamentoDividido() {
             const valorTotal = parseFloat(getValorTotal());
             const valorPago = parcelasDivididas.reduce((sum, p) => sum + (parseFloat(p.valor) || 0), 0);
             const diferenca = Math.abs(valorTotal - valorPago);
 
-            // Validar se valor bate (tolerância de 1 centavo)
             if (diferenca > 0.01) {
                 if (valorPago < valorTotal) {
                     alert(`❌ VALOR INSUFICIENTE!\n\nTotal: R$ ${valorTotal.toFixed(2)}\nPago: R$ ${valorPago.toFixed(2)}\nFalta: R$ ${(valorTotal - valorPago).toFixed(2)}`);
@@ -3284,405 +3563,94 @@
                 }
                 return;
             }
-
-            // Validar se tem pelo menos uma forma de pagamento
             if (parcelasDivididas.length === 0) {
                 alert('❌ Adicione pelo menos uma forma de pagamento!');
                 return;
             }
 
+            // Fecha o modal dividido para dar espaço aos popups
+            document.getElementById('modalDividido').classList.remove('active');
+
+            _dividido_totalParcelas = parcelasDivididas.length;
+            const pagamentosProcessados = [];
+
+            for (let i = 0; i < parcelasDivididas.length; i++) {
+                const parcela = parcelasDivididas[i];
+                _dividido_parcelaAtual = i + 1;
+                const valorParcela = parseFloat(parcela.valor);
+                let resultado = null;
+
+                console.log(`\n--- Parcela ${_dividido_parcelaAtual}/${_dividido_totalParcelas}: ${parcela.metodo} R$ ${valorParcela.toFixed(2)} ---`);
+
+                if (parcela.metodo === 'PIX') {
+                    // PIX: registra direto sem maquininha (igual ao fluxo normal)
+                    resultado = { metodo: 'PIX', valor: valorParcela, sucesso: true };
+
+                } else if (parcela.metodo === 'DEBITO' || parcela.metodo === 'CREDITO') {
+                    // CRED/DEB: usa popup TEF com botão finalizar manualmente
+                    const res = await _aguardarPopupTEFDividido(parcela.metodo, valorParcela);
+
+                    if (res.cancelado) {
+                        alert('❌ Pagamento cancelado.\n\nOs itens permanecem no carrinho.');
+                        // Reabre modal dividido
+                        document.getElementById('modalDividido').classList.add('active');
+                        return;
+                    }
+                    resultado = {
+                        metodo: parcela.metodo,
+                        valor: valorParcela,
+                        autorizacao: res.manual ? 'MANUAL' : res.autorizacao,
+                        nsu:      res.manual ? null : res.nsu,
+                        bandeira: res.manual ? null : res.bandeira,
+                        parcelas: res.manual ? 1    : res.parcelas,
+                        manual:   !!res.manual,
+                        sucesso: true
+                    };
+
+                } else if (parcela.metodo === 'DINHEIRO') {
+                    // DINHEIRO: usa modal com troco em tempo real + abre gaveta
+                    const res = await _aguardarModalDinheiroDividido(valorParcela);
+
+                    if (res.cancelado) {
+                        alert('❌ Pagamento cancelado.\n\nOs itens permanecem no carrinho.');
+                        document.getElementById('modalDividido').classList.add('active');
+                        return;
+                    }
+                    resultado = {
+                        metodo: 'DINHEIRO',
+                        valor: valorParcela,
+                        valor_recebido: res.valorRecebido,
+                        troco: res.troco,
+                        sucesso: true
+                    };
+                }
+
+                if (resultado && resultado.sucesso) {
+                    pagamentosProcessados.push(resultado);
+                    console.log(`✅ Parcela ${_dividido_parcelaAtual} OK`);
+                }
+            }
+
+            // Todas as parcelas OK — registra a venda
             try {
-                console.log('=== INICIANDO PAGAMENTO DIVIDIDO ===');
-                console.log('Total de formas:', parcelasDivididas.length);
-
-                const pagamentosProcessados = [];
-                let todosSucesso = true;
-
-                // PROCESSAR CADA PAGAMENTO SEQUENCIALMENTE
-                for (let i = 0; i < parcelasDivididas.length; i++) {
-                    const parcela = parcelasDivididas[i];
-                    console.log(`\n--- Processando Pagamento ${i + 1}/${parcelasDivididas.length} ---`);
-                    console.log(`Método: ${parcela.metodo}`);
-                    console.log(`Valor: R$ ${parcela.valor}`);
-
-                    let resultado = null;
-
-                    if (parcela.metodo === 'DINHEIRO') {
-                        // 1. DINHEIRO - Abrir gaveta e pedir valor
-                        console.log('💵 Processando DINHEIRO...');
-                        
-                        const valorRecebidoStr = prompt(
-                            `💵 PAGAMENTO EM DINHEIRO\n\n` +
-                            `Valor a pagar em dinheiro: R$ ${parseFloat(parcela.valor).toFixed(2)}\n\n` +
-                            `Digite o valor recebido:`
-                        );
-
-                        if (valorRecebidoStr === null) {
-                            alert('❌ Pagamento cancelado pelo usuário');
-                            todosSucesso = false;
-                            break;
-                        }
-
-                        const valorRecebido = parseFloat(valorRecebidoStr.replace(',', '.'));
-
-                        if (isNaN(valorRecebido) || valorRecebido < parseFloat(parcela.valor)) {
-                            alert('❌ Valor insuficiente para pagamento em dinheiro!');
-                            todosSucesso = false;
-                            break;
-                        }
-
-                        // Abrir gaveta
-                        const resultadoGaveta = await abrirGaveta();
-                        
-                        if (resultadoGaveta && !resultadoGaveta.sucesso && !resultadoGaveta.continuarVenda) {
-                            console.log('❌ Usuário cancelou por erro na gaveta');
-                            todosSucesso = false;
-                            break;
-                        }
-
-                        const troco = valorRecebido - parseFloat(parcela.valor);
-                        resultado = {
-                            metodo: 'DINHEIRO',
-                            valor: parseFloat(parcela.valor),
-                            valor_recebido: valorRecebido,
-                            troco: troco,
-                            sucesso: true
-                        };
-
-                        if (troco > 0) {
-                            alert(`💵 Dinheiro registrado!\n\nRecebido: R$ ${valorRecebido.toFixed(2)}\n💰 Troco: R$ ${troco.toFixed(2)}`);
-                        } else {
-                            alert(`💵 Dinheiro registrado!\n\nRecebido: R$ ${valorRecebido.toFixed(2)}\n✅ Sem troco`);
-                        }
-
-                    } else if (parcela.metodo === 'PIX') {
-                        // 2. PIX - Chamar TEF
-                        console.log('📱 Processando PIX via TEF...');
-                        alert(`📱 Processando PIX de R$ ${parseFloat(parcela.valor).toFixed(2)}\n\nAguarde a transação no TEF...`);
-
-                        let pixAprovado = false;
-                        let tentativas = 0;
-                        const maxTentativas = 3;
-
-                        while (!pixAprovado && tentativas < maxTentativas) {
-                            tentativas++;
-                            console.log(`Tentativa ${tentativas} de PIX...`);
-
-                            try {
-                                const resultadoPix = await pix();
-
-                                if (resultadoPix && resultadoPix.resultado && resultadoPix.resultado.data) {
-                                    resultado = {
-                                        metodo: 'PIX',
-                                        valor: parseFloat(parcela.valor),
-                                        nsu: resultadoPix.resultado.nsu || null,
-                                        autorizacao: resultadoPix.resultado.autorizacao || null,
-                                        sucesso: true
-                                    };
-                                    pixAprovado = true;
-                                    alert(`✅ PIX aprovado!\n\nValor: R$ ${parseFloat(parcela.valor).toFixed(2)}`);
-                                } else {
-                                    // PIX falhou
-                                    console.log('❌ PIX não aprovado');
-                                    
-                                    const opcao = confirm(
-                                        `❌ PIX NÃO APROVADO\n\n` +
-                                        `Valor: R$ ${parseFloat(parcela.valor).toFixed(2)}\n\n` +
-                                        `Possíveis causas:\n` +
-                                        `• Cliente cancelou\n` +
-                                        `• Sem saldo\n` +
-                                        `• Erro na conexão\n\n` +
-                                        `📱 Deseja TENTAR NOVAMENTE?\n\n` +
-                                        `[OK] = Tentar novamente\n` +
-                                        `[Cancelar] = Outras opções`
-                                    );
-
-                                    if (opcao) {
-                                        // Tentar novamente
-                                        continue;
-                                    } else {
-                                        // Mostrar opções
-                                        const escolha = prompt(
-                                            `⚠️ O QUE DESEJA FAZER?\n\n` +
-                                            `1 - Finalizar manualmente (cliente já pagou fora do sistema)\n` +
-                                            `2 - Trocar forma de pagamento\n` +
-                                            `3 - Cancelar toda a venda\n\n` +
-                                            `Digite o número da opção:`
-                                        );
-
-                                        if (escolha === '1') {
-                                            // Finalizar manualmente
-                                            resultado = {
-                                                metodo: 'PIX',
-                                                valor: parseFloat(parcela.valor),
-                                                nsu: 'MANUAL',
-                                                autorizacao: 'MANUAL',
-                                                manual: true,
-                                                sucesso: true
-                                            };
-                                            pixAprovado = true;
-                                            alert(`⚠️ PIX marcado como MANUAL\n\nValor: R$ ${parseFloat(parcela.valor).toFixed(2)}\n\n✅ Venda será finalizada`);
-                                        } else if (escolha === '2') {
-                                            // Trocar forma de pagamento
-                                            alert('🔄 Retorne ao modal e altere a forma de pagamento para esta parcela.');
-                                            todosSucesso = false;
-                                            break;
-                                        } else {
-                                            // Cancelar venda
-                                            alert('❌ Venda cancelada pelo operador');
-                                            todosSucesso = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.error('Erro no PIX:', error);
-                                
-                                const opcao = confirm(
-                                    `❌ ERRO NO PIX\n\n` +
-                                    `${error.message}\n\n` +
-                                    `Deseja TENTAR NOVAMENTE?`
-                                );
-
-                                if (!opcao) {
-                                    todosSucesso = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!pixAprovado && tentativas >= maxTentativas) {
-                            alert('❌ PIX falhou após 3 tentativas');
-                            todosSucesso = false;
-                            break;
-                        }
-
-                    } else if (parcela.metodo === 'DEBITO') {
-                        // 3. DÉBITO - Chamar TEF
-                        console.log('💳 Processando DÉBITO via TEF...');
-                        alert(`💳 Processando DÉBITO de R$ ${parseFloat(parcela.valor).toFixed(2)}\n\nAguarde a transação no TEF...`);
-
-                        let debitoAprovado = false;
-                        let tentativas = 0;
-                        const maxTentativas = 3;
-
-                        while (!debitoAprovado && tentativas < maxTentativas) {
-                            tentativas++;
-                            console.log(`Tentativa ${tentativas} de DÉBITO...`);
-
-                            try {
-                                const resultadoDebito = await debito();
-
-                                if (resultadoDebito && resultadoDebito.resultado && resultadoDebito.resultado.data) {
-                                    resultado = {
-                                        metodo: 'DEBITO',
-                                        valor: parseFloat(parcela.valor),
-                                        nsu: resultadoDebito.resultado.nsu || null,
-                                        autorizacao: resultadoDebito.resultado.autorizacao || null,
-                                        sucesso: true
-                                    };
-                                    debitoAprovado = true;
-                                    alert(`✅ DÉBITO aprovado!\n\nValor: R$ ${parseFloat(parcela.valor).toFixed(2)}`);
-                                } else {
-                                    // DÉBITO falhou
-                                    const opcao = confirm(
-                                        `❌ DÉBITO NÃO APROVADO\n\n` +
-                                        `Valor: R$ ${parseFloat(parcela.valor).toFixed(2)}\n\n` +
-                                        `📱 Deseja TENTAR NOVAMENTE?\n\n` +
-                                        `[OK] = Tentar novamente\n` +
-                                        `[Cancelar] = Outras opções`
-                                    );
-
-                                    if (opcao) {
-                                        continue;
-                                    } else {
-                                        const escolha = prompt(
-                                            `⚠️ O QUE DESEJA FAZER?\n\n` +
-                                            `1 - Finalizar manualmente\n` +
-                                            `2 - Trocar forma de pagamento\n` +
-                                            `3 - Cancelar toda a venda\n\n` +
-                                            `Digite o número:`
-                                        );
-
-                                        if (escolha === '1') {
-                                            resultado = {
-                                                metodo: 'DEBITO',
-                                                valor: parseFloat(parcela.valor),
-                                                nsu: 'MANUAL',
-                                                autorizacao: 'MANUAL',
-                                                manual: true,
-                                                sucesso: true
-                                            };
-                                            debitoAprovado = true;
-                                            alert(`⚠️ DÉBITO marcado como MANUAL\n\n✅ Venda será finalizada`);
-                                        } else if (escolha === '2') {
-                                            alert('🔄 Retorne ao modal e altere a forma de pagamento.');
-                                            todosSucesso = false;
-                                            break;
-                                        } else {
-                                            alert('❌ Venda cancelada');
-                                            todosSucesso = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.error('Erro no DÉBITO:', error);
-                                
-                                const opcao = confirm(`❌ ERRO NO DÉBITO\n\n${error.message}\n\nTentar novamente?`);
-                                if (!opcao) {
-                                    todosSucesso = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!debitoAprovado && tentativas >= maxTentativas) {
-                            alert('❌ DÉBITO falhou após 3 tentativas');
-                            todosSucesso = false;
-                            break;
-                        }
-
-                    } else if (parcela.metodo === 'CREDITO') {
-                        // 4. CRÉDITO - Chamar TEF
-                        console.log('💳 Processando CRÉDITO via TEF...');
-                        alert(`💳 Processando CRÉDITO de R$ ${parseFloat(parcela.valor).toFixed(2)}\n\nAguarde a transação no TEF...`);
-
-                        let creditoAprovado = false;
-                        let tentativas = 0;
-                        const maxTentativas = 3;
-
-                        while (!creditoAprovado && tentativas < maxTentativas) {
-                            tentativas++;
-                            console.log(`Tentativa ${tentativas} de CRÉDITO...`);
-
-                            try {
-                                const resultadoCredito = await credito();
-
-                                if (resultadoCredito && resultadoCredito.resultado && resultadoCredito.resultado.data) {
-                                    resultado = {
-                                        metodo: 'CREDITO',
-                                        valor: parseFloat(parcela.valor),
-                                        nsu: resultadoCredito.resultado.nsu || null,
-                                        autorizacao: resultadoCredito.resultado.autorizacao || null,
-                                        bandeira: resultadoCredito.resultado.bandeira || null,
-                                        parcelas: resultadoCredito.resultado.parcelas || 1,
-                                        sucesso: true
-                                    };
-                                    creditoAprovado = true;
-                                    alert(`✅ CRÉDITO aprovado!\n\nValor: R$ ${parseFloat(parcela.valor).toFixed(2)}`);
-                                } else {
-                                    // CRÉDITO falhou
-                                    const opcao = confirm(
-                                        `❌ CRÉDITO NÃO APROVADO\n\n` +
-                                        `Valor: R$ ${parseFloat(parcela.valor).toFixed(2)}\n\n` +
-                                        `📱 Deseja TENTAR NOVAMENTE?`
-                                    );
-
-                                    if (opcao) {
-                                        continue;
-                                    } else {
-                                        const escolha = prompt(
-                                            `⚠️ O QUE DESEJA FAZER?\n\n` +
-                                            `1 - Finalizar manualmente\n` +
-                                            `2 - Trocar forma de pagamento\n` +
-                                            `3 - Cancelar toda a venda\n\n` +
-                                            `Digite o número:`
-                                        );
-
-                                        if (escolha === '1') {
-                                            resultado = {
-                                                metodo: 'CREDITO',
-                                                valor: parseFloat(parcela.valor),
-                                                nsu: 'MANUAL',
-                                                autorizacao: 'MANUAL',
-                                                manual: true,
-                                                sucesso: true
-                                            };
-                                            creditoAprovado = true;
-                                            alert(`⚠️ CRÉDITO marcado como MANUAL\n\n✅ Venda será finalizada`);
-                                        } else if (escolha === '2') {
-                                            alert('🔄 Retorne ao modal e altere a forma de pagamento.');
-                                            todosSucesso = false;
-                                            break;
-                                        } else {
-                                            alert('❌ Venda cancelada');
-                                            todosSucesso = false;
-                                            break;
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.error('Erro no CRÉDITO:', error);
-                                
-                                const opcao = confirm(`❌ ERRO NO CRÉDITO\n\n${error.message}\n\nTentar novamente?`);
-                                if (!opcao) {
-                                    todosSucesso = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (!creditoAprovado && tentativas >= maxTentativas) {
-                            alert('❌ CRÉDITO falhou após 3 tentativas');
-                            todosSucesso = false;
-                            break;
-                        }
-                    }
-
-                    if (resultado && resultado.sucesso) {
-                        pagamentosProcessados.push(resultado);
-                        console.log(`✅ Pagamento ${i + 1} processado com sucesso`);
-                    }
-                }
-
-                // Se algum pagamento falhou, cancelar tudo
-                if (!todosSucesso) {
-                    console.log('❌ Pagamento dividido cancelado - alguma transação falhou');
-                    alert('❌ Pagamento cancelado!\n\nAlguma transação falhou ou foi cancelada.\n\nOs itens permanecem no carrinho.');
-                    return;
-                }
-
-                console.log('=== TODOS OS PAGAMENTOS APROVADOS ===');
-                console.log('Total de pagamentos:', pagamentosProcessados.length);
-
-                // AGORA SIM - REGISTRAR VENDA
-                const observacao = pagamentosProcessados.map(p => 
-                    `${p.metodo}: R$ ${parseFloat(p.valor).toFixed(2)}${p.nsu ? ' (NSU: ' + p.nsu + ')' : ''}`
+                const observacao = pagamentosProcessados.map(p =>
+                    `${p.metodo}: R$ ${parseFloat(p.valor).toFixed(2)}${p.manual ? ' (MANUAL)' : p.autorizacao ? ' (Auth: ' + p.autorizacao + ')' : ''}`
                 ).join(' | ');
 
-                const dadosPagamento = {
+                const resultadoVenda = await registrarVenda('DIVIDIDO', {
                     pagamento_dividido: true,
                     formas_pagamento: pagamentosProcessados,
                     observacao_pagamento: observacao
-                };
-
-                console.log('Registrando venda com observação:', observacao);
-
-                const resultadoVenda = await registrarVenda('DIVIDIDO', dadosPagamento);
+                });
 
                 if (!resultadoVenda || !resultadoVenda.sucesso) {
                     alert('❌ Erro ao registrar venda no sistema!\n\nATENÇÃO: Os pagamentos foram processados mas a venda não foi registrada.');
                     return;
                 }
 
-                console.log('✅ Venda registrada com sucesso:', resultadoVenda.codigo_venda);
-
-                // Limpar carrinho
                 limparCarrinho(true);
-
-                // Fechar modal
                 fecharPagamentoDividido();
-
-                // Mostrar sucesso detalhado
-                let mensagemSucesso = '✅ VENDA REALIZADA COM SUCESSO!\n\n';
-                mensagemSucesso += '💰 Formas de Pagamento:\n';
-                pagamentosProcessados.forEach(p => {
-                    mensagemSucesso += `• ${p.metodo}: R$ ${parseFloat(p.valor).toFixed(2)}\n`;
-                });
-                mensagemSucesso += `\n💵 Total: R$ ${valorTotal.toFixed(2)}`;
-
-                alert(mensagemSucesso);
+                showVendaSucesso(`DIVIDIDO • Cód. ${resultadoVenda.codigo_venda}`);
 
             } catch (error) {
                 console.error('❌ Erro ao finalizar pagamento dividido:', error);
@@ -4141,6 +4109,8 @@
             <div class="popup-spinner" id="popupSpinner"></div>
             <div class="popup-pagamento-msg" id="popupMsg">Passe o cartão na maquininha PagBank</div>
             <div id="popupResultado" style="display:none"></div>
+            <button class="popup-btn-manual" id="popupBtnManual" onclick="finalizarManualmente()">⚠️ Finalizar Manualmente</button>
+            <div class="popup-btn-manual-aviso" id="popupBtnManualAviso">Use apenas se a maquininha aprovou mas não retornou confirmação</div>
             <button class="popup-btn-fechar" id="popupBtnFechar" style="display:none" onclick="fecharPopupPagamento()">Fechar</button>
         </div>
     </div>
@@ -4206,6 +4176,30 @@
                         ✖ Cancelar
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DINHEIRO / TROCO -->
+    <div class="modal-dinheiro" id="modalDinheiro">
+        <div class="modal-dinheiro-box">
+            <div class="modal-dinheiro-icone">💵</div>
+            <div class="modal-dinheiro-titulo">Pagamento em Dinheiro</div>
+            <div class="modal-dinheiro-total" id="mdTotal">R$ 0,00</div>
+
+            <div class="modal-dinheiro-label">Valor recebido</div>
+            <input class="modal-dinheiro-input" id="mdInput" type="number" min="0" step="0.01"
+                placeholder="0,00" oninput="_atualizarTroco()" onkeydown="mdKeyDown(event)" autofocus>
+
+            <div class="modal-dinheiro-troco-box" id="mdTrocoBox">
+                <div class="modal-dinheiro-troco-label">💰 Troco</div>
+                <div class="modal-dinheiro-troco-valor" id="mdTrocoValor">—</div>
+                <div class="modal-dinheiro-troco-msg" id="mdTrocoMsg"></div>
+            </div>
+
+            <div class="modal-dinheiro-btns">
+                <button class="modal-dinheiro-btn-cancel" onclick="fecharModalDinheiro()">Cancelar</button>
+                <button class="modal-dinheiro-btn-ok" id="mdBtnOk" onclick="confirmarDinheiro()" disabled>✅ Confirmar</button>
             </div>
         </div>
     </div>
