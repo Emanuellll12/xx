@@ -867,6 +867,75 @@
             box-shadow: 0 4px 12px rgba(108, 5, 155, 0.5);
         }
 
+        /* POPUP VENDA REALIZADA — verde grande, fecha sozinho */
+        .popup-sucesso {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 999999;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-sucesso.active { display: flex; }
+        .popup-sucesso-box {
+            background: linear-gradient(145deg, #14532d, #166534);
+            border: 3px solid #22c55e;
+            border-radius: 28px;
+            padding: 56px 64px;
+            text-align: center;
+            min-width: 380px;
+            max-width: 500px;
+            box-shadow: 0 0 60px rgba(34,197,94,0.4), 0 20px 60px rgba(0,0,0,0.5);
+            animation: sucessoEntrar 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        @keyframes sucessoEntrar {
+            from { transform: scale(0.6); opacity: 0; }
+            to   { transform: scale(1);   opacity: 1; }
+        }
+        .popup-sucesso-check {
+            font-size: 80px;
+            line-height: 1;
+            margin-bottom: 20px;
+            animation: checkPulse 0.4s ease 0.2s both;
+        }
+        @keyframes checkPulse {
+            from { transform: scale(0); }
+            to   { transform: scale(1); }
+        }
+        .popup-sucesso-titulo {
+            font-size: 32px;
+            font-weight: 900;
+            color: #4ade80;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        .popup-sucesso-sub {
+            font-size: 18px;
+            color: #86efac;
+            font-weight: 500;
+        }
+        .popup-sucesso-barra {
+            margin-top: 28px;
+            height: 6px;
+            background: rgba(74,222,128,0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .popup-sucesso-barra-fill {
+            height: 100%;
+            background: #4ade80;
+            border-radius: 3px;
+            width: 100%;
+            animation: encolher 2s linear forwards;
+        }
+        @keyframes encolher {
+            from { width: 100%; }
+            to   { width: 0%; }
+        }
+
         /* POPUP STATUS PAGAMENTO (CRÉDITO / DÉBITO) */
         .popup-pagamento {
             display: none;
@@ -2179,6 +2248,20 @@
         }
 
         // ==================== FINALIZAR VENDAS ====================
+        // ==================== POPUP VENDA REALIZADA ====================
+        function showVendaSucesso(subtexto) {
+            document.getElementById('popupSucessoSub').textContent = subtexto || '';
+            // Reinicia a animação da barra recriando o elemento
+            const barra = document.getElementById('popupSucessoBarra');
+            barra.style.animation = 'none';
+            barra.offsetHeight; // reflow
+            barra.style.animation = '';
+            document.getElementById('popupSucesso').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('popupSucesso').classList.remove('active');
+            }, 2000);
+        }
+
         // ==================== POPUP STATUS PAGAMENTO ====================
         function abrirPopupPagamento(tipo, valor) {
             const el = (id) => document.getElementById(id);
@@ -2230,7 +2313,7 @@
             const registroVenda = await registrarVenda('PIX', null);
             if (registroVenda && registroVenda.sucesso) {
                 limparCarrinho(true);
-                alert(`✅ Venda PIX registrada!\n\nCódigo: ${registroVenda.codigo_venda}\nAguarde a confirmação do pagamento no seu celular.`);
+                showVendaSucesso(`PIX • Cód. ${registroVenda.codigo_venda}`);
             } else {
                 alert('❌ Erro ao registrar venda PIX no sistema.');
             }
@@ -2262,8 +2345,9 @@
                     };
                     const registroVenda = await registrarVenda('CREDITO', dadosTEF);
                     if (registroVenda && registroVenda.sucesso) {
-                        mostrarResultadoPopup(true, `Venda #${registroVenda.codigo_venda} | NSU: ${dadosTEF.nsu || '-'}`);
+                        fecharPopupPagamento();
                         limparCarrinho(true);
+                        showVendaSucesso(`CRÉDITO • Cód. ${registroVenda.codigo_venda}`);
                     } else {
                         mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
                     }
@@ -2303,8 +2387,9 @@
                     };
                     const registroVenda = await registrarVenda('DEBITO', dadosTEF);
                     if (registroVenda && registroVenda.sucesso) {
-                        mostrarResultadoPopup(true, `Venda #${registroVenda.codigo_venda} | NSU: ${dadosTEF.nsu || '-'}`);
+                        fecharPopupPagamento();
                         limparCarrinho(true);
+                        showVendaSucesso(`DÉBITO • Cód. ${registroVenda.codigo_venda}`);
                     } else {
                         mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
                     }
@@ -2382,9 +2467,9 @@
                 
                 // 4. MOSTRAR TROCO
                 if (troco > 0) {
-                    alert(`✅ VENDA REALIZADA COM SUCESSO!\n\n💵 Valor Recebido: R$ ${valorRecebido.toFixed(2)}\n💰 Troco: R$ ${troco.toFixed(2)}\n\n✅ Carrinho limpo automaticamente`);
+                    showVendaSucesso(`DINHEIRO • Troco: R$ ${troco.toFixed(2).replace('.', ',')}`);
                 } else {
-                    alert(`✅ VENDA REALIZADA COM SUCESSO!\n\n💵 Valor Recebido: R$ ${valorRecebido.toFixed(2)}\n✅ Sem troco\n\n✅ Carrinho limpo automaticamente`);
+                    showVendaSucesso('DINHEIRO • Sem troco');
                 }
                 
             } catch (error) {
@@ -3653,6 +3738,16 @@ Digite o valor REAL contado no caixa:`;
         }
     </script>
     <!-- MODAL HISTÓRICO DE VENDAS -->
+    <!-- POPUP VENDA REALIZADA COM SUCESSO -->
+    <div class="popup-sucesso" id="popupSucesso">
+        <div class="popup-sucesso-box">
+            <div class="popup-sucesso-check">✅</div>
+            <div class="popup-sucesso-titulo">Venda Realizada!</div>
+            <div class="popup-sucesso-sub" id="popupSucessoSub"></div>
+            <div class="popup-sucesso-barra"><div class="popup-sucesso-barra-fill" id="popupSucessoBarra"></div></div>
+        </div>
+    </div>
+
     <!-- POPUP STATUS PAGAMENTO CRÉDITO/DÉBITO -->
     <div class="popup-pagamento" id="popupPagamento">
         <div class="popup-pagamento-box">
