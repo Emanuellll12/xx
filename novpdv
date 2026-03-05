@@ -867,6 +867,51 @@
             box-shadow: 0 4px 12px rgba(108, 5, 155, 0.5);
         }
 
+        /* POPUP STATUS PAGAMENTO (CRÉDITO / DÉBITO) */
+        .popup-pagamento {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+        }
+        .popup-pagamento.active { display: flex; }
+        .popup-pagamento-box {
+            background: #1a1a2e;
+            border-radius: 24px;
+            padding: 40px 48px;
+            text-align: center;
+            min-width: 340px;
+            max-width: 440px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            border: 2px solid #6c059b;
+            animation: popupEntrar 0.25s ease;
+        }
+        @keyframes popupEntrar {
+            from { transform: scale(0.85); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .popup-pagamento-icone { font-size: 52px; margin-bottom: 16px; }
+        .popup-pagamento-titulo { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+        .popup-pagamento-msg { font-size: 15px; color: #aaa; margin-bottom: 20px; min-height: 22px; }
+        .popup-pagamento-valor { font-size: 32px; font-weight: 800; color: #a855f7; margin-bottom: 24px; }
+        .popup-spinner {
+            width: 44px; height: 44px;
+            border: 4px solid rgba(168,85,247,0.2);
+            border-top-color: #a855f7;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .popup-resultado-ok  { background: rgba(34,197,94,0.15);  color: #22c55e; font-size:18px; font-weight:700; padding:12px 24px; border-radius:12px; margin-top:8px; }
+        .popup-resultado-err { background: rgba(239,68,68,0.15);  color: #ef4444; font-size:18px; font-weight:700; padding:12px 24px; border-radius:12px; margin-top:8px; }
+        .popup-btn-fechar { margin-top:20px; background:#6c059b; color:#fff; border:none; padding:12px 32px; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; }
+        .popup-btn-fechar:hover { background:#4a0470; }
+
         /* MODAL PAGAMENTO DIVIDIDO */
         .modal-dividido {
             display: none;
@@ -2134,141 +2179,142 @@
         }
 
         // ==================== FINALIZAR VENDAS ====================
-        async function finalizarVendaPix() {
-            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
-            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
-                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
-                return;
-            }
+        // ==================== POPUP STATUS PAGAMENTO ====================
+        function abrirPopupPagamento(tipo, valor) {
+            const el = (id) => document.getElementById(id);
+            el('popupIcone').textContent  = tipo === 'CRÉDITO' ? '💳' : '💳';
+            el('popupTitulo').textContent = `Processando ${tipo}...`;
+            el('popupValor').textContent  = `R$ ${parseFloat(valor).toFixed(2).replace('.', ',')}`;
+            el('popupMsg').textContent    = 'Passe o cartão na maquininha PagBank';
+            el('popupSpinner').style.display   = 'block';
+            el('popupResultado').style.display = 'none';
+            el('popupBtnFechar').style.display = 'none';
+            el('popupResultado').className     = '';
+            el('popupResultado').textContent   = '';
+            document.getElementById('popupPagamento').classList.add('active');
+        }
 
-            if (carrinho.length === 0) {
-                alert('Carrinho vazio! Adicione produtos primeiro.');
-                return;
+        function mostrarResultadoPopup(aprovado, mensagem) {
+            const el = (id) => document.getElementById(id);
+            el('popupSpinner').style.display   = 'none';
+            el('popupMsg').textContent         = '';
+            el('popupResultado').style.display = 'block';
+            el('popupResultado').className     = aprovado ? 'popup-resultado-ok' : 'popup-resultado-err';
+            el('popupResultado').textContent   = aprovado ? '✅ ' + mensagem : '❌ ' + mensagem;
+            el('popupTitulo').textContent      = aprovado ? 'Pagamento Aprovado!' : 'Pagamento Negado';
+            if (!aprovado) {
+                el('popupBtnFechar').style.display = 'block';
             }
-            
-            console.log('Iniciando pagamento PIX...');
-            try {
-                const resultado = await pix();
-                
-                // Verifica se o pagamento foi bem-sucedido
-                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    console.log('Pagamento PIX aprovado!');
-                    
-                    // Extrai dados do TEF
-                    const dadosTEF = {
-                        nsu: resultado.resultado.id || null,
-                        autorizacao: resultado.resultado.tef.codigoAutorizacao || null,
-                        bandeira: resultado.resultado.tef.codigoBandeira || null,
-                        parcelas: 1
-                    };
-                    
-                    const registroVenda = await registrarVenda('PIX', dadosTEF);
-                    
-                    if (registroVenda.sucesso) {
-                        limparCarrinho(true); // Sem confirmação após venda
-                        alert(`✅ Pagamento PIX realizado com sucesso!\n\nCódigo da Venda: ${registroVenda.codigo_venda}`);
-                    } else {
-                        alert('❌ Erro ao registrar venda no sistema.');
-                    }
-                } else {
-                    console.error('Pagamento PIX não aprovado:', resultado);
-                    alert('❌ PIX NAO APROVADO\nMotivo: '+(resultado&&resultado.resultado&&resultado.resultado.tef?resultado.resultado.tef.mensagemResultado||'Sem motivo':'TEF offline'));
-                }
-            } catch (error) {
-                console.error('Erro ao processar PIX:', error);
-                alert('❌ Erro ao processar pagamento PIX. Tente novamente.');
+            // Se aprovado, fecha automaticamente após 2s
+            if (aprovado) {
+                setTimeout(fecharPopupPagamento, 2000);
             }
         }
 
-        async function finalizarVendaCredito() {
-            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
+        function fecharPopupPagamento() {
+            document.getElementById('popupPagamento').classList.remove('active');
+        }
+
+        // ==================== FINALIZAR VENDA PIX ====================
+        // PIX = apenas registra a venda, sem passar pela maquininha
+        async function finalizarVendaPix() {
             if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
-                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
+                alert('❌ CAIXA FECHADO!\n\nAbra o caixa antes de realizar vendas.');
                 return;
             }
-
             if (carrinho.length === 0) {
                 alert('Carrinho vazio! Adicione produtos primeiro.');
                 return;
             }
-            
-            console.log('Iniciando pagamento CRÉDITO...');
+
+            const registroVenda = await registrarVenda('PIX', null);
+            if (registroVenda && registroVenda.sucesso) {
+                limparCarrinho(true);
+                alert(`✅ Venda PIX registrada!\n\nCódigo: ${registroVenda.codigo_venda}\nAguarde a confirmação do pagamento no seu celular.`);
+            } else {
+                alert('❌ Erro ao registrar venda PIX no sistema.');
+            }
+        }
+
+        // ==================== FINALIZAR VENDA CRÉDITO ====================
+        async function finalizarVendaCredito() {
+            if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
+                alert('❌ CAIXA FECHADO!\n\nAbra o caixa antes de realizar vendas.');
+                return;
+            }
+            if (carrinho.length === 0) {
+                alert('Carrinho vazio! Adicione produtos primeiro.');
+                return;
+            }
+
+            const valor = getValorTotal();
+            abrirPopupPagamento('CRÉDITO', valor);
+
             try {
                 const resultado = await credito();
-                
-                // Verifica se o pagamento foi bem-sucedido
+
                 if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    console.log('Pagamento CRÉDITO aprovado!');
-                    
-                    // Extrai dados do TEF
                     const dadosTEF = {
-                        nsu: resultado.resultado.id || null,
-                        autorizacao: resultado.resultado.tef.codigoAutorizacao || null,
-                        bandeira: resultado.resultado.tef.codigoBandeira || null,
-                        parcelas: resultado.resultado.tef.numeroParcelas || 1
+                        nsu:        resultado.resultado.tef.nsu         || null,
+                        autorizacao:resultado.resultado.tef.codigoAutorizacao,
+                        bandeira:   resultado.resultado.tef.codigoBandeira || null,
+                        parcelas:   resultado.resultado.tef.numeroParcelas || 1
                     };
-                    
                     const registroVenda = await registrarVenda('CREDITO', dadosTEF);
-                    
-                    if (registroVenda.sucesso) {
-                        limparCarrinho(true); // Sem confirmação após venda
-                        alert(`✅ Pagamento CRÉDITO realizado com sucesso!\n\nCódigo da Venda: ${registroVenda.codigo_venda}\nNSU: ${dadosTEF.nsu}`);
+                    if (registroVenda && registroVenda.sucesso) {
+                        mostrarResultadoPopup(true, `Venda #${registroVenda.codigo_venda} | NSU: ${dadosTEF.nsu || '-'}`);
+                        limparCarrinho(true);
                     } else {
-                        alert('❌ Erro ao registrar venda no sistema.');
+                        mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
                     }
                 } else {
-                    console.error('Pagamento CRÉDITO não aprovado:', resultado);
-                    alert('❌ CREDITO NAO APROVADO\nMotivo: '+(resultado&&resultado.resultado&&resultado.resultado.tef?resultado.resultado.tef.mensagemResultado||'Sem motivo':'TEF offline'));
+                    const motivo = resultado?.resultado?.tef?.mensagemResultado || 'Sem resposta da maquininha';
+                    mostrarResultadoPopup(false, motivo);
                 }
             } catch (error) {
-                console.error('Erro ao processar CRÉDITO:', error);
-                alert('❌ Erro ao processar pagamento CRÉDITO. Tente novamente.');
+                mostrarResultadoPopup(false, 'Erro de comunicação. Tente novamente.');
+                console.error('Erro CRÉDITO:', error);
             }
         }
 
+        // ==================== FINALIZAR VENDA DÉBITO ====================
         async function finalizarVendaDebito() {
-            // ✅ VERIFICAR SE CAIXA ESTÁ ABERTO
             if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
-                alert('❌ CAIXA FECHADO!\n\nVocê precisa abrir o caixa antes de realizar vendas.');
+                alert('❌ CAIXA FECHADO!\n\nAbra o caixa antes de realizar vendas.');
                 return;
             }
-
             if (carrinho.length === 0) {
                 alert('Carrinho vazio! Adicione produtos primeiro.');
                 return;
             }
-            
-            console.log('Iniciando pagamento DÉBITO...');
+
+            const valor = getValorTotal();
+            abrirPopupPagamento('DÉBITO', valor);
+
             try {
                 const resultado = await debito();
-                
-                // Verifica se o pagamento foi bem-sucedido
+
                 if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    console.log('Pagamento DÉBITO aprovado!');
-                    
-                    // Extrai dados do TEF
                     const dadosTEF = {
-                        nsu: resultado.resultado.id || null,
-                        autorizacao: resultado.resultado.tef.codigoAutorizacao || null,
-                        bandeira: resultado.resultado.tef.codigoBandeira || null,
-                        parcelas: 1
+                        nsu:        resultado.resultado.tef.nsu         || null,
+                        autorizacao:resultado.resultado.tef.codigoAutorizacao,
+                        bandeira:   resultado.resultado.tef.codigoBandeira || null,
+                        parcelas:   1
                     };
-                    
                     const registroVenda = await registrarVenda('DEBITO', dadosTEF);
-                    
-                    if (registroVenda.sucesso) {
-                        limparCarrinho(true); // Sem confirmação após venda
-                        alert(`✅ Pagamento DÉBITO realizado com sucesso!\n\nCódigo da Venda: ${registroVenda.codigo_venda}\nNSU: ${dadosTEF.nsu}`);
+                    if (registroVenda && registroVenda.sucesso) {
+                        mostrarResultadoPopup(true, `Venda #${registroVenda.codigo_venda} | NSU: ${dadosTEF.nsu || '-'}`);
+                        limparCarrinho(true);
                     } else {
-                        alert('❌ Erro ao registrar venda no sistema.');
+                        mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
                     }
                 } else {
-                    console.error('Pagamento DÉBITO não aprovado:', resultado);
-                    alert('❌ DEBITO NAO APROVADO\nMotivo: '+(resultado&&resultado.resultado&&resultado.resultado.tef?resultado.resultado.tef.mensagemResultado||'Sem motivo':'TEF offline'));
+                    const motivo = resultado?.resultado?.tef?.mensagemResultado || 'Sem resposta da maquininha';
+                    mostrarResultadoPopup(false, motivo);
                 }
             } catch (error) {
-                console.error('Erro ao processar DÉBITO:', error);
-                alert('❌ Erro ao processar pagamento DÉBITO. Tente novamente.');
+                mostrarResultadoPopup(false, 'Erro de comunicação. Tente novamente.');
+                console.error('Erro DÉBITO:', error);
             }
         }
 
@@ -3607,6 +3653,19 @@ Digite o valor REAL contado no caixa:`;
         }
     </script>
     <!-- MODAL HISTÓRICO DE VENDAS -->
+    <!-- POPUP STATUS PAGAMENTO CRÉDITO/DÉBITO -->
+    <div class="popup-pagamento" id="popupPagamento">
+        <div class="popup-pagamento-box">
+            <div class="popup-pagamento-icone" id="popupIcone">💳</div>
+            <div class="popup-pagamento-titulo" id="popupTitulo">Aguardando maquininha...</div>
+            <div class="popup-pagamento-valor" id="popupValor"></div>
+            <div class="popup-spinner" id="popupSpinner"></div>
+            <div class="popup-pagamento-msg" id="popupMsg">Passe o cartão na maquininha PagBank</div>
+            <div id="popupResultado" style="display:none"></div>
+            <button class="popup-btn-fechar" id="popupBtnFechar" style="display:none" onclick="fecharPopupPagamento()">Fechar</button>
+        </div>
+    </div>
+
     <div class="modal-historico" id="modalHistorico">
         <div class="modal-historico-content">
             <div class="modal-historico-header">
