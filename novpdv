@@ -613,6 +613,34 @@
             transform: scale(0.95);
         }
 
+        .btn-favorito {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 2px 4px;
+            line-height: 1;
+            transition: transform 0.2s;
+            filter: grayscale(1) opacity(0.4);
+        }
+        .btn-favorito.ativo {
+            filter: none;
+            animation: estrelaPulse 0.3s ease;
+        }
+        @keyframes estrelaPulse {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+        .produto-item.favorito {
+            order: -1;
+            border-left: 3px solid #f59e0b;
+        }
+        .categoria-produtos {
+            display: flex;
+            flex-direction: column;
+        }
+
         .produto-acoes {
             display: flex;
             gap: 8px;
@@ -866,6 +894,75 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(108, 5, 155, 0.5);
         }
+
+        /* MODAL BALANÇA — produtos de 0 a 50 */
+        .modal-balanca {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 99998;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-balanca.active { display: flex; }
+        .modal-balanca-box {
+            background: #1a1a2e;
+            border: 2px solid #6c059b;
+            border-radius: 24px;
+            padding: 36px 44px;
+            text-align: center;
+            min-width: 320px;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            animation: popupEntrar 0.25s ease;
+        }
+        .modal-balanca-icone { font-size: 48px; margin-bottom: 12px; }
+        .modal-balanca-titulo { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .modal-balanca-preco { font-size: 14px; color: #a855f7; margin-bottom: 20px; }
+        .modal-balanca-input-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .modal-balanca-input {
+            width: 140px;
+            padding: 14px 16px;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            border-radius: 14px;
+            border: 2px solid #6c059b;
+            background: #0f0f23;
+            color: #fff;
+            outline: none;
+        }
+        .modal-balanca-input:focus { border-color: #a855f7; }
+        .modal-balanca-unidade { font-size: 20px; color: #888; font-weight: 600; }
+        .modal-balanca-preview {
+            font-size: 22px;
+            font-weight: 800;
+            color: #4ade80;
+            margin: 12px 0 24px;
+            min-height: 30px;
+        }
+        .modal-balanca-btns { display: flex; gap: 12px; justify-content: center; }
+        .modal-balanca-btn-ok {
+            background: linear-gradient(135deg, #6c059b, #a855f7);
+            color: #fff; border: none;
+            padding: 14px 36px; border-radius: 14px;
+            font-size: 16px; font-weight: 700; cursor: pointer;
+        }
+        .modal-balanca-btn-ok:hover { opacity: 0.9; }
+        .modal-balanca-btn-cancel {
+            background: #2d2d44; color: #aaa; border: none;
+            padding: 14px 24px; border-radius: 14px;
+            font-size: 16px; cursor: pointer;
+        }
+        .modal-balanca-btn-cancel:hover { background: #3d3d54; }
 
         /* POPUP VENDA REALIZADA — verde grande, fecha sozinho */
         .popup-sucesso {
@@ -1311,6 +1408,13 @@
 
     <script>
         // ==================== CONFIGURAÇÃO SUPABASE ====================
+        // SQL necessário no Supabase (rode uma vez):
+        // CREATE TABLE IF NOT EXISTS produtos_favoritos (
+        //   id bigserial primary key,
+        //   loja_id text not null,
+        //   codigo text not null,
+        //   unique(loja_id, codigo)
+        // );
         const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
         
@@ -1474,6 +1578,7 @@
 
                 console.log(`✅ ${data.length} produtos carregados da loja ${lojaAtual.nome}`);
                 produtosTodos = data || [];
+                await carregarFavoritos(lojaAtual.id);
                 renderizarCategorias(produtosTodos);
             } catch (error) {
                 console.error('Erro ao carregar produtos:', error);
@@ -1488,6 +1593,74 @@
         }
 
         // ==================== RENDERIZAR CATEGORIAS ====================
+        // ==================== FAVORITOS ====================
+        // Cache em memória dos favoritos (carregado do Supabase na inicialização)
+        let favoritosCache = [];
+
+        function getFavoritos() {
+            return favoritosCache;
+        }
+
+        async function carregarFavoritos(lojaId) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('produtos_favoritos')
+                    .select('codigo')
+                    .eq('loja_id', lojaId);
+                if (error) throw error;
+                favoritosCache = (data || []).map(r => r.codigo);
+                console.log(`⭐ ${favoritosCache.length} favoritos carregados.`);
+            } catch (e) {
+                console.warn('Erro ao carregar favoritos:', e);
+                favoritosCache = [];
+            }
+        }
+
+        async function toggleFavorito(codigo, lojaId) {
+            const isFav = favoritosCache.includes(codigo);
+
+            // 1. Atualiza cache e UI imediatamente (sem esperar Supabase)
+            if (isFav) favoritosCache = favoritosCache.filter(c => c !== codigo);
+            else favoritosCache.push(codigo);
+            renderizarCategorias(produtosTodos);
+
+            // 2. Persiste no Supabase
+            try {
+                let erro = null;
+                if (isFav) {
+                    const res = await supabaseClient
+                        .from('produtos_favoritos')
+                        .delete()
+                        .eq('loja_id', lojaId)
+                        .eq('codigo', codigo);
+                    erro = res.error;
+                } else {
+                    const res = await supabaseClient
+                        .from('produtos_favoritos')
+                        .insert({ loja_id: lojaId, codigo: codigo });
+                    // Se der conflito (já existe), ignora — está salvo
+                    if (res.error && res.error.code !== '23505') erro = res.error;
+                }
+
+                if (erro) throw erro;
+                console.log(`⭐ Supabase: favorito ${isFav ? 'removido' : 'salvo'} — ${codigo}`);
+
+            } catch (e) {
+                console.error('❌ Erro ao salvar favorito no Supabase:', e);
+                // Reverte cache
+                if (isFav) favoritosCache.push(codigo);
+                else favoritosCache = favoritosCache.filter(c => c !== codigo);
+                renderizarCategorias(produtosTodos);
+
+                const msg = e?.message || e?.code || JSON.stringify(e);
+                if (msg.includes('does not exist') || msg.includes('relation')) {
+                    alert('❌ Tabela produtos_favoritos não existe no Supabase!\n\nRode este SQL no Supabase SQL Editor:\n\nCREATE TABLE produtos_favoritos (\n  id bigserial primary key,\n  loja_id text not null,\n  codigo text not null,\n  unique(loja_id, codigo)\n);\n\nALTER TABLE produtos_favoritos ENABLE ROW LEVEL SECURITY;\nCREATE POLICY \"allow_all\" ON produtos_favoritos FOR ALL USING (true) WITH CHECK (true);');
+                } else {
+                    alert('❌ Erro ao salvar favorito:\n' + msg);
+                }
+            }
+        }
+
         function renderizarCategorias(produtos) {
             console.log('Renderizando categorias com', produtos.length, 'produtos');
             const categorias = ['Sorvetes', 'Bebidas', 'Salgados', 'Combos', 'Outros'];
@@ -1521,24 +1694,34 @@
                 if (produtosCategoria.length === 0) return;
 
                 const corClasse = categoria.toLowerCase();
+                const favs = getFavoritos();
+                // Favoritos sobem para o topo dentro da categoria
+                const ordenados = [
+                    ...produtosCategoria.filter(p => favs.includes(p.codigo)),
+                    ...produtosCategoria.filter(p => !favs.includes(p.codigo))
+                ];
                 
                 html += `
                     <div class="categoria-card">
                         <div class="categoria-header ${corClasse}">${categoria.toUpperCase()}</div>
                         <div class="categoria-produtos">
-                            ${produtosCategoria.map(produto => `
-                                <div class="produto-item">
+                            ${ordenados.map(produto => {
+                                const isFav = favs.includes(produto.codigo);
+                                const lojaId = lojaAtual ? lojaAtual.id : '';
+                                return `
+                                <div class="produto-item${isFav ? ' favorito' : ''}">
                                     <div class="produto-nome">${produto.nome}</div>
                                     <div class="produto-codigo">Cód: ${produto.codigo} | Estoque: ${produto.estoque}</div>
                                     <div class="produto-footer">
                                         <div class="produto-preco">R$ ${parseFloat(produto.preco_venda).toFixed(2)}</div>
                                         <div class="produto-acoes">
+                                            <button class="btn-favorito${isFav ? ' ativo' : ''}" onclick="toggleFavorito('${produto.codigo}','${lojaId}')" title="Favoritar">⭐</button>
                                             <button class="btn-reposicao" onclick='reporEstoque(${JSON.stringify(produto).replace(/'/g, "&apos;")})' title="Repor Estoque">📦</button>
                                             <button class="btn-adicionar" onclick='adicionarAoCarrinho(${JSON.stringify(produto).replace(/'/g, "&apos;")})'>+</button>
                                         </div>
                                     </div>
                                 </div>
-                            `).join('')}
+                            `}).join('')}
                         </div>
                     </div>
                 `;
@@ -1965,29 +2148,97 @@
         }
 
         // ==================== CARRINHO DE COMPRAS ====================
+        // ==================== BALANÇA (códigos 0–50) ====================
+        let _balancaProduto = null;
+
+        function isProdutoBalanca(produto) {
+            const cod = parseInt(produto.codigo, 10);
+            return !isNaN(cod) && cod >= 0 && cod <= 50;
+        }
+
         function adicionarAoCarrinho(produto) {
             console.log('Adicionando ao carrinho:', produto);
-            
+            if (isProdutoBalanca(produto)) {
+                abrirModalBalanca(produto);
+                return;
+            }
             const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
-            
             if (itemExistente) {
                 if (itemExistente.quantidade >= produto.estoque) {
                     alert(`Estoque insuficiente! Disponível: ${produto.estoque}`);
                     return;
                 }
                 itemExistente.quantidade++;
-                console.log('Quantidade atualizada:', itemExistente);
             } else {
                 carrinho.push({
                     codigo: produto.codigo,
                     nome: produto.nome,
-                    preco: produto.preco_venda,
+                    preco: parseFloat(produto.preco_venda),
                     quantidade: 1,
-                    estoque: produto.estoque
+                    estoque: produto.estoque,
+                    balanca: false
                 });
-                console.log('Novo item adicionado');
             }
-            
+            atualizarCarrinho();
+        }
+
+        function abrirModalBalanca(produto) {
+            _balancaProduto = produto;
+            document.getElementById('balancaNome').textContent = produto.nome;
+            document.getElementById('balancaPrecoKg').textContent =
+                `R$ ${parseFloat(produto.preco_venda).toFixed(2)} / kg`;
+            document.getElementById('balancaGramas').value = '';
+            document.getElementById('balancaPreview').textContent = '';
+            document.getElementById('modalBalanca').classList.add('active');
+            setTimeout(() => document.getElementById('balancaGramas').focus(), 100);
+        }
+
+        function fecharModalBalanca() {
+            document.getElementById('modalBalanca').classList.remove('active');
+            _balancaProduto = null;
+        }
+
+        function calcularBalanca() {
+            const g = parseFloat(document.getElementById('balancaGramas').value);
+            const prev = document.getElementById('balancaPreview');
+            if (!_balancaProduto || isNaN(g) || g <= 0) {
+                prev.textContent = '';
+                return;
+            }
+            const precoKg = parseFloat(_balancaProduto.preco_venda);
+            const valor = (precoKg * g) / 1000;
+            prev.textContent = `R$ ${valor.toFixed(2).replace('.', ',')}`;
+        }
+
+        function balancaKeyDown(e) {
+            if (e.key === 'Enter') confirmarBalanca();
+            if (e.key === 'Escape') fecharModalBalanca();
+        }
+
+        function confirmarBalanca() {
+            const g = parseFloat(document.getElementById('balancaGramas').value);
+            if (!_balancaProduto || isNaN(g) || g <= 0) {
+                document.getElementById('balancaGramas').focus();
+                return;
+            }
+            const precoKg = parseFloat(_balancaProduto.preco_venda);
+            const precoItem = parseFloat(((precoKg * g) / 1000).toFixed(2));
+            const label = g >= 1000
+                ? `${(g / 1000).toFixed(3).replace('.', ',')} kg`
+                : `${g}g`;
+
+            // Balança sempre adiciona como nova linha (cada pesagem é única)
+            carrinho.push({
+                codigo: _balancaProduto.codigo,
+                nome: `${_balancaProduto.nome} (${label})`,
+                preco: precoItem,
+                quantidade: 1,
+                estoque: _balancaProduto.estoque,
+                balanca: true,
+                gramas: g
+            });
+
+            fecharModalBalanca();
             atualizarCarrinho();
         }
 
@@ -2049,16 +2300,18 @@
                 const subtotal = item.preco * item.quantidade;
                 total += subtotal;
 
+                const qtdCell = item.balanca
+                    ? `<span style="color:#a855f7;font-size:13px;">⚖️ ${item.gramas}g</span>`
+                    : `<div class="qtd-controls">
+                        <button class="qtd-btn" onclick="alterarQuantidade(${index}, -1)">−</button>
+                        <span class="qtd-numero">${item.quantidade}</span>
+                        <button class="qtd-btn" onclick="alterarQuantidade(${index}, 1)">+</button>
+                       </div>`;
+
                 html += `
                     <tr>
                         <td><strong>${item.nome}</strong><br><small style="color: #6b7280;">Cód: ${item.codigo}</small></td>
-                        <td>
-                            <div class="qtd-controls">
-                                <button class="qtd-btn" onclick="alterarQuantidade(${index}, -1)">−</button>
-                                <span class="qtd-numero">${item.quantidade}</span>
-                                <button class="qtd-btn" onclick="alterarQuantidade(${index}, 1)">+</button>
-                            </div>
-                        </td>
+                        <td>${qtdCell}</td>
                         <td>R$ ${parseFloat(item.preco).toFixed(2)}</td>
                         <td>R$ ${subtotal.toFixed(2)}</td>
                     </tr>
@@ -3738,6 +3991,25 @@ Digite o valor REAL contado no caixa:`;
         }
     </script>
     <!-- MODAL HISTÓRICO DE VENDAS -->
+    <!-- MODAL BALANÇA (produtos 0-50) -->
+    <div class="modal-balanca" id="modalBalanca">
+        <div class="modal-balanca-box">
+            <div class="modal-balanca-icone">⚖️</div>
+            <div class="modal-balanca-titulo" id="balancaNome"></div>
+            <div class="modal-balanca-preco" id="balancaPrecoKg"></div>
+            <div class="modal-balanca-input-wrap">
+                <input class="modal-balanca-input" id="balancaGramas" type="number" min="1" max="99999"
+                    placeholder="0" oninput="calcularBalanca()" onkeydown="balancaKeyDown(event)">
+                <span class="modal-balanca-unidade">g</span>
+            </div>
+            <div class="modal-balanca-preview" id="balancaPreview"></div>
+            <div class="modal-balanca-btns">
+                <button class="modal-balanca-btn-cancel" onclick="fecharModalBalanca()">Cancelar</button>
+                <button class="modal-balanca-btn-ok" onclick="confirmarBalanca()">Adicionar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- POPUP VENDA REALIZADA COM SUCESSO -->
     <div class="popup-sucesso" id="popupSucesso">
         <div class="popup-sucesso-box">
