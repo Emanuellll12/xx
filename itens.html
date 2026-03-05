@@ -419,6 +419,481 @@
             width: 0%;
             transition: width 0.3s;
         }
+
+        /* ===== RESPONSIVE MOBILE ===== */
+        @media (max-width: 768px) {
+            /* SIDEBAR MOBILE - ESCONDER */
+            .sidebar {
+                display: none;
+            }
+
+            /* MAIN CONTENT - SEM MARGEM */
+            .main-content {
+                margin-left: 0;
+            }
+
+            /* HEADER MOBILE */
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 15px 20px;
+                gap: 12px;
+            }
+
+            .header-title {
+                font-size: 20px;
+                justify-content: center;
+            }
+
+            .search-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .search-input {
+                width: 100%;
+                padding: 12px 15px;
+                font-size: 15px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 12px;
+                font-size: 15px;
+            }
+
+            /* TABS MOBILE - SCROLL HORIZONTAL */
+            .tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 0;
+            }
+
+            .tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab {
+                display: inline-block;
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: fit-content;
+            }
+
+            /* TAB CONTENT */
+            .tab-content {
+                padding: 15px;
+            }
+
+            /* TABELA MOBILE - SCROLL HORIZONTAL */
+            .table-container {
+                margin: 0 -15px;
+                border-radius: 0;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin; /* Firefox */
+                scrollbar-color: #6c059b #f3f4f6; /* Firefox */
+            }
+
+            /* SCROLL BAR CUSTOMIZADA PARA TABELA (Chrome/Safari/Edge) */
+            .table-container::-webkit-scrollbar {
+                height: 10px;
+                background: #f3f4f6;
+            }
+
+            .table-container::-webkit-scrollbar-track {
+                background: #f3f4f6;
+                border-radius: 10px;
+                margin: 0 15px;
+            }
+
+            .table-container::-webkit-scrollbar-thumb {
+                background: #6c059b;
+                border-radius: 10px;
+                border: 2px solid #f3f4f6;
+            }
+
+            .table-container::-webkit-scrollbar-thumb:hover {
+                background: #4a0470;
+            }
+
+            .table-container::-webkit-scrollbar-thumb:active {
+                background: #3a0360;
+            }
+
+            /* SOMBRA LATERAL PARA INDICAR SCROLL */
+            .table-container {
+                position: relative;
+            }
+
+            .table-container::after {
+                content: '';
+                position: sticky;
+                right: 0;
+                top: 0;
+                bottom: 10px;
+                width: 40px;
+                background: linear-gradient(to left, rgba(0,0,0,0.15), transparent);
+                pointer-events: none;
+                z-index: 1;
+            }
+
+            table {
+                font-size: 13px;
+                min-width: 650px;
+            }
+
+            th {
+                padding: 12px 10px;
+                font-size: 11px;
+            }
+
+            td {
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+
+            /* MODAL MOBILE */
+            .modal {
+                padding: 0;
+                align-items: flex-end;
+            }
+
+            .modal-content {
+                width: 100%;
+                max-width: 100%;
+                max-height: 95vh;
+                border-radius: 20px 20px 0 0;
+                margin: 0;
+            }
+
+            .modal-header {
+                font-size: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #e5e7eb;
+                margin-bottom: 20px;
+            }
+
+            /* FORM MOBILE */
+            .form-group {
+                margin-bottom: 18px;
+            }
+
+            .form-label {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            .form-input,
+            .form-select {
+                padding: 14px 16px;
+                font-size: 15px;
+                -webkit-appearance: none;
+            }
+
+            /* CATEGORIAS MOBILE - 2 COLUNAS */
+            .categoria-btns {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .categoria-btn {
+                padding: 14px 10px;
+                font-size: 14px;
+            }
+
+            /* UPLOAD AREA MOBILE */
+            .upload-area {
+                padding: 25px 15px;
+            }
+
+            .upload-icon {
+                font-size: 40px;
+            }
+
+            .upload-text {
+                font-size: 13px;
+            }
+
+            .upload-hint {
+                font-size: 11px;
+            }
+
+            .preview-foto {
+                max-height: 180px;
+            }
+
+            /* FORM ACTIONS MOBILE */
+            .form-actions {
+                flex-direction: column-reverse;
+                gap: 10px;
+                margin-top: 20px;
+                position: sticky;
+                bottom: 0;
+                background: white;
+                padding: 15px 0 0;
+                margin-left: -30px;
+                margin-right: -30px;
+                margin-bottom: -30px;
+                padding: 15px 30px;
+                border-top: 2px solid #e5e7eb;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+                padding: 14px;
+                font-size: 16px;
+            }
+
+            /* CONTEXT MENU MOBILE */
+            .context-menu {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                border-radius: 20px 20px 0 0;
+                border: none;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+                z-index: 3001;
+            }
+
+            .context-menu-item {
+                padding: 16px 20px;
+                font-size: 16px;
+                border-bottom: 1px solid #f3f4f6;
+            }
+
+            .context-menu-item:last-child {
+                border-bottom: none;
+            }
+
+            /* LOADING E EMPTY STATE */
+            .loading,
+            .empty-state {
+                padding: 40px 20px;
+            }
+
+            .empty-icon {
+                font-size: 48px;
+            }
+
+            /* ERROR MESSAGE */
+            .error-message {
+                margin: 0 -30px 20px;
+                border-radius: 0;
+                font-size: 14px;
+            }
+
+            /* PROGRESS BAR */
+            .upload-progress {
+                height: 6px;
+            }
+        }
+
+        /* MOBILE EXTRA PEQUENO */
+        @media (max-width: 480px) {
+            .header-title {
+                font-size: 18px;
+            }
+
+            table {
+                min-width: 500px;
+                font-size: 12px;
+            }
+
+            th,
+            td {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+
+            .modal-content {
+                padding: 25px 20px;
+            }
+
+            .categoria-btn {
+                padding: 12px 8px;
+                font-size: 13px;
+            }
+
+            .form-actions {
+                padding: 15px 20px;
+                margin-left: -20px;
+                margin-right: -20px;
+            }
+        }
+
+        /* LANDSCAPE MOBILE */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .modal-content {
+                max-height: 85vh;
+            }
+
+            .upload-area {
+                padding: 20px 15px;
+            }
+
+            .upload-icon {
+                font-size: 36px;
+            }
+        }
+
+        /* MELHORIAS TOUCH */
+        @media (hover: none) and (pointer: coarse) {
+            /* Aumentar área de toque */
+            .btn,
+            .categoria-btn,
+            .nav-item,
+            .tab {
+                min-height: 44px;
+            }
+
+            .form-input,
+            .form-select {
+                min-height: 48px;
+            }
+
+            /* Remover hover states em touch */
+            .editable:hover {
+                background: transparent;
+            }
+
+            tr:hover {
+                background: transparent;
+            }
+
+            /* Feedback visual em touch */
+            .btn:active,
+            .categoria-btn:active,
+            .tab:active {
+                opacity: 0.7;
+                transform: scale(0.98);
+            }
+
+            /* INDICADOR DE SCROLL */
+            .scroll-indicator {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 12px;
+                background: linear-gradient(135deg, #6c059b 0%, #8b3db8 100%);
+                color: white;
+                font-size: 13px;
+                font-weight: 600;
+                border-radius: 8px;
+                margin: 10px 15px;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+
+            .scroll-indicator-icon {
+                font-size: 20px;
+                animation: slideRight 1.5s infinite;
+            }
+
+            @keyframes slideRight {
+                0%, 100% { transform: translateX(0); }
+                50% { transform: translateX(8px); }
+            }
+
+            /* Esconder indicador após primeira interação */
+            .table-container.scrolled ~ .scroll-indicator {
+                display: none;
+            }
+        }
+
+        /* ADICIONAR MENU HAMBURGER MOBILE */
+        .mobile-header {
+            display: none;
+            background: linear-gradient(135deg, #6c059b 0%, #4a0470 100%);
+            padding: 15px 20px;
+            color: white;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .mobile-logo {
+            font-size: 24px;
+            font-weight: 900;
+        }
+
+        .mobile-menu-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .mobile-nav {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+        }
+
+        .mobile-nav.active {
+            display: block;
+        }
+
+        .mobile-nav-content {
+            background: white;
+            width: 280px;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .mobile-nav-close {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .mobile-nav-close button {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6c059b;
+            cursor: pointer;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background: #f9fafb;
+            color: #374151;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .mobile-nav-item.active {
+            background: #6c059b;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
@@ -437,6 +912,33 @@
                 <span>Itens</span>
             </div>
             <div class="nav-item" onclick="fazerLogout()" style="margin-top: auto;">
+                <span>🚪</span>
+                <span>SAIR</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MOBILE HEADER -->
+    <div class="mobile-header">
+        <div class="mobile-logo">OMG</div>
+        <button class="mobile-menu-btn" onclick="abrirMenuMobile()">☰</button>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <div class="mobile-nav" id="mobileNav" onclick="fecharMenuMobile()">
+        <div class="mobile-nav-content" onclick="event.stopPropagation()">
+            <div class="mobile-nav-close">
+                <button onclick="fecharMenuMobile()">✕</button>
+            </div>
+            <a href="pdv-supabase-final.html" class="mobile-nav-item">
+                <span>🏪</span>
+                <span>PDV</span>
+            </a>
+            <div class="mobile-nav-item active">
+                <span>📦</span>
+                <span>Itens</span>
+            </div>
+            <div class="mobile-nav-item" onclick="fazerLogout()">
                 <span>🚪</span>
                 <span>SAIR</span>
             </div>
@@ -471,7 +973,7 @@
 
         <!-- TAB CONTENT - EDIÇÃO RÁPIDA -->
         <div id="tab-edicao" class="tab-content active">
-            <div class="table-container">
+            <div class="table-container" id="tableEdicao">
                 <table id="tabelaEdicao">
                     <thead>
                         <tr>
@@ -488,11 +990,15 @@
                     </tbody>
                 </table>
             </div>
+            <div class="scroll-indicator" id="scrollIndicatorEdicao">
+                <span>Deslize para ver mais</span>
+                <span class="scroll-indicator-icon">👉</span>
+            </div>
         </div>
 
         <!-- TAB CONTENT - DETALHADO -->
         <div id="tab-detalhado" class="tab-content">
-            <div class="table-container">
+            <div class="table-container" id="tableDetalhado">
                 <table id="tabelaDetalhado">
                     <thead>
                         <tr>
@@ -514,11 +1020,15 @@
                     </tbody>
                 </table>
             </div>
+            <div class="scroll-indicator" id="scrollIndicatorDetalhado">
+                <span>Deslize para ver mais</span>
+                <span class="scroll-indicator-icon">👉</span>
+            </div>
         </div>
 
         <!-- TAB CONTENT - HISTÓRICO -->
         <div id="tab-historico" class="tab-content">
-            <div class="table-container">
+            <div class="table-container" id="tableHistorico">
                 <table id="tabelaHistorico">
                     <thead>
                         <tr>
@@ -536,6 +1046,10 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="scroll-indicator" id="scrollIndicatorHistorico">
+                <span>Deslize para ver mais</span>
+                <span class="scroll-indicator-icon">👉</span>
             </div>
         </div>
     </div>
@@ -650,9 +1164,9 @@
 
     <script>
         // ==================== CONFIGURAÇÃO SUPABASE ====================
-        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
-        
+const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+
         let supabaseClient;
         let lojaAtual = null;
         let usuarioAtual = null;
@@ -670,24 +1184,37 @@
                 const { data: { session }, error } = await supabaseClient.auth.getSession();
                
                 if (error || !session) {
-                    window.location.href = 'login.html';
+                    console.error('Sem sessão ativa');
+                    window.location.href = 'vendas.html';
                     return false;
                 }
 
                 usuarioAtual = session.user;
+                console.log('✅ Usuário logado:', usuarioAtual.email);
 
+                // Buscar loja do usuário
                 const { data: usuarioLoja, error: lojaError } = await supabaseClient
                     .from('usuarios_loja')
                     .select('loja_id, cargo')
                     .eq('user_id', session.user.id)
-                    .single();
+                    .maybeSingle();
 
-                if (lojaError || !usuarioLoja) {
-                    alert('Usuário sem loja associada');
-                    window.location.href = 'login.html';
+                if (lojaError) {
+                    console.error('Erro ao buscar loja:', lojaError);
+                    alert('Erro ao buscar loja do usuário');
                     return false;
                 }
 
+                if (!usuarioLoja) {
+                    console.error('Usuário sem loja associada');
+                    alert('Usuário sem loja associada');
+                    window.location.href = 'vendas.html';
+                    return false;
+                }
+
+                console.log('✅ Loja ID:', usuarioLoja.loja_id);
+
+                // Buscar informações da loja
                 const { data: lojaInfo, error: lojaInfoError } = await supabaseClient
                     .from('lojas')
                     .select('*')
@@ -695,16 +1222,17 @@
                     .single();
 
                 if (lojaInfoError || !lojaInfo) {
-                    window.location.href = 'login.html';
+                    console.error('Erro ao buscar info da loja:', lojaInfoError);
+                    alert('Erro ao carregar informações da loja');
                     return false;
                 }
 
                 lojaAtual = lojaInfo;
-                console.log('✅ Loja:', lojaAtual.nome);
+                console.log('✅ Loja carregada:', lojaAtual.nome);
                 return true;
             } catch (error) {
-                console.error('Erro:', error);
-                window.location.href = 'login.html';
+                console.error('Erro na autenticação:', error);
+                alert('Erro ao verificar autenticação: ' + error.message);
                 return false;
             }
         }
@@ -713,7 +1241,7 @@
         async function fazerLogout() {
             if (confirm('Deseja sair?')) {
                 await supabaseClient.auth.signOut();
-                window.location.href = 'login.html';
+                window.location.href = 'vendas.html';
             }
         }
 
@@ -737,9 +1265,16 @@
 
         // ==================== INICIALIZAÇÃO ====================
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Iniciando página de itens...');
+            
             const autenticado = await verificarAutenticacao();
-            if (!autenticado) return;
-            carregarItens();
+            if (!autenticado) {
+                console.error('❌ Falha na autenticação');
+                return;
+            }
+            
+            console.log('✅ Autenticação OK, carregando itens...');
+            await carregarItens();
            
             document.getElementById('searchInput').addEventListener('input', (e) => {
                 pesquisarItens(e.target.value);
@@ -748,6 +1283,31 @@
             document.addEventListener('click', () => {
                 document.getElementById('contextMenu').classList.remove('active');
             });
+
+            // DETECTAR SCROLL NAS TABELAS E ESCONDER INDICADOR
+            setupScrollIndicator('tableEdicao', 'scrollIndicatorEdicao');
+            setupScrollIndicator('tableDetalhado', 'scrollIndicatorDetalhado');
+            setupScrollIndicator('tableHistorico', 'scrollIndicatorHistorico');
+
+            function setupScrollIndicator(tableId, indicatorId) {
+                const table = document.getElementById(tableId);
+                const indicator = document.getElementById(indicatorId);
+                
+                if (table && indicator) {
+                    table.addEventListener('scroll', function() {
+                        if (this.scrollLeft > 10) {
+                            indicator.style.display = 'none';
+                            // Salvar no localStorage para não mostrar novamente
+                            localStorage.setItem(`scrolled_${tableId}`, 'true');
+                        }
+                    });
+
+                    // Verificar se já scrollou antes
+                    if (localStorage.getItem(`scrolled_${tableId}`) === 'true') {
+                        indicator.style.display = 'none';
+                    }
+                }
+            }
 
             // DRAG & DROP
             const uploadArea = document.getElementById('uploadArea');
@@ -781,6 +1341,8 @@
                     previewFoto({ target: fileInput });
                 }
             });
+            
+            console.log('✅ Página de itens carregada completamente');
         });
 
         // ==================== CARREGAR DADOS ====================
@@ -1240,6 +1802,15 @@
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = mensagem;
             errorDiv.classList.add('active');
+        }
+
+        // ==================== MENU MOBILE ====================
+        function abrirMenuMobile() {
+            document.getElementById('mobileNav').classList.add('active');
+        }
+
+        function fecharMenuMobile() {
+            document.getElementById('mobileNav').classList.remove('active');
         }
     </script>
 </body>
