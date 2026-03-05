@@ -843,6 +843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const { data: lojaInfo } = await supabaseClient.from('lojas').select('*').eq('id', usuariosLoja[0].loja_id).maybeSingle();
                     if (lojaInfo && lojaInfo.status === 'ATIVO') {
                         lojaAtual = lojaInfo;
+                        window.location.href = 'intent://connect/start';
                         await verificarOuCriarCaixa();
                         carregarProdutos();
                         return;
@@ -877,6 +878,7 @@ async function fazerLogin() {
         lojaAtual = lojaInfo;
         localStorage.setItem('totem_credenciais', JSON.stringify({ email, senha }));
         document.getElementById('telaLogin').classList.remove('active');
+        window.location.href = 'intent://connect/start';
         await verificarOuCriarCaixa();
         carregarProdutos();
     } catch(e) {
