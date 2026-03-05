@@ -1128,7 +1128,7 @@ function tefAprovado(venda) {
     const r = venda.resultado;
     if (!r || typeof r !== "object") return false;
     if (!r.tef) return false;
-    return (r.tef.mensagemResultado || "") === "TRANSAC APROVADA";
+    return !!(r.tef.codigoAutorizacao && r.tef.codigoAutorizacao.trim() !== "");
 }
 
 async function tefPix(valor) { const v = await sendPost('/pix', { valor }); if (!v) return null; if (tefAprovado(v)) historicoVendas.push(v); return v; }
