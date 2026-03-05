@@ -895,6 +895,63 @@
             box-shadow: 0 4px 12px rgba(108, 5, 155, 0.5);
         }
 
+        /* MODAL FECHAR CAIXA */
+        .modal-fechar-caixa {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 99997;
+            align-items: center; justify-content: center;
+        }
+        .modal-fechar-caixa.active { display: flex; }
+        .mfc-box {
+            background: #1a1a2e; border: 2px solid #6c059b;
+            border-radius: 24px; padding: 40px 44px;
+            text-align: center; min-width: 340px; max-width: 460px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            animation: popupEntrar 0.25s ease;
+        }
+        .mfc-titulo { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+        .mfc-sub { font-size: 14px; color: #888; margin-bottom: 28px; }
+        .mfc-label { font-size: 13px; color: #a855f7; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .mfc-input {
+            width: 100%; padding: 16px; font-size: 30px; font-weight: 800;
+            text-align: center; border-radius: 14px;
+            border: 2px solid #6c059b; background: #0f0f23; color: #fff;
+            outline: none; box-sizing: border-box; margin-bottom: 28px;
+        }
+        .mfc-input:focus { border-color: #a855f7; }
+        .mfc-resultado {
+            background: #0f0f23; border-radius: 16px;
+            padding: 20px 24px; margin-bottom: 24px; text-align: left;
+        }
+        .mfc-linha { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+        .mfc-linha-label { font-size: 14px; color: #888; }
+        .mfc-linha-valor { font-size: 15px; font-weight: 700; color: #fff; }
+        .mfc-linha-sep { border-top: 1px solid #2d2d44; margin: 8px 0; }
+        .mfc-linha-destaque .mfc-linha-label { color: #fff; font-size: 15px; font-weight: 700; }
+        .mfc-linha-destaque .mfc-linha-valor { font-size: 18px; }
+        .mfc-quebra-pos { color: #22c55e !important; }
+        .mfc-quebra-neg { color: #ef4444 !important; }
+        .mfc-quebra-zero { color: #4ade80 !important; }
+        .mfc-btns { display: flex; gap: 12px; justify-content: center; }
+        .mfc-btn-ok {
+            background: linear-gradient(135deg, #6c059b, #a855f7);
+            color: #fff; border: none; padding: 14px 36px;
+            border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; flex: 1;
+        }
+        .mfc-btn-ok:hover { opacity: 0.9; }
+        .mfc-btn-cancel {
+            background: #2d2d44; color: #aaa; border: none;
+            padding: 14px 24px; border-radius: 14px; font-size: 16px; cursor: pointer;
+        }
+        .mfc-btn-cancel:hover { background: #3d3d54; }
+        .mfc-btn-confirmar {
+            background: linear-gradient(135deg, #166534, #22c55e);
+            color: #fff; border: none; padding: 14px 36px;
+            border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; flex: 1;
+        }
+        .mfc-btn-confirmar:hover { opacity: 0.9; }
+
         /* MODAL BALANÇA — produtos de 0 a 50 */
         .modal-balanca {
             display: none;
@@ -2808,10 +2865,6 @@
                 // Clicou para FECHAR
                 await notificarAcaoCaixa('CLIQUE_FECHAR', {});
                 
-                // ABRIR GAVETA IMEDIATAMENTE
-                console.log('💰 Abrindo gaveta (clique fechar caixa)...');
-                await abrirGaveta();
-                
                 fecharCaixa();
             } else {
                 // Clicou para ABRIR
@@ -2876,144 +2929,151 @@
         }
 
         // Fechar caixa
-        async function fecharCaixa() {
-            if (!caixaAtual) {
-                alert('Nenhum caixa aberto');
+        // ==================== VARIÁVEIS FECHAR CAIXA ====================
+        let _mfcDados = null; // dados calculados aguardando confirmação
+
+        function abrirModalFechamento() {
+            document.getElementById('mfcValorContado').value = '';
+            document.getElementById('mfcResultado').style.display = 'none';
+            document.getElementById('mfcBtnsConfirmar').style.display = 'none';
+            document.getElementById('mfcStepInput').style.display = 'block';
+            document.getElementById('mfcSub').textContent = 'Conte o dinheiro físico no caixa';
+            document.getElementById('modalFecharCaixa').classList.add('active');
+            setTimeout(() => document.getElementById('mfcValorContado').focus(), 100);
+        }
+
+        function fecharModalFechamento() {
+            document.getElementById('modalFecharCaixa').classList.remove('active');
+            _mfcDados = null;
+        }
+
+        function mfcKeyDown(e) {
+            if (e.key === 'Enter') mfcCalcular();
+            if (e.key === 'Escape') fecharModalFechamento();
+        }
+
+        function mfcLimparResultado() {
+            document.getElementById('mfcResultado').style.display = 'none';
+            document.getElementById('mfcBtnsConfirmar').style.display = 'none';
+        }
+
+        async function mfcCalcular() {
+            const inputVal = document.getElementById('mfcValorContado').value;
+            const valorContado = parseFloat(String(inputVal).replace(',', '.'));
+            if (isNaN(valorContado) || valorContado < 0) {
+                document.getElementById('mfcValorContado').focus();
                 return;
             }
 
-            // Calcular totais do caixa
-            const { data: vendas, error: vendasError } = await supabaseClient
+            // Buscar vendas do caixa
+            const { data: vendas } = await supabaseClient
                 .from('vendas')
                 .select('valor_total, metodo_pagamento')
                 .eq('loja_id', lojaAtual.id)
                 .gte('data_venda', caixaAtual.data_abertura)
                 .eq('status', 'CONCLUIDA');
 
-            if (vendasError) {
-                console.error('Erro ao buscar vendas:', vendasError);
-                alert('Erro ao calcular vendas do caixa');
-                return;
-            }
-
-            // Buscar retiradas do caixa
-            const { data: retiradas, error: retiradasError } = await supabaseClient
+            const { data: retiradas } = await supabaseClient
                 .from('retiradas_caixa')
                 .select('valor')
                 .eq('caixa_id', caixaAtual.id);
 
-            const totalRetiradas = retiradas ? retiradas.reduce((sum, r) => sum + parseFloat(r.valor), 0) : 0;
-
-            // Calcular totais por método
-            let totalGeral = 0;
-            let totalPix = 0;
-            let totalCredito = 0;
-            let totalDebito = 0;
-            let totalDinheiro = 0;
-            let qtdVendas = vendas.length;
-
-            vendas.forEach(venda => {
-                const valor = parseFloat(venda.valor_total);
-                totalGeral += valor;
-
-                switch(venda.metodo_pagamento) {
-                    case 'PIX': totalPix += valor; break;
-                    case 'CREDITO': totalCredito += valor; break;
-                    case 'DEBITO': totalDebito += valor; break;
-                    case 'DINHEIRO': totalDinheiro += valor; break;
-                }
+            let totalGeral = 0, totalPix = 0, totalCredito = 0, totalDebito = 0, totalDinheiro = 0;
+            (vendas || []).forEach(v => {
+                const val = parseFloat(v.valor_total);
+                totalGeral += val;
+                if (v.metodo_pagamento === 'PIX')      totalPix      += val;
+                if (v.metodo_pagamento === 'CREDITO')  totalCredito  += val;
+                if (v.metodo_pagamento === 'DEBITO')   totalDebito   += val;
+                if (v.metodo_pagamento === 'DINHEIRO') totalDinheiro += val;
             });
+            const totalRetiradas = (retiradas || []).reduce((s, r) => s + parseFloat(r.valor), 0);
+            const saldoInicial   = parseFloat(caixaAtual.valor_inicial);
+            const esperado       = saldoInicial + totalDinheiro - totalRetiradas;
+            const diferenca      = valorContado - esperado;
 
-            const valorEsperado = parseFloat(caixaAtual.valor_inicial) + totalDinheiro - totalRetiradas;
+            // Salva para usar na confirmação
+            _mfcDados = {
+                valorContado, totalGeral, totalPix, totalCredito, totalDebito,
+                totalDinheiro, totalRetiradas, saldoInicial, esperado, diferenca,
+                qtdVendas: (vendas || []).length
+            };
 
-            const mensagem = `
-📊 RESUMO DO CAIXA
+            // Preenche resultado — mostra APENAS dinheiro
+            const fmt = v => `R$ ${v.toFixed(2).replace('.', ',')}`;
+            document.getElementById('mfcSaldoInicial').textContent     = fmt(saldoInicial);
+            document.getElementById('mfcVendasDinheiro').textContent   = fmt(totalDinheiro);
+            document.getElementById('mfcRetiradas').textContent        = fmt(totalRetiradas);
+            document.getElementById('mfcEsperado').textContent         = fmt(esperado);
+            document.getElementById('mfcContado').textContent          = fmt(valorContado);
 
-💰 Valor Inicial: R$ ${parseFloat(caixaAtual.valor_inicial).toFixed(2)}
-
-📦 Vendas Realizadas: ${qtdVendas}
-💳 Total Vendas: R$ ${totalGeral.toFixed(2)}
-
-Detalhamento por método:
-• PIX: R$ ${totalPix.toFixed(2)}
-• Crédito: R$ ${totalCredito.toFixed(2)}
-• Débito: R$ ${totalDebito.toFixed(2)}
-• Dinheiro: R$ ${totalDinheiro.toFixed(2)}
-
-💸 Retiradas: R$ ${totalRetiradas.toFixed(2)}
-
-💵 Valor Esperado em Caixa: R$ ${valorEsperado.toFixed(2)}
-
-Digite o valor REAL contado no caixa:`;
-
-            const valorContado = prompt(mensagem);
-            
-            if (valorContado === null) return; // Cancelou
-
-            const valorFinal = parseFloat(valorContado.replace(',', '.'));
-            
-            if (isNaN(valorFinal) || valorFinal < 0) {
-                alert('❌ Valor inválido!');
-                return;
+            const difEl = document.getElementById('mfcDiferenca');
+            if (diferenca > 0.009) {
+                difEl.textContent  = `+${fmt(diferenca)} (sobra)`;
+                difEl.className    = 'mfc-linha-valor mfc-quebra-pos';
+            } else if (diferenca < -0.009) {
+                difEl.textContent  = `${fmt(diferenca)} (falta)`;
+                difEl.className    = 'mfc-linha-valor mfc-quebra-neg';
+            } else {
+                difEl.textContent  = '✅ Bateu certinho!';
+                difEl.className    = 'mfc-linha-valor mfc-quebra-zero';
             }
 
-            const diferenca = valorFinal - valorEsperado;
-            const observacaoFinal = prompt('Observação do fechamento (opcional):') || '';
+            // Mostra resultado e botão confirmar
+            document.getElementById('mfcStepInput').style.display   = 'none';
+            document.getElementById('mfcResultado').style.display   = 'block';
+            document.getElementById('mfcBtnsConfirmar').style.display = 'flex';
+        }
+
+        async function mfcConfirmar() {
+            if (!_mfcDados) return;
+            const d = _mfcDados;
 
             try {
                 const { error } = await supabaseClient
                     .from('caixas')
                     .update({
-                        status: 'FECHADO',
-                        data_fechamento: new Date().toISOString(),
-                        usuario_fechamento: usuarioAtual.id,
-                        valor_vendas: totalGeral,
-                        valor_final: valorFinal,
-                        total_vendas_pix: totalPix,
-                        total_vendas_credito: totalCredito,
-                        total_vendas_debito: totalDebito,
-                        total_vendas_dinheiro: totalDinheiro,
-                        qtd_vendas: qtdVendas,
-                        observacao_fechamento: observacaoFinal
+                        status:                  'FECHADO',
+                        data_fechamento:         new Date().toISOString(),
+                        usuario_fechamento:      usuarioAtual.id,
+                        valor_vendas:            d.totalGeral,
+                        valor_final:             d.valorContado,
+                        total_vendas_pix:        d.totalPix,
+                        total_vendas_credito:    d.totalCredito,
+                        total_vendas_debito:     d.totalDebito,
+                        total_vendas_dinheiro:   d.totalDinheiro,
+                        qtd_vendas:              d.qtdVendas,
+                        observacao_fechamento:   ''
                     })
                     .eq('id', caixaAtual.id);
 
                 if (error) throw error;
 
-                let mensagemFinal = `✅ CAIXA FECHADO COM SUCESSO!\n\n`;
-                mensagemFinal += `💰 Valor Esperado: R$ ${valorEsperado.toFixed(2)}\n`;
-                mensagemFinal += `💵 Valor Contado: R$ ${valorFinal.toFixed(2)}\n\n`;
-                
-                if (diferenca > 0) {
-                    mensagemFinal += `📈 Sobra: R$ ${diferenca.toFixed(2)}`;
-                } else if (diferenca < 0) {
-                    mensagemFinal += `📉 Falta: R$ ${Math.abs(diferenca).toFixed(2)}`;
-                } else {
-                    mensagemFinal += `✅ Caixa bateu certinho!`;
-                }
+                fecharModalFechamento();
 
-                console.log('✅ Venda cancelada:', vendaId);
-
-                alert(mensagemFinal);
-                
-                // Enviar notificação Telegram
                 await notificarAcaoCaixa('FECHAR', {
-                    valorInicial: parseFloat(caixaAtual.valor_inicial),
-                    valorFinal: valorFinal,
-                    valorVendas: totalGeral,
-                    qtdVendas: qtdVendas,
-                    totalRetiradas: totalRetiradas,
-                    diferenca: diferenca
+                    valorInicial:  d.saldoInicial,
+                    valorFinal:    d.valorContado,
+                    valorVendas:   d.totalGeral,
+                    qtdVendas:     d.qtdVendas,
+                    totalRetiradas:d.totalRetiradas,
+                    diferenca:     d.diferenca
                 });
-                
+
                 caixaAtual = null;
                 atualizarBotaoCaixa(false);
+                showVendaSucesso('Caixa fechado com sucesso!');
+
             } catch (error) {
                 console.error('Erro ao fechar caixa:', error);
                 alert('❌ Erro ao fechar caixa: ' + error.message);
             }
         }
 
+        async function fecharCaixa() {
+            if (!caixaAtual) { alert('Nenhum caixa aberto'); return; }
+            abrirModalFechamento();
+        }
         // ==================== RETIRAR DINHEIRO ====================
         async function retirarDinheiro() {
             // NOTIFICAR IMEDIATAMENTE AO CLICAR NO BOTÃO
@@ -3991,6 +4051,58 @@ Digite o valor REAL contado no caixa:`;
         }
     </script>
     <!-- MODAL HISTÓRICO DE VENDAS -->
+    <!-- MODAL FECHAR CAIXA -->
+    <div class="modal-fechar-caixa" id="modalFecharCaixa">
+        <div class="mfc-box">
+            <div class="mfc-titulo">🔒 Fechar Caixa</div>
+            <div class="mfc-sub" id="mfcSub">Conte o dinheiro físico no caixa</div>
+
+            <div id="mfcStepInput">
+                <div class="mfc-label">Quanto tem no caixa agora?</div>
+                <input class="mfc-input" id="mfcValorContado" type="number" min="0" step="0.01"
+                    placeholder="0,00" onkeydown="mfcKeyDown(event)" oninput="mfcLimparResultado()">
+                <div class="mfc-btns">
+                    <button class="mfc-btn-cancel" onclick="fecharModalFechamento()">Cancelar</button>
+                    <button class="mfc-btn-ok" onclick="mfcCalcular()">Calcular</button>
+                </div>
+            </div>
+
+            <div class="mfc-resultado" id="mfcResultado">
+                <div class="mfc-linha">
+                    <span class="mfc-linha-label">💰 Saldo inicial</span>
+                    <span class="mfc-linha-valor" id="mfcSaldoInicial"></span>
+                </div>
+                <div class="mfc-linha">
+                    <span class="mfc-linha-label">💵 Vendas em dinheiro</span>
+                    <span class="mfc-linha-valor" id="mfcVendasDinheiro"></span>
+                </div>
+                <div class="mfc-linha">
+                    <span class="mfc-linha-label">💸 Retiradas</span>
+                    <span class="mfc-linha-valor" id="mfcRetiradas"></span>
+                </div>
+                <div class="mfc-linha-sep"></div>
+                <div class="mfc-linha mfc-linha-destaque">
+                    <span class="mfc-linha-label">📊 Esperado em caixa</span>
+                    <span class="mfc-linha-valor" id="mfcEsperado"></span>
+                </div>
+                <div class="mfc-linha mfc-linha-destaque">
+                    <span class="mfc-linha-label">🖐️ Contado</span>
+                    <span class="mfc-linha-valor" id="mfcContado"></span>
+                </div>
+                <div class="mfc-linha-sep"></div>
+                <div class="mfc-linha mfc-linha-destaque">
+                    <span class="mfc-linha-label">⚖️ Diferença</span>
+                    <span class="mfc-linha-valor" id="mfcDiferenca"></span>
+                </div>
+            </div>
+
+            <div class="mfc-btns" id="mfcBtnsConfirmar" style="display:none">
+                <button class="mfc-btn-cancel" onclick="fecharModalFechamento()">Cancelar</button>
+                <button class="mfc-btn-confirmar" id="mfcBtnConfirmar" onclick="mfcConfirmar()" style="display:flex">Confirmar Fechamento</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL BALANÇA (produtos 0-50) -->
     <div class="modal-balanca" id="modalBalanca">
         <div class="modal-balanca-box">
