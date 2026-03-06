@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6c059b">
+    <title>🔥 Estufa - OMG PDV</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #6c059b 0%, #4a0470 100%);
+            padding: 25px 30px;
+            box-shadow: 0 4px 20px rgba(108, 5, 155, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            color: white;
+            font-size: 32px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .loja-info {
+            color: rgba(255,255,255,0.95);
+            font-size: 15px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-header {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            font-size: 14px;
+        }
+
+        .btn-header:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 30px;
+        }
+
+        /* PAINEL SORVETES */
+        .sorvetes-panel {
+            background: linear-gradient(135deg, #6c059b 0%, #8b3db8 100%);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(108, 5, 155, 0.25);
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .sorvetes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .sorvetes-title {
+            font-size: 28px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .refresh-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .refresh-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+
+        .sorvetes-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .sorvete-stat {
+            background: rgba(255,255,255,0.15);
+            padding: 25px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.25);
+            transition: all 0.3s;
+        }
+
+        .sorvete-stat:hover {
+            transform: translateY(-4px);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .sorvete-stat-label {
+            font-size: 13px;
+            opacity: 0.95;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .sorvete-stat-value {
+            font-size: 42px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        /* SALGADOS HEADER */
+        .salgados-header {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .salgados-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .total-salgados {
+            background: linear-gradient(135deg, #6c059b 0%, #8b3db8 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        /* GRID DE SALGADOS */
+        .salgados-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .salgado-card {
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid transparent;
+        }
+
+        .salgado-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(108, 5, 155, 0.2);
+            border-color: #6c059b;
+        }
+
+        .salgado-card.sem-estoque {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border-color: #ef4444;
+        }
+
+        .salgado-card.sem-estoque:hover {
+            border-color: #dc2626;
+        }
+
+        .salgado-card.baixo-estoque {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border-color: #f59e0b;
+        }
+
+        .salgado-card.baixo-estoque:hover {
+            border-color: #d97706;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-disponivel {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .status-baixo {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .status-esgotado {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .salgado-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+            filter: grayscale(0);
+            transition: transform 0.3s;
+        }
+
+        .salgado-card:hover .salgado-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .salgado-card.sem-estoque .salgado-icon {
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }
+
+        .salgado-codigo {
+            font-size: 10px;
+            font-weight: 700;
+            color: #6c059b;
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+
+        .salgado-nome {
+            font-size: 14px;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 10px;
+            line-height: 1.2;
+            min-height: 34px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .salgado-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .info-item {
+            background: #f9fafb;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 9px;
+            color: #6b7280;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 3px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: #1f2937;
+        }
+
+        .info-value.estoque-zero {
+            color: #ef4444;
+        }
+
+        .info-value.estoque-baixo {
+            color: #f59e0b;
+        }
+
+        .info-value.estoque-ok {
+            color: #10b981;
+        }
+
+        .salgado-preco {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: 900;
+            color: #6c059b;
+            text-align: center;
+            padding: 8px;
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-radius: 10px;
+        }
+
+        /* LOADING */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .loading-spinner {
+            font-size: 56px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+
+            .header-left h1 {
+                font-size: 26px;
+            }
+
+            .header-right {
+                width: 100%;
+            }
+
+            .btn-header {
+                flex: 1;
+                text-align: center;
+            }
+
+            .container {
+                padding: 0 15px;
+                margin: 20px auto;
+            }
+
+            .sorvetes-panel {
+                padding: 20px;
+            }
+
+            .sorvetes-title {
+                font-size: 20px;
+            }
+
+            .sorvetes-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .refresh-indicator {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            .sorvetes-stats {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .sorvete-stat {
+                padding: 15px;
+            }
+
+            .sorvete-stat-label {
+                font-size: 11px;
+            }
+
+            .sorvete-stat-value {
+                font-size: 32px;
+            }
+
+            .salgados-header {
+                padding: 15px;
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .salgados-title {
+                font-size: 20px;
+            }
+
+            .total-salgados {
+                width: 100%;
+                text-align: center;
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            /* 3 COLUNAS NO MOBILE */
+            .salgados-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .salgado-card {
+                padding: 12px;
+            }
+
+            .salgado-icon {
+                font-size: 32px;
+                margin-bottom: 6px;
+            }
+
+            .status-badge {
+                font-size: 8px;
+                padding: 3px 6px;
+                top: 8px;
+                right: 8px;
+            }
+
+            .salgado-codigo {
+                font-size: 9px;
+                margin-bottom: 4px;
+            }
+
+            .salgado-nome {
+                font-size: 12px;
+                margin-bottom: 8px;
+                min-height: 30px;
+            }
+
+            .salgado-info {
+                gap: 6px;
+                margin-top: 8px;
+            }
+
+            .info-item {
+                padding: 6px 4px;
+            }
+
+            .info-label {
+                font-size: 8px;
+                margin-bottom: 2px;
+            }
+
+            .info-value {
+                font-size: 14px;
+            }
+
+            .salgado-preco {
+                font-size: 14px;
+                padding: 6px;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-left h1 {
+                font-size: 22px;
+            }
+
+            .sorvetes-title,
+            .salgados-title {
+                font-size: 18px;
+            }
+
+            .sorvete-stat-value {
+                font-size: 28px;
+            }
+
+            .container {
+                padding: 0 10px;
+            }
+
+            /* MANTER 3 COLUNAS MESMO EM TELAS PEQUENAS */
+            .salgados-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .salgado-card {
+                padding: 10px;
+            }
+
+            .salgado-icon {
+                font-size: 28px;
+            }
+
+            .salgado-codigo {
+                font-size: 8px;
+            }
+
+            .salgado-nome {
+                font-size: 11px;
+                min-height: 28px;
+            }
+
+            .info-value {
+                font-size: 12px;
+            }
+
+            .salgado-preco {
+                font-size: 13px;
+            }
+        }
+
+        /* LANDSCAPE MOBILE */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .salgados-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1>🔥 Estufa</h1>
+                <div class="loja-info" id="lojaInfo">Carregando...</div>
+            </div>
+            <div class="header-right">
+                <button class="btn-header" onclick="window.location.href='vendas.html'">← Voltar ao PDV</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTAINER -->
+    <div class="container">
+        <!-- PAINEL SORVETES -->
+        <div class="sorvetes-panel">
+            <div class="sorvetes-header">
+                <div class="sorvetes-title">🍦 Sorvetes Vendidos Hoje</div>
+                <div class="refresh-indicator">
+                    <div class="refresh-dot"></div>
+                    <span>Auto-refresh 30s</span>
+                </div>
+            </div>
+            <div class="sorvetes-stats">
+                <div class="sorvete-stat">
+                    <div class="sorvete-stat-label">Total Vendido</div>
+                    <div class="sorvete-stat-value" id="totalSorvetes">0</div>
+                </div>
+                <div class="sorvete-stat">
+                    <div class="sorvete-stat-label">Valor Total</div>
+                    <div class="sorvete-stat-value" id="valorSorvetes">R$ 0,00</div>
+                </div>
+                <div class="sorvete-stat">
+                    <div class="sorvete-stat-label">Última Venda</div>
+                    <div class="sorvete-stat-value" id="ultimaVendaSorvete">--:--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SALGADOS -->
+        <div class="salgados-header">
+            <div class="salgados-title">🥐 Salgados na Estufa</div>
+            <div class="total-salgados" id="totalSalgados">0 itens</div>
+        </div>
+
+        <div class="salgados-grid" id="salgadosGrid">
+            <div class="loading">
+                <div class="loading-spinner">⏳</div>
+                <p>Carregando salgados...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO SUPABASE
+const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let usuarioAtual = null;
+        let lojaAtual = null;
+        let autoRefreshInterval = null;
+
+        // INICIALIZAÇÃO
+        async function init() {
+            console.log('Inicializando estufa...');
+            
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (error || !session) {
+                alert('Você precisa estar logado!');
+                window.location.href = 'vendas.html';
+                return;
+            }
+
+            usuarioAtual = session.user;
+
+            const { data: usuarioLoja } = await supabaseClient
+                .from('usuarios_loja')
+                .select('loja_id')
+                .eq('user_id', usuarioAtual.id)
+                .maybeSingle();
+
+            if (!usuarioLoja) {
+                alert('Usuário sem loja associada');
+                return;
+            }
+
+            const { data: lojaInfo } = await supabaseClient
+                .from('lojas')
+                .select('*')
+                .eq('id', usuarioLoja.loja_id)
+                .single();
+
+            lojaAtual = lojaInfo;
+            document.getElementById('lojaInfo').textContent = `🏪 ${lojaAtual.nome}`;
+
+            await carregarDados();
+            autoRefreshInterval = setInterval(carregarDados, 30000);
+        }
+
+        async function carregarDados() {
+            console.log('Carregando dados da estufa...');
+            await Promise.all([
+                carregarSalgados(),
+                carregarSorvetes()
+            ]);
+        }
+
+        async function carregarSalgados() {
+            console.log('Carregando salgados...');
+
+            const { data: produtos, error } = await supabaseClient
+                .from('itens')
+                .select('*')
+                .eq('loja_id', lojaAtual.id)
+                .ilike('categoria', 'Salgados')
+                .eq('ativo', true)
+                .order('nome', { ascending: true });
+
+            if (error) {
+                console.error('Erro ao carregar salgados:', error);
+                document.getElementById('salgadosGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚠️</div>
+                        <p>Erro ao carregar salgados</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (!produtos || produtos.length === 0) {
+                document.getElementById('salgadosGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🥐</div>
+                        <p>Nenhum salgado cadastrado</p>
+                    </div>
+                `;
+                document.getElementById('totalSalgados').textContent = '0 itens';
+                return;
+            }
+
+            renderizarSalgados(produtos);
+            document.getElementById('totalSalgados').textContent = `${produtos.length} ${produtos.length === 1 ? 'item' : 'itens'}`;
+        }
+
+        function renderizarSalgados(produtos) {
+            console.log('Renderizando', produtos.length, 'salgados');
+
+            let html = '';
+            produtos.forEach(produto => {
+                const estoque = parseInt(produto.estoque) || 0;
+                const preco = parseFloat(produto.preco_venda) || 0;
+                
+                let statusClass = '';
+                let statusText = '';
+                let cardClass = '';
+                let estoqueClass = '';
+
+                if (estoque === 0) {
+                    statusClass = 'status-esgotado';
+                    statusText = 'Esgotado';
+                    cardClass = 'sem-estoque';
+                    estoqueClass = 'estoque-zero';
+                } else if (estoque <= 5) {
+                    statusClass = 'status-baixo';
+                    statusText = 'Baixo';
+                    cardClass = 'baixo-estoque';
+                    estoqueClass = 'estoque-baixo';
+                } else {
+                    statusClass = 'status-disponivel';
+                    statusText = 'Disponível';
+                    estoqueClass = 'estoque-ok';
+                }
+
+                html += `
+                    <div class="salgado-card ${cardClass}">
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <div class="salgado-icon">🥐</div>
+                        <div class="salgado-codigo">CÓD: ${produto.codigo}</div>
+                        <div class="salgado-nome">${produto.nome}</div>
+                        <div class="salgado-info">
+                            <div class="info-item">
+                                <div class="info-label">Estoque</div>
+                                <div class="info-value ${estoqueClass}">${estoque}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Unidade</div>
+                                <div class="info-value">${produto.unidade || 'UN'}</div>
+                            </div>
+                        </div>
+                        <div class="salgado-preco">R$ ${preco.toFixed(2)}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('salgadosGrid').innerHTML = html;
+        }
+
+        async function carregarSorvetes() {
+            console.log('Carregando dados de sorvetes vendidos hoje...');
+
+            const hoje = new Date();
+            const inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 0, 0, 0);
+            const fimHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59);
+
+            const { data: vendas, error } = await supabaseClient
+                .from('vendas')
+                .select('id, data_venda, valor_total')
+                .eq('loja_id', lojaAtual.id)
+                .gte('data_venda', inicioHoje.toISOString())
+                .lte('data_venda', fimHoje.toISOString())
+                .neq('status', 'CANCELADA');
+
+            if (error) {
+                console.error('Erro ao carregar vendas:', error);
+                return;
+            }
+
+            if (!vendas || vendas.length === 0) {
+                document.getElementById('totalSorvetes').textContent = '0';
+                document.getElementById('valorSorvetes').textContent = 'R$ 0,00';
+                document.getElementById('ultimaVendaSorvete').textContent = '--:--';
+                return;
+            }
+
+            let totalSorvetes = 0;
+            let valorTotal = 0;
+            let ultimaVenda = null;
+
+            for (const venda of vendas) {
+                const { data: itens } = await supabaseClient
+                    .from('itens_venda')
+                    .select('*')
+                    .eq('venda_id', venda.id);
+
+                if (itens) {
+                    itens.forEach(item => {
+                        if (item.item_codigo && String(item.item_codigo).toUpperCase().startsWith('X')) {
+                            totalSorvetes += item.quantidade;
+                            valorTotal += item.quantidade * parseFloat(item.preco_unitario);
+                            
+                            if (!ultimaVenda || new Date(venda.data_venda) > new Date(ultimaVenda)) {
+                                ultimaVenda = venda.data_venda;
+                            }
+                        }
+                    });
+                }
+            }
+
+            document.getElementById('totalSorvetes').textContent = totalSorvetes;
+            document.getElementById('valorSorvetes').textContent = `R$ ${valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            
+            if (ultimaVenda) {
+                const hora = new Date(ultimaVenda).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                document.getElementById('ultimaVendaSorvete').textContent = hora;
+            } else {
+                document.getElementById('ultimaVendaSorvete').textContent = '--:--';
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
