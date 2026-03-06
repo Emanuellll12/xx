@@ -637,7 +637,7 @@
             border-left: 3px solid #f59e0b;
         }
         .produto-item.estoque-baixo {
-            background: #af4b2c;
+            background: #fff8f0;
             border-color: #f97316;
             animation: pulseLaranja 2s ease-in-out infinite;
         }
@@ -645,7 +645,7 @@
             border-color: #ea580c;
             box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
         }
-        .produto-item.estoque-baixo .produto-nome { color: #ffffff; }
+        .produto-item.estoque-baixo .produto-nome { color: #9a3412; }
         @keyframes pulseLaranja {
             0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
             50%       { box-shadow: 0 0 0 4px rgba(249,115,22,0.2); }
@@ -3226,6 +3226,8 @@
 
         async function fecharCaixa() {
             if (!caixaAtual) { alert('Nenhum caixa aberto'); return; }
+            console.log('💰 Abrindo gaveta (fechar caixa)...');
+            await abrirGaveta();
             abrirModalFechamento();
         }
         // ==================== RETIRAR DINHEIRO ====================
