@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6c059b">
+    <title>OMG - Sistema de Gestão</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #6c059b 0%, #4a0470 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* CONTAINER */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .logo {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 30px;
+            background: white;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+
+        .logo-text {
+            font-size: 72px;
+            font-weight: 900;
+            color: #6c059b;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            color: rgba(255,255,255,0.95);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .loja-info {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 20px;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* GRID DE MÓDULOS */
+        .modulos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .modulo-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .modulo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #6c059b, #8b3db8);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .modulo-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .modulo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(108, 5, 155, 0.4);
+        }
+
+        .modulo-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            display: block;
+            transition: transform 0.3s;
+        }
+
+        .modulo-card:hover .modulo-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .modulo-titulo {
+            font-size: 28px;
+            font-weight: 900;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .modulo-descricao {
+            font-size: 15px;
+            color: #6b7280;
+            font-weight: 500;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modulo-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-pdv {
+            background: linear-gradient(135deg, #6c059b 0%, #8b3db8 100%);
+            color: white;
+        }
+
+        .badge-itens {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .badge-financeiro {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .badge-estufa {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            animation: fadeIn 0.8s ease 0.4s both;
+        }
+
+        .btn-sair {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 14px 32px;
+            border-radius: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            font-size: 16px;
+            display: inline-block;
+        }
+
+        .btn-sair:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        /* ANIMAÇÕES */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* LOADING */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .loading-spinner {
+            font-size: 64px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .header p {
+                font-size: 16px;
+            }
+
+            .logo {
+                width: 100px;
+                height: 100px;
+                margin-bottom: 20px;
+            }
+
+            .logo-text {
+                font-size: 48px;
+            }
+
+            .loja-info {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            .modulos-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .modulo-card {
+                padding: 30px;
+            }
+
+            .modulo-icon {
+                font-size: 64px;
+            }
+
+            .modulo-titulo {
+                font-size: 24px;
+            }
+
+            .modulo-descricao {
+                font-size: 14px;
+            }
+
+            .header {
+                margin-bottom: 40px;
+            }
+
+            .footer {
+                margin-top: 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 28px;
+            }
+
+            .logo {
+                width: 80px;
+                height: 80px;
+            }
+
+            .logo-text {
+                font-size: 40px;
+            }
+
+            .modulo-icon {
+                font-size: 56px;
+            }
+
+            .modulo-titulo {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="mainContainer">
+        <div class="loading">
+            <div class="loading-spinner">⏳</div>
+            <p style="font-size: 18px; font-weight: 600;">Carregando...</p>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURAÇÃO SUPABASE
+const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let usuarioAtual = null;
+        let lojaAtual = null;
+
+        // INICIALIZAÇÃO
+        async function init() {
+            console.log('Inicializando sistema...');
+            
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (error || !session) {
+                alert('Você precisa estar logado!');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            usuarioAtual = session.user;
+
+            const { data: usuarioLoja } = await supabaseClient
+                .from('usuarios_loja')
+                .select('loja_id, cargo')
+                .eq('user_id', usuarioAtual.id)
+                .maybeSingle();
+
+            if (!usuarioLoja) {
+                alert('Usuário sem loja associada');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const { data: lojaInfo } = await supabaseClient
+                .from('lojas')
+                .select('*')
+                .eq('id', usuarioLoja.loja_id)
+                .single();
+
+            lojaAtual = lojaInfo;
+            
+            renderizarPagina();
+        }
+
+        function renderizarPagina() {
+            const container = document.getElementById('mainContainer');
+            
+            container.innerHTML = `
+                <!-- HEADER -->
+                <div class="header">
+                    <div class="logo">
+                        <div class="logo-text">OMG</div>
+                    </div>
+                    <h1>Sistema de Gestão</h1>
+                    <p>Bem-vindo ao COVEX</p>
+                    <div class="loja-info">🏪 ${lojaAtual.nome}</div>
+                </div>
+
+                <!-- MÓDULOS -->
+                <div class="modulos-grid">
+                    <!-- PDV -->
+
+                    <!-- ITENS -->
+                    <a href="itens.html" class="modulo-card">
+                        <span class="modulo-icon">📦</span>
+                        <div class="modulo-titulo">Itens</div>
+                        <div class="modulo-descricao">
+                            Cadastro e gerenciamento de produtos, controle de estoque, preços e categorias com upload de fotos.
+                        </div>
+                        <span class="modulo-badge badge-itens">Gestão de Produtos</span>
+                    </a>
+
+                    <!-- FINANCEIRO -->
+                    <a href="financeiro.html" class="modulo-card">
+                        <span class="modulo-icon">💰</span>
+                        <div class="modulo-titulo">Financeiro</div>
+                        <div class="modulo-descricao">
+                            Dashboard financeiro com gráficos, relatórios de vendas, análise de desempenho e controle de caixa.
+                        </div>
+                        <span class="modulo-badge badge-financeiro">Relatórios & Análises</span>
+                    </a>
+
+                    <!-- ESTUFA -->
+                    <a href="estufa.html" class="modulo-card">
+                        <span class="modulo-icon">🔥</span>
+                        <div class="modulo-titulo">Estufa</div>
+                        <div class="modulo-descricao">
+                            Monitoramento em tempo real de salgados e sorvetes, controle de estoque da estufa com auto-refresh.
+                        </div>
+                        <span class="modulo-badge badge-estufa">Controle de Estufa</span>
+                    </a>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="footer">
+                    <button class="btn-sair" onclick="fazerLogout()">🚪 Sair do Sistema</button>
+                </div>
+            `;
+        }
+
+        async function fazerLogout() {
+            if (confirm('Deseja realmente sair do sistema?')) {
+                await supabaseClient.auth.signOut();
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Inicializar
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
