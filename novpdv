@@ -1887,7 +1887,7 @@
                                         <div class="produto-acoes">
                                             <button class="btn-favorito${isFav ? ' ativo' : ''}" onclick="toggleFavorito('${produto.codigo}','${lojaId}')" title="Favoritar">⭐</button>
                                             <button class="btn-reposicao" onclick='reporEstoque(${JSON.stringify(produto).replace(/'/g, "&apos;")})' title="Repor Estoque">📦</button>
-                                            <button class="btn-adicionar" onclick='adicionarAoCarrinho(${JSON.stringify(produto).replace(/'/g, "&apos;")})'>+</button>
+                                            <button class="btn-adicionar${semEstoque ? ' disabled' : ''}" ${semEstoque ? 'disabled style="opacity:0.35;cursor:not-allowed;"' : ''} onclick='adicionarAoCarrinho(${JSON.stringify(produto).replace(/'/g, "&apos;")})'>+</button>
                                         </div>
                                     </div>
                                 </div>
@@ -2330,6 +2330,10 @@
             console.log('Adicionando ao carrinho:', produto);
             if (isProdutoBalanca(produto)) {
                 abrirModalBalanca(produto);
+                return;
+            }
+            if (produto.estoque <= 0) {
+                alert(`❌ Produto sem estoque! Não é possível adicionar ao carrinho.`);
                 return;
             }
             const itemExistente = carrinho.find(item => item.codigo === produto.codigo);
