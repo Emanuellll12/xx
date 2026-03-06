@@ -3264,6 +3264,13 @@
         }
         // ==================== RETIRAR DINHEIRO ====================
         async function retirarDinheiro() {
+            const senhaDigitada = prompt('🔒 Digite a senha para retirar dinheiro:');
+            if (senhaDigitada === null) return; // Cancelou
+            if (senhaDigitada !== 'novello01' && senhaDigitada !== 'salgado01') {
+                alert('❌ Senha incorreta! Acesso negado.');
+                return;
+            }
+
             // NOTIFICAR IMEDIATAMENTE AO CLICAR NO BOTÃO
             await notificarAcaoCaixa('CLIQUE_RETIRADA', {});
 
@@ -3695,6 +3702,13 @@
         // ==================== HISTÓRICO DE VENDAS ====================
         
         function abrirHistoricoVendas() {
+            const senhaDigitada = prompt('🔒 Digite a senha para acessar o histórico de vendas:');
+            if (senhaDigitada === null) return; // Cancelou
+            if (senhaDigitada !== 'novello01') {
+                alert('❌ Senha incorreta! Acesso negado.');
+                return;
+            }
+
             // Definir data de hoje como padrão
             const hoje = new Date().toISOString().split('T')[0];
             document.getElementById('dataFiltro').value = hoje;
