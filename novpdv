@@ -663,6 +663,30 @@
             margin-left: 6px;
             vertical-align: middle;
         }
+        .produto-item.sem-estoque {
+            background: #f9f9f9;
+            border-color: #d1d5db;
+            opacity: 0.65;
+            filter: grayscale(0.3);
+        }
+        .produto-item.sem-estoque:hover {
+            border-color: #9ca3af;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .produto-item.sem-estoque .produto-nome { color: #6b7280; }
+        .badge-sem-estoque {
+            display: inline-block;
+            background: #6b7280;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
         .categoria-produtos {
             display: flex;
             flex-direction: column;
@@ -1709,7 +1733,6 @@
                     .select('codigo, nome, categoria, preco_venda, estoque, unidade, loja_id')
                     .eq('ativo', true)
                     .eq('loja_id', lojaAtual.id) // Filtro explícito por segurança
-                    .gt('estoque', 0)
                     .order('nome');
 
                 if (error) {
@@ -1849,10 +1872,15 @@
                             ${ordenados.map(produto => {
                                 const isFav = favs.includes(produto.codigo);
                                 const lojaId = lojaAtual ? lojaAtual.id : '';
-                                const estoqueBaixo = produto.estoque <= 1;
+                                const semEstoque = produto.estoque <= 0;
+                                const estoqueBaixo = !semEstoque && produto.estoque <= 1;
+                                const classeEstoque = semEstoque ? ' sem-estoque' : (estoqueBaixo ? ' estoque-baixo' : '');
+                                const badgeEstoque = semEstoque 
+                                    ? '<span class="badge-sem-estoque">❌ Sem estoque</span>'
+                                    : (estoqueBaixo ? '<span class="badge-estoque-baixo">⚠️ Estoque baixo</span>' : '');
                                 return `
-                                <div class="produto-item${isFav ? ' favorito' : ''}${estoqueBaixo ? ' estoque-baixo' : ''}">
-                                    <div class="produto-nome">${produto.nome}${estoqueBaixo ? '<span class="badge-estoque-baixo">⚠️ Estoque baixo</span>' : ''}</div>
+                                <div class="produto-item${isFav ? ' favorito' : ''}${classeEstoque}">
+                                    <div class="produto-nome">${produto.nome}${badgeEstoque}</div>
                                     <div class="produto-codigo">Cód: ${produto.codigo} | Estoque: ${produto.estoque}</div>
                                     <div class="produto-footer">
                                         <div class="produto-preco">R$ ${parseFloat(produto.preco_venda).toFixed(2)}</div>
