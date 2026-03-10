@@ -845,9 +845,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         lojaAtual = lojaInfo;
                         await verificarOuCriarCaixa();
                         carregarProdutos();
-                        aplicarCustomizacaoElgin().then(() => {
-                            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
-                        });
+                        setTimeout(() => { window.location.href = 'intent://connect/start'; }, 500);
                         return;
                     }
                 }
@@ -859,65 +857,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     document.getElementById('telaLogin').classList.add('active');
 });
-
-// ==================== CUSTOMIZAÇÃO ELGIN TEF ====================
-function dispararIntent(uri) {
-    // Usa <a> com click programático — mais confiável que window.location.href para intents com extras
-    return new Promise((resolve) => {
-        try {
-            const a = document.createElement('a');
-            a.href = uri;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                resolve();
-            }, 400);
-        } catch(e) {
-            console.warn('Intent error:', e);
-            resolve();
-        }
-    });
-}
-
-async function aplicarCustomizacaoElgin() {
-    const LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuAbLiXKpQYAp47ltDZJK6XpNXF-oInwK7jmH_LijndDK7ZDmAJloCik_wsbYw0x3JXXXPQG1A3NzHsOkK22xFB_zW1xbPx3QnNOK90_Q0b6hKNrNF2-CkRE1vOmLthEzb0xhLwoE-egn2-A9KlV3Hf90Qz1DOCOiAZLavPCmqYgNgFdS19FuBDwXzd1Tx/s320/ChatGPT%20Image%2024%20de%20fev.%20de%202026,%2016_53_37.png';
-
-    // Sintaxe correta: intent://HOST#Intent;action=...;S.extra=valor;end
-    // NÃO usar encodeURIComponent nos valores de cor pois o # vira %23 e quebra
-
-    // 1. application: gradiente roxo + logo
-    await dispararIntent(
-        `intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;` +
-        `S.grupo=application;` +
-        `S.logotipo=${encodeURIComponent(LOGO_URL)};` +
-        `S.gradienteInicio=%236c059b;` +
-        `S.gradienteFim=%234a0370;` +
-        `end`
-    );
-
-    // 2. header: botões e ícones brancos sobre roxo
-    await dispararIntent(
-        `intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;` +
-        `S.grupo=header;` +
-        `S.corBotao=%236c059b;` +
-        `S.corIcone=%23ffffff;` +
-        `S.corFonte=%23ffffff;` +
-        `end`
-    );
-
-    // 3. content: mesmo esquema
-    await dispararIntent(
-        `intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;` +
-        `S.grupo=content;` +
-        `S.corBotao=%236c059b;` +
-        `S.corIcone=%23ffffff;` +
-        `S.corFonte=%23ffffff;` +
-        `S.corFonteMensagem=%234a0370;` +
-        `end`
-    );
-}
 
 // ==================== AUTENTICAÇÃO ====================
 async function fazerLogin() {
@@ -941,9 +880,7 @@ async function fazerLogin() {
         document.getElementById('telaLogin').classList.remove('active');
         await verificarOuCriarCaixa();
         carregarProdutos();
-        aplicarCustomizacaoElgin().then(() => {
-            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
-        });
+        setTimeout(() => { window.location.href = 'intent://connect/start'; }, 500);
     } catch(e) {
         console.error('Erro login:', e);
         erroEl.textContent = 'Erro ao fazer login: ' + e.message;
