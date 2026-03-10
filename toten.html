@@ -656,7 +656,7 @@
         <div class="bv-logo-ring">
             <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijIxmSiMuWAtAUoqsx0CBMnEHEqEWBVgcUJ1KrH1MscmYpfOSVrOEO4KiQVhfyGWix6V5RCzdx1-1_b2jMHJdL3R4knnp-F_KjO9eMfOIxKgqToM5yFYtAS5KHjDnG_7FQNfAlxGs9_0q-BFvFbFIjuNDO_9ii1nwRFlqWb4i4wy-t-kFoQ-bRGG2bm_nC/s16000/ChatGPT%20Image%2025%20de%20fev.%20de%202026,%2012_11_35.png" alt="Logo" onerror="this.parentElement.innerHTML='🍔'">
         </div>
-        <div class="bv-pill">Autoatendimento000000</div>
+        <div class="bv-pill">Autoatendimento</div>
         <div class="bv-nome-loja">Casa do Salgado</div>
         <div class="bv-subtitulo">Faça seu pedido aqui</div>
         <div class="bv-divider"></div>
@@ -845,8 +845,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         lojaAtual = lojaInfo;
                         await verificarOuCriarCaixa();
                         carregarProdutos();
-                        aplicarCustomizacaoElgin();
-                        setTimeout(() => { window.location.href = 'intent://connect/start'; }, 1200);
+                        aplicarCustomizacaoElgin().then(() => {
+                            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
+                        });
                         return;
                     }
                 }
@@ -860,32 +861,62 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==================== CUSTOMIZAÇÃO ELGIN TEF ====================
-function aplicarCustomizacaoElgin() {
+function dispararIntent(uri) {
+    // Usa <a> com click programático — mais confiável que window.location.href para intents com extras
+    return new Promise((resolve) => {
+        try {
+            const a = document.createElement('a');
+            a.href = uri;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                resolve();
+            }, 400);
+        } catch(e) {
+            console.warn('Intent error:', e);
+            resolve();
+        }
+    });
+}
+
+async function aplicarCustomizacaoElgin() {
     const LOGO_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuAbLiXKpQYAp47ltDZJK6XpNXF-oInwK7jmH_LijndDK7ZDmAJloCik_wsbYw0x3JXXXPQG1A3NzHsOkK22xFB_zW1xbPx3QnNOK90_Q0b6hKNrNF2-CkRE1vOmLthEzb0xhLwoE-egn2-A9KlV3Hf90Qz1DOCOiAZLavPCmqYgNgFdS19FuBDwXzd1Tx/s320/ChatGPT%20Image%2024%20de%20fev.%20de%202026,%2016_53_37.png';
-    const GRADIENTE_INICIO = '#6c059b';
-    const GRADIENTE_FIM = '#4a0370';
-    const COR_BOTAO = '#6c059b';
-    const COR_ICONE = '#ffffff';
-    const COR_FONTE = '#ffffff';
 
-    // 1. Customização geral (background + logo)
-    try {
-        window.location.href = `intent:#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=application;S.logotipo=${encodeURIComponent(LOGO_URL)};S.gradienteInicio=${encodeURIComponent(GRADIENTE_INICIO)};S.gradienteFim=${encodeURIComponent(GRADIENTE_FIM)};end`;
-    } catch(e) { console.warn('Customização application:', e); }
+    // Sintaxe correta: intent://HOST#Intent;action=...;S.extra=valor;end
+    // NÃO usar encodeURIComponent nos valores de cor pois o # vira %23 e quebra
 
-    // 2. Customização do header
-    setTimeout(() => {
-        try {
-            window.location.href = `intent:#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=header;S.corBotao=${encodeURIComponent(COR_BOTAO)};S.corIcone=${encodeURIComponent(COR_ICONE)};S.corFonte=${encodeURIComponent(COR_FONTE)};end`;
-        } catch(e) { console.warn('Customização header:', e); }
-    }, 300);
+    // 1. application: gradiente roxo + logo
+    await dispararIntent(
+        `intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;` +
+        `S.grupo=application;` +
+        `S.logotipo=${encodeURIComponent(LOGO_URL)};` +
+        `S.gradienteInicio=%236c059b;` +
+        `S.gradienteFim=%234a0370;` +
+        `end`
+    );
 
-    // 3. Customização do content
-    setTimeout(() => {
-        try {
-            window.location.href = `intent:#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=content;S.corBotao=${encodeURIComponent(COR_BOTAO)};S.corIcone=${encodeURIComponent(COR_ICONE)};S.corFonte=${encodeURIComponent(COR_FONTE)};S.corFonteMensagem=${encodeURIComponent('#4a0370')};end`;
-        } catch(e) { console.warn('Customização content:', e); }
-    }, 600);
+    // 2. header: botões e ícones brancos sobre roxo
+    await dispararIntent(
+        `intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;` +
+        `S.grupo=header;` +
+        `S.corBotao=%236c059b;` +
+        `S.corIcone=%23ffffff;` +
+        `S.corFonte=%23ffffff;` +
+        `end`
+    );
+
+    // 3. content: mesmo esquema
+    await dispararIntent(
+        `intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;` +
+        `S.grupo=content;` +
+        `S.corBotao=%236c059b;` +
+        `S.corIcone=%23ffffff;` +
+        `S.corFonte=%23ffffff;` +
+        `S.corFonteMensagem=%234a0370;` +
+        `end`
+    );
 }
 
 // ==================== AUTENTICAÇÃO ====================
@@ -910,8 +941,9 @@ async function fazerLogin() {
         document.getElementById('telaLogin').classList.remove('active');
         await verificarOuCriarCaixa();
         carregarProdutos();
-        aplicarCustomizacaoElgin();
-        setTimeout(() => { window.location.href = 'intent://connect/start'; }, 1200);
+        aplicarCustomizacaoElgin().then(() => {
+            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
+        });
     } catch(e) {
         console.error('Erro login:', e);
         erroEl.textContent = 'Erro ao fazer login: ' + e.message;
