@@ -1463,7 +1463,7 @@ function mostrarToast(msg) {
 </script>
 
 <!-- Botão flutuante para iniciar o APK da impressora -->
-<a id="linkImpressora" href="intent://start#Intent;scheme=omgprinter;package=com.omg.gertecapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end" style="display:none;"></a>
+<a id="linkImpressora" href="intent://start#Intent;scheme=omgprinter;package=com.omg.gertecapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10000000;S.browser_fallback_url=about%3Ablank;end" style="display:none;"></a>
 
 <div id="btnImpressoraWrap" style="position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
   <button id="btnImpressora" onclick="iniciarImpressora()"
