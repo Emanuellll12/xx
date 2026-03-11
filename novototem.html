@@ -1463,6 +1463,8 @@ function mostrarToast(msg) {
 </script>
 
 <!-- Botão flutuante para iniciar o APK da impressora -->
+<a id="linkImpressora" href="intent://start#Intent;scheme=omgprinter;package=com.omg.gertecapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end" style="display:none;"></a>
+
 <div id="btnImpressoraWrap" style="position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
   <button id="btnImpressora" onclick="iniciarImpressora()"
     style="background:#6c059b;color:#fff;border:none;border-radius:16px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(108,5,155,0.5);display:flex;align-items:center;gap:10px;">
@@ -1472,85 +1474,55 @@ function mostrarToast(msg) {
 </div>
 
 <script>
-async function iniciarImpressora() {
-    const btn = document.getElementById('btnImpressora');
-    const statusEl = document.getElementById('statusImpressora');
-
-    // 1. Verifica se já está ativo
+async function verificarImpressora() {
     try {
         const r = await fetch('http://localhost:3000/status', { signal: AbortSignal.timeout(1500) });
         const d = await r.json();
-        if (d.ok) {
-            marcarAtiva(btn, statusEl);
-            return;
-        }
-    } catch(e) {}
-
-    // 2. Abre o APK em segundo plano via intent com FLAG_ACTIVITY_NO_HISTORY
-    // Isso abre o app, ele inicia o serviço e some — voltando ao Chrome automaticamente
-    statusEl.textContent = '⏳ Iniciando serviço...';
-    statusEl.style.color = '#fbbf24';
-
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    // FLAG_ACTIVITY_NEW_TASK (268435456) + FLAG_ACTIVITY_NO_HISTORY (1073741824) = 1342177280
-    // Isso faz o app abrir, iniciar o serviço e não ficar na pilha de navegação
-    iframe.src = 'intent://start#Intent;scheme=omgprinter;package=com.omg.gertecapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;i.android.intent.extra.START_FLAGS=1342177280;end';
-    document.body.appendChild(iframe);
-
-    // 3. Aguarda o serviço subir (tenta por até 10s)
-    let tentativas = 0;
-    const verificar = setInterval(async () => {
-        tentativas++;
-        try {
-            const r = await fetch('http://localhost:3000/status', { signal: AbortSignal.timeout(1000) });
-            const d = await r.json();
-            if (d.ok) {
-                clearInterval(verificar);
-                marcarAtiva(btn, statusEl);
-                document.body.removeChild(iframe);
-                return;
-            }
-        } catch(e) {}
-
-        if (tentativas >= 10) {
-            clearInterval(verificar);
-            // Fallback: abre normalmente se iframe não funcionou
-            statusEl.textContent = '⏳ Abrindo app...';
-            window.location.href = 'intent://start#Intent;scheme=omgprinter;package=com.omg.gertecapp;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
-            // Verifica após voltar ao Chrome
-            setTimeout(async () => {
-                try {
-                    const r2 = await fetch('http://localhost:3000/status', { signal: AbortSignal.timeout(2000) });
-                    const d2 = await r2.json();
-                    if (d2.ok) marcarAtiva(btn, statusEl);
-                    else statusEl.textContent = '⚠️ Minimize o app da impressora';
-                } catch(e) {
-                    statusEl.textContent = '⚠️ Minimize o app da impressora';
-                    statusEl.style.color = '#f87171';
-                }
-            }, 4000);
-        }
-    }, 1000);
+        return d.ok === true;
+    } catch(e) { return false; }
 }
 
-function marcarAtiva(btn, statusEl) {
+function marcarAtiva() {
+    const btn = document.getElementById('btnImpressora');
+    const statusEl = document.getElementById('statusImpressora');
     statusEl.textContent = '✅ Impressora ativa!';
     statusEl.style.color = '#10b981';
     btn.style.background = '#059669';
     btn.textContent = '✅ Impressora Ativa';
-    btn.onclick = null; // Desabilita o botão
+    btn.onclick = null;
 }
 
-// Verifica ao carregar a página
-window.addEventListener('load', async () => {
+async function iniciarImpressora() {
     const statusEl = document.getElementById('statusImpressora');
-    const btn = document.getElementById('btnImpressora');
-    try {
-        const r = await fetch('http://localhost:3000/status', { signal: AbortSignal.timeout(1500) });
-        const d = await r.json();
-        if (d.ok) marcarAtiva(btn, statusEl);
-    } catch(e) {}
+
+    // Já está ativo?
+    if (await verificarImpressora()) { marcarAtiva(); return; }
+
+    // Abre o APK exatamente como a Elgin faz — clique programático num <a href="intent://...">
+    statusEl.textContent = '⏳ Iniciando serviço...';
+    statusEl.style.color = '#fbbf24';
+    document.getElementById('linkImpressora').click();
+
+    // Verifica a cada 1s por até 12s se o serviço subiu
+    let n = 0;
+    const poll = setInterval(async () => {
+        n++;
+        if (await verificarImpressora()) {
+            clearInterval(poll);
+            marcarAtiva();
+            return;
+        }
+        if (n >= 12) {
+            clearInterval(poll);
+            statusEl.textContent = '⚠️ Abra o app "OMG Impressora" manualmente e minimize';
+            statusEl.style.color = '#f87171';
+        }
+    }, 1000);
+}
+
+// Verifica ao carregar
+window.addEventListener('load', async () => {
+    if (await verificarImpressora()) marcarAtiva();
 });
 </script>
 
