@@ -1522,21 +1522,28 @@ function iniciarSistema() {
     const status = document.getElementById('startStatus');
     const btn = document.querySelector('#overlayStart button');
     btn.disabled = true;
-    status.textContent = 'Iniciando impressora...';
+    status.textContent = '⏳ Abrindo impressora...';
 
-    // 1. Abre app (inicia servico, minimiza sozinho)
+    // Quando o Chrome voltar ao foco (após o app abrir e minimizar),
+    // dispara o teste e some o overlay
+    function aoVoltar() {
+        if (document.visibilityState === 'visible') {
+            document.removeEventListener('visibilitychange', aoVoltar);
+            status.textContent = '🖨️ Imprimindo teste...';
+            // Pequena pausa pra garantir que o serviço do APK subiu
+            setTimeout(() => {
+                window.location.href = 'omgprinter://teste';
+                // Some overlay depois que o deeplink do teste for enviado
+                setTimeout(() => {
+                    document.getElementById('overlayStart').style.display = 'none';
+                }, 1500);
+            }, 1000);
+        }
+    }
+    document.addEventListener('visibilitychange', aoVoltar);
+
+    // Abre o app — minimiza sozinho e devolve foco ao Chrome
     window.location.href = 'omgprinter://start';
-
-    // 2. Imprime teste apos 3s
-    setTimeout(() => {
-        status.textContent = 'Imprimindo teste...';
-        window.location.href = 'omgprinter://teste';
-    }, 3000);
-
-    // 3. Some overlay apos 4s
-    setTimeout(() => {
-        document.getElementById('overlayStart').style.display = 'none';
-    }, 4500);
 }
 
 function imprimirTeste() {
