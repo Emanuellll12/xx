@@ -561,10 +561,31 @@
 
         .bv-cats-titulo {
             font-family:'Syne',sans-serif;
-            font-size:13px; font-weight:700;
-            color:var(--cinza); text-transform:uppercase;
-            letter-spacing:3px; text-align:center;
+            font-size:22px; font-weight:800;
+            color:#fff; text-transform:uppercase;
+            letter-spacing:2px; text-align:center;
             position:relative; z-index:2;
+            background: linear-gradient(135deg, #fff 0%, #d8b4fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            padding: 4px 0;
+        }
+        .bv-cats-subtitulo {
+            font-size:20px; font-weight:700;
+            color:rgba(255,255,255,0.85); text-align:center;
+            letter-spacing:1px; margin-top:4px;
+            position:relative; z-index:2;
+        }
+        .bv-seta {
+            font-size:28px; text-align:center;
+            position:relative; z-index:2;
+            animation: pulseSeta 1s ease-in-out infinite;
+            line-height:1;
+        }
+        @keyframes pulseSeta {
+            0%, 100% { transform: translateY(0); opacity:1; }
+            50% { transform: translateY(6px); opacity:0.5; }
         }
 
         .bv-grid {
@@ -671,9 +692,10 @@
         <div class="bv-subtitulo">Faça seu pedido aqui</div>
         <div class="bv-divider"></div>
     </div>
-    <div class="bv-cats-titulo">O que você quer hoje?</div><br>
+    <div class="bv-cats-titulo">👇 O QUE VOCÊ QUER HOJE?</div>
+
     <div class="bv-grid" id="bvGrid"></div>
-    <div class="bv-toque">✦ Toque em uma categoria para começar ✦</div>
+
 </div>
 
 <div class="totem-wrapper">
