@@ -831,33 +831,41 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    const credSalvas = localStorage.getItem('totem_credenciais');
-    if (credSalvas) {
-        try {
-            const { email, senha } = JSON.parse(credSalvas);
-            const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-            if (!loginError && loginData?.user) {
-                usuarioAtual = loginData.user;
-                const { data: usuariosLoja } = await supabaseClient.from('usuarios_loja').select('loja_id, cargo').eq('user_id', usuarioAtual.id).limit(1);
-                if (usuariosLoja && usuariosLoja.length > 0) {
-                    const { data: lojaInfo } = await supabaseClient.from('lojas').select('*').eq('id', usuariosLoja[0].loja_id).maybeSingle();
-                    if (lojaInfo && lojaInfo.status === 'ATIVO') {
-                        lojaAtual = lojaInfo;
-                        await verificarOuCriarCaixa();
-                        carregarProdutos();
-                        aplicarCustomizacaoElgin().then(() => {
-                            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
-                        });
-                        return;
-                    }
-                }
-            }
-        } catch(e) {
-            console.warn('Sessão salva inválida, pedindo login:', e);
-        }
+    // SEMPRE mostra tela de login primeiro — nunca tela preta
+    // Login automático só roda se tiver credenciais válidas salvas
+    function mostrarLogin() {
         localStorage.removeItem('totem_credenciais');
+        document.getElementById('telaLogin').classList.add('active');
     }
-    document.getElementById('telaLogin').classList.add('active');
+
+    const credSalvas = localStorage.getItem('totem_credenciais');
+    if (!credSalvas) { mostrarLogin(); return; }
+
+    try {
+        const { email, senha } = JSON.parse(credSalvas);
+        if (!email || !senha) { mostrarLogin(); return; }
+
+        const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        if (loginError || !loginData?.user) { mostrarLogin(); return; }
+
+        usuarioAtual = loginData.user;
+
+        const { data: usuariosLoja, error: e1 } = await supabaseClient.from('usuarios_loja').select('loja_id, cargo').eq('user_id', usuarioAtual.id).limit(1);
+        if (e1 || !usuariosLoja || usuariosLoja.length === 0) { mostrarLogin(); return; }
+
+        const { data: lojaInfo, error: e2 } = await supabaseClient.from('lojas').select('*').eq('id', usuariosLoja[0].loja_id).maybeSingle();
+        if (e2 || !lojaInfo || lojaInfo.status !== 'ATIVO') { mostrarLogin(); return; }
+
+        lojaAtual = lojaInfo;
+        await verificarOuCriarCaixa();
+        carregarProdutos();
+        aplicarCustomizacaoElgin().then(() => {
+            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
+        });
+    } catch(e) {
+        console.warn('Erro no auto-login:', e);
+        mostrarLogin();
+    }
 });
 
 // ==================== CUSTOMIZAÇÃO ELGIN TEF ====================
@@ -972,7 +980,9 @@ async function carregarProdutos() {
         mostrarTelaBoasVindas();
     } catch(e) {
         console.error('Erro ao carregar produtos:', e);
-        document.getElementById('produtosGrid').innerHTML = '<div class="loading-state"><p>⚠️ Erro ao carregar cardápio</p></div>';
+        // NUNCA tela preta — mostra erro visível e volta pro login
+        document.getElementById('produtosGrid').innerHTML = '<div class="loading-state"><p>⚠️ Erro ao carregar cardápio<br><small>' + e.message + '</small></p></div>';
+        document.getElementById('telaLogin').classList.add('active');
     }
 }
 
