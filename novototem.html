@@ -453,7 +453,39 @@
         }
         @keyframes bounceIn { 0%{transform:scale(0)} 60%{transform:scale(1.12)} 100%{transform:scale(1)} }
         .sucesso-titulo { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--texto); margin-bottom:6px; }
-        .sucesso-sub { font-size:15px; color:var(--cinza); font-weight:500; margin-bottom:24px; }
+        .sucesso-sub { font-size:15px; color:var(--cinza); font-weight:500; margin-bottom:16px; }
+        .sucesso-impressao {
+            display:flex; align-items:center; justify-content:center; gap:12px;
+            background: linear-gradient(135deg, rgba(108,5,155,0.12), rgba(139,47,201,0.08));
+            border: 2px solid rgba(108,5,155,0.35);
+            border-radius: var(--radius-sm);
+            padding: 16px 20px; margin-bottom: 20px;
+            font-size: 16px; font-weight: 700; color: var(--roxo);
+            line-height: 1.4; text-align: left;
+            animation: pulseImpressao 1.5s ease-in-out infinite;
+        }
+        .sucesso-impressao-icone {
+            font-size: 32px; flex-shrink: 0;
+            animation: bounceImpressao 1s ease-in-out infinite;
+        }
+        @keyframes pulseImpressao {
+            0%,100% { box-shadow: 0 0 0 0 rgba(108,5,155,0.2); }
+            50% { box-shadow: 0 0 0 8px rgba(108,5,155,0); }
+        }
+        @keyframes bounceImpressao {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .pgto-impressao-aviso {
+            margin-top: 14px;
+            background: linear-gradient(135deg, rgba(108,5,155,0.15), rgba(139,47,201,0.1));
+            border: 2px solid rgba(108,5,155,0.4);
+            border-radius: var(--radius-sm);
+            padding: 14px 18px;
+            font-size: 16px; font-weight: 800; color: var(--roxo);
+            text-align: center; letter-spacing: 0.5px;
+            animation: pulseImpressao 1.5s ease-in-out infinite;
+        }
         .sucesso-codigo {
             background:var(--preto-surface);
             border:1px solid var(--preto-border);
@@ -826,6 +858,10 @@
         <div class="sucesso-ring">🎉</div>
         <div class="sucesso-titulo">Pedido Confirmado!</div>
         <div class="sucesso-sub">Seu pedido foi registrado com sucesso</div>
+        <div class="sucesso-impressao" id="sucessoImpressao" style="display:none">
+            <span class="sucesso-impressao-icone">🖨️</span>
+            <span>Aguarde a impressão<br>do seu comprovante</span>
+        </div>
         <div class="sucesso-codigo">
             <div class="sucesso-codigo-label">Número do Pedido</div>
             <div class="sucesso-codigo-valor" id="sucessoCodigo">#0000</div>
@@ -1403,7 +1439,7 @@ async function iniciarPagamento(metodo) {
         }
         console.log('RESULTADO TEF:', JSON.stringify(resultado));
         if (tefAprovado(resultado)) {
-            document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>';
+            document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>' + (metodo === 'PIX' ? '<div class="pgto-impressao-aviso">🖨️ Aguarde a impressão do comprovante...</div>' : '');
             document.getElementById('btnCancelarPgto').disabled = true;
             const tef = resultado.resultado?.tef || {};
             const dadosTEF = { nsu: tef.nsuTerminal || tef.nsuTransacao || null, data_tef: tef.dataHoraTransacao || null, autorizacao: tef.codigoAutorizacao || null, bandeira: tef.nomeBandeira || tef.codigoBandeira || null, parcelas: tef.parcelas || 1 };
@@ -1411,7 +1447,7 @@ async function iniciarPagamento(metodo) {
             document.getElementById('modalPagamento').classList.remove('active');
             if (reg?.sucesso) {
                 imprimirCupom(carrinho, getValorTotal(), reg.codigo_venda, metodo);
-                mostrarSucesso(reg.codigo_venda);
+                mostrarSucesso(reg.codigo_venda, metodo === 'PIX');
             } else {
                 alert('❌ Pagamento aprovado no TEF, mas erro ao salvar no sistema.\nNSU: ' + (dadosTEF.nsu || 'N/A'));
             }
@@ -1549,7 +1585,7 @@ async function finalizarDividido() {
     const reg = await registrarVendaTotem('DIVIDIDO', {});
     if (reg?.sucesso) {
         imprimirCupom(carrinhoParaImprimir, totalParaImprimir, reg.codigo_venda, 'DIVIDIDO');
-        mostrarSucesso(reg.codigo_venda);
+        mostrarSucesso(reg.codigo_venda, false);
     } else {
         alert('❌ Todos os pagamentos aprovados, mas erro ao salvar no sistema. Contate o suporte.');
     }
@@ -1596,11 +1632,17 @@ async function notificarVendaSorveteTotem(itens, vendaId, valorTotal) {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chatId, text: mensagem, parse_mode: 'Markdown' }) });
 }
 
-function mostrarSucesso(codigoVenda) {
+function mostrarSucesso(codigoVenda, isPix) {
     document.getElementById('sucessoCodigo').textContent = `#${String(codigoVenda).slice(-6).padStart(6, '0')}`;
+    const impressaoEl = document.getElementById('sucessoImpressao');
+    if (isPix && impressaoEl) {
+        impressaoEl.style.display = 'flex';
+    } else if (impressaoEl) {
+        impressaoEl.style.display = 'none';
+    }
     document.getElementById('modalSucesso').classList.add('active');
     carregarProdutos();
-    let seg = 3;
+    let seg = isPix ? 6 : 3; // PIX dá mais tempo pra impressora terminar
     const contador = document.getElementById('sucessoContador');
     const intervalo = setInterval(() => {
         seg--;
