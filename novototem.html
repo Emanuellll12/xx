@@ -819,7 +819,7 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
             total: total.toFixed(2)
         };
         // Envia para o APK de impressão via HTTP local (porta 3000)
-        fetch('http://localhost:3000/imprimir', {
+        fetch('http://localhost:17432/imprimir', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(cupom)
@@ -1466,7 +1466,7 @@ function mostrarToast(msg) {
 <a id="linkImpressora" href="omgprinter://start" style="display:none;"></a>
 
 <div id="btnImpressoraWrap" style="position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
-  <button id="btnImpressora" onclick="iniciarImpressora()"
+  <button id="btnImpressora" onclick="abrirImpressora()"
     style="background:#6c059b;color:#fff;border:none;border-radius:16px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(108,5,155,0.5);display:flex;align-items:center;gap:10px;">
     🖨️ Iniciar Impressora
   </button>
@@ -1474,62 +1474,10 @@ function mostrarToast(msg) {
 </div>
 
 <script>
-async function verificarImpressora() {
-    try {
-        const r = await fetch('http://localhost:3000/status', { signal: AbortSignal.timeout(1500) });
-        const d = await r.json();
-        return d.ok === true;
-    } catch(e) { return false; }
+function abrirImpressora() {
+    // Exatamente igual a Elgin: window.location.href com deeplink
+    window.location.href = 'omgprinter://start';
 }
-
-function marcarAtiva() {
-    const btn = document.getElementById('btnImpressora');
-    const statusEl = document.getElementById('statusImpressora');
-    statusEl.textContent = '✅ Impressora ativa!';
-    statusEl.style.color = '#10b981';
-    btn.style.background = '#059669';
-    btn.textContent = '✅ Impressora Ativa';
-    btn.onclick = null;
-}
-
-async function iniciarImpressora() {
-    const statusEl = document.getElementById('statusImpressora');
-
-    // Já está ativo?
-    if (await verificarImpressora()) { marcarAtiva(); return; }
-
-    // Abre o APK exatamente como a Elgin faz — clique programático num <a href="intent://...">
-    statusEl.textContent = '⏳ Iniciando serviço...';
-    statusEl.style.color = '#fbbf24';
-    document.getElementById('linkImpressora').click();
-
-    // Verifica a cada 1s por até 12s se o serviço subiu
-    let n = 0;
-    const poll = setInterval(async () => {
-        n++;
-        if (await verificarImpressora()) {
-            clearInterval(poll);
-            marcarAtiva();
-            return;
-        }
-        if (n >= 12) {
-            clearInterval(poll);
-            statusEl.textContent = '⚠️ Abra o app "OMG Impressora" manualmente e minimize';
-            statusEl.style.color = '#f87171';
-        }
-    }, 1000);
-}
-
-// Verifica ao carregar
-window.addEventListener('load', async () => {
-    // Verifica se impressora ja esta ativa (APK já rodando do boot)
-    if (await verificarImpressora()) {
-        marcarAtiva();
-        // Se impressora ja ativa, some o overlay automaticamente
-        const overlay = document.getElementById('overlayStart');
-        if (overlay) overlay.style.display = 'none';
-    }
-});
 </script>
 
 
@@ -1559,47 +1507,13 @@ window.addEventListener('load', async () => {
 </div>
 
 <script>
-async function iniciarSistema() {
-    const btn = document.querySelector('#overlayStart button');
-    const status = document.getElementById('startStatus');
-    btn.disabled = true;
-    status.textContent = '';
-
-    // 1. Verifica se impressora já está ativa
-    if (await verificarImpressora()) {
+function iniciarSistema() {
+    // Abre o app da impressora exatamente como Elgin abre o TEF
+    window.location.href = 'omgprinter://start';
+    // Some o overlay imediatamente — app vai subir em background
+    setTimeout(() => {
         document.getElementById('overlayStart').style.display = 'none';
-        marcarAtiva();
-        return;
-    }
-
-    // 2. Dispara o deeplink da impressora automaticamente (mesma técnica da Elgin)
-    btn.textContent = '⏳ Iniciando impressora...';
-    status.textContent = 'Aguarde...';
-    document.getElementById('linkImpressora').click();
-
-    // 3. Aguarda serviço subir (verifica a cada 1s por até 15s)
-    let n = 0;
-    const poll = setInterval(async () => {
-        n++;
-        status.textContent = 'Aguardando serviço... ' + n + 's';
-
-        if (await verificarImpressora()) {
-            clearInterval(poll);
-            marcarAtiva();
-            status.textContent = '✅ Pronto!';
-            setTimeout(() => {
-                document.getElementById('overlayStart').style.display = 'none';
-            }, 800);
-            return;
-        }
-
-        if (n >= 30) {
-            clearInterval(poll);
-            btn.disabled = false;
-            btn.textContent = '▶ TENTAR NOVAMENTE';
-            status.textContent = '⚠️ App não respondeu. Verifique se está instalado.';
-        }
-    }, 1000);
+    }, 1500);
 }
 </script>
 
