@@ -819,7 +819,7 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
             total: total.toFixed(2)
         };
         // Envia para o APK de impressão via HTTP local (porta 3000)
-        fetch('http://localhost:9876/imprimir', {
+        fetch('http://localhost:3000/imprimir', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(cupom)
@@ -1593,7 +1593,7 @@ async function iniciarSistema() {
             return;
         }
 
-        if (n >= 15) {
+        if (n >= 30) {
             clearInterval(poll);
             btn.disabled = false;
             btn.textContent = '▶ TENTAR NOVAMENTE';
