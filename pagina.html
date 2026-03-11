@@ -33,7 +33,7 @@
             --sombra-card: 0 2px 16px rgba(0,0,0,0.5);
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        body { font-family:'DM Sans',sans-serif; background:var(--preto); display:flex; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
+        body { font-family:'DM Sans',sans-serif; background:#ffffff; display:flex; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
 
         /* ===== WRAPPER ===== */
         .totem-wrapper { width:100vw; height:100vh; display:flex; flex-direction:column; background:var(--preto); overflow:hidden; position:relative; }
@@ -636,7 +636,7 @@
 </head>
 <body>
 
-<div id="telaLogin">
+<div id="telaLogin" class="active">
     <div class="login-box">
         <div class="login-logo">🍔</div>
         <div class="login-titulo">Bem-vindo!</div>
@@ -831,32 +831,34 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    // SEMPRE mostra tela de login primeiro — nunca tela preta
-    // Login automático só roda se tiver credenciais válidas salvas
-    function mostrarLogin() {
+    // telaLogin já está visível por padrão no HTML
+    // Esta função apenas limpa credenciais inválidas
+    function falharLogin() {
         localStorage.removeItem('totem_credenciais');
-        document.getElementById('telaLogin').classList.add('active');
+        // telaLogin já está visível, não precisa fazer nada
     }
 
     const credSalvas = localStorage.getItem('totem_credenciais');
-    if (!credSalvas) { mostrarLogin(); return; }
+    if (!credSalvas) return; // telaLogin já aparece
 
     try {
         const { email, senha } = JSON.parse(credSalvas);
-        if (!email || !senha) { mostrarLogin(); return; }
+        if (!email || !senha) { falharLogin(); return; }
 
         const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-        if (loginError || !loginData?.user) { mostrarLogin(); return; }
+        if (loginError || !loginData?.user) { falharLogin(); return; }
 
         usuarioAtual = loginData.user;
 
         const { data: usuariosLoja, error: e1 } = await supabaseClient.from('usuarios_loja').select('loja_id, cargo').eq('user_id', usuarioAtual.id).limit(1);
-        if (e1 || !usuariosLoja || usuariosLoja.length === 0) { mostrarLogin(); return; }
+        if (e1 || !usuariosLoja || usuariosLoja.length === 0) { falharLogin(); return; }
 
         const { data: lojaInfo, error: e2 } = await supabaseClient.from('lojas').select('*').eq('id', usuariosLoja[0].loja_id).maybeSingle();
-        if (e2 || !lojaInfo || lojaInfo.status !== 'ATIVO') { mostrarLogin(); return; }
+        if (e2 || !lojaInfo || lojaInfo.status !== 'ATIVO') { falharLogin(); return; }
 
+        // Auto-login OK — esconder tela de login e entrar
         lojaAtual = lojaInfo;
+        document.getElementById('telaLogin').classList.remove('active');
         await verificarOuCriarCaixa();
         carregarProdutos();
         aplicarCustomizacaoElgin().then(() => {
@@ -864,7 +866,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     } catch(e) {
         console.warn('Erro no auto-login:', e);
-        mostrarLogin();
+        falharLogin();
     }
 });
 
