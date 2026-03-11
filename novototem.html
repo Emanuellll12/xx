@@ -1519,11 +1519,11 @@ function abrirImpressora() {
         <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">Impressora pronta!</div>
         <div style="color:#a78bfa;font-size:15px;text-align:center;">Inicie o terminal de pagamento</div>
         <button onclick="passo2()" id="btn2" style="
-            width:100%;background:linear-gradient(135deg,#0ea5e9,#6366f1);
+            width:100%;background:linear-gradient(135deg,#6c059b,#a21caf);
             color:#fff;border:none;border-radius:20px;
             padding:22px 0;font-size:22px;font-weight:800;
             font-family:'Nunito',sans-serif;cursor:pointer;
-            box-shadow:0 8px 32px rgba(14,165,233,0.5);
+            box-shadow:0 8px 32px rgba(108,5,155,0.5);
         ">💳 INICIAR TEF</button>
     </div>
 </div>
@@ -1544,9 +1544,24 @@ function passo1() {
 }
 
 function passo2() {
-    // Abre TEF e entra no PDV imediatamente
-    window.location.href = 'intent://connect/start';
-    document.getElementById('overlayStart').style.display = 'none';
+    // 1. Customiza background do app Elgin IDH (roxo OMG)
+    window.location.href = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=application;S.gradienteInicio=%234a0470;S.gradienteFim=%236c059b;end';
+
+    setTimeout(() => {
+        // 2. Customiza header (botões e ícones roxo claro)
+        window.location.href = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=header;S.corBotao=%234a0470;S.corIcone=%23ffffff;S.corFonte=%23ffffff;end';
+    }, 500);
+
+    setTimeout(() => {
+        // 3. Customiza conteúdo central
+        window.location.href = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=content;S.corBotao=%236c059b;S.corIcone=%23ffffff;S.corFonte=%23ffffff;S.corFonteMensagem=%23ffffff;end';
+    }, 1000);
+
+    setTimeout(() => {
+        // 4. Abre o TEF
+        window.location.href = 'intent://connect/start';
+        document.getElementById('overlayStart').style.display = 'none';
+    }, 1500);
 }
 </script>
 
