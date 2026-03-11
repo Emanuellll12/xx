@@ -1499,7 +1499,7 @@ function abrirImpressora() {
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     z-index:99999; gap:24px; padding:32px; box-sizing:border-box;
 ">
-    <!-- ETAPA 1: Iniciar Impressora -->
+    <!-- ETAPA 1 -->
     <div id="etapa1" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:400px;">
         <div style="font-size:72px;">🖨️</div>
         <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">Casa do Salgado</div>
@@ -1511,14 +1511,13 @@ function abrirImpressora() {
             font-family:'Nunito',sans-serif;cursor:pointer;
             box-shadow:0 8px 32px rgba(108,5,155,0.5);
         ">🖨️ INICIAR</button>
-        <div id="st1" style="color:#a78bfa;font-size:14px;min-height:20px;text-align:center;"></div>
     </div>
 
-    <!-- ETAPA 2: Iniciar TEF -->
+    <!-- ETAPA 2 -->
     <div id="etapa2" style="display:none;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:400px;">
         <div style="font-size:72px;">✅</div>
         <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">Impressora pronta!</div>
-        <div style="color:#a78bfa;font-size:15px;text-align:center;">Agora inicie o terminal de pagamento</div>
+        <div style="color:#a78bfa;font-size:15px;text-align:center;">Inicie o terminal de pagamento</div>
         <button onclick="passo2()" id="btn2" style="
             width:100%;background:linear-gradient(135deg,#0ea5e9,#6366f1);
             color:#fff;border:none;border-radius:20px;
@@ -1526,50 +1525,28 @@ function abrirImpressora() {
             font-family:'Nunito',sans-serif;cursor:pointer;
             box-shadow:0 8px 32px rgba(14,165,233,0.5);
         ">💳 INICIAR TEF</button>
-        <div id="st2" style="color:#a78bfa;font-size:14px;min-height:20px;text-align:center;"></div>
     </div>
 </div>
 
 <script>
-// PASSO 1: abre impressora, quando voltar imprime teste e mostra etapa 2
 function passo1() {
-    const btn = document.getElementById('btn1');
-    const st = document.getElementById('st1');
-    btn.disabled = true;
-    btn.textContent = '⏳ Abrindo...';
-
-    function aoVoltar() {
-        if (document.visibilityState !== 'visible') return;
-        document.removeEventListener('visibilitychange', aoVoltar);
-        st.textContent = '🖨️ Imprimindo teste...';
-        // Imprime teste
-        window.location.href = 'omgprinter://teste';
-        // Após enviar o deeplink, mostra etapa 2
-        setTimeout(() => {
-            document.getElementById('etapa1').style.display = 'none';
-            const e2 = document.getElementById('etapa2');
-            e2.style.display = 'flex';
-        }, 800);
-    }
-    document.addEventListener('visibilitychange', aoVoltar);
+    // 1. Abre o app da impressora
     window.location.href = 'omgprinter://start';
+
+    // 2. Já troca pra etapa 2 imediatamente — sem esperar evento
+    document.getElementById('etapa1').style.display = 'none';
+    document.getElementById('etapa2').style.display = 'flex';
+
+    // 3. Imprime teste após 4s (tempo para o APK subir e inicializar a impressora)
+    setTimeout(() => {
+        window.location.href = 'omgprinter://teste';
+    }, 4000);
 }
 
-// PASSO 2: abre TEF, quando voltar entra no PDV direto
 function passo2() {
-    const btn = document.getElementById('btn2');
-    const st = document.getElementById('st2');
-    btn.disabled = true;
-    btn.textContent = '⏳ Abrindo TEF...';
-
-    function aoVoltar() {
-        if (document.visibilityState !== 'visible') return;
-        document.removeEventListener('visibilitychange', aoVoltar);
-        // Entra no PDV
-        document.getElementById('overlayStart').style.display = 'none';
-    }
-    document.addEventListener('visibilitychange', aoVoltar);
+    // Abre TEF e entra no PDV imediatamente
     window.location.href = 'intent://connect/start';
+    document.getElementById('overlayStart').style.display = 'none';
 }
 </script>
 
