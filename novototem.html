@@ -1522,7 +1522,13 @@ async function iniciarImpressora() {
 
 // Verifica ao carregar
 window.addEventListener('load', async () => {
-    if (await verificarImpressora()) marcarAtiva();
+    // Verifica se impressora ja esta ativa (APK já rodando do boot)
+    if (await verificarImpressora()) {
+        marcarAtiva();
+        // Se impressora ja ativa, some o overlay automaticamente
+        const overlay = document.getElementById('overlayStart');
+        if (overlay) overlay.style.display = 'none';
+    }
 });
 </script>
 
@@ -1557,23 +1563,43 @@ async function iniciarSistema() {
     const btn = document.querySelector('#overlayStart button');
     const status = document.getElementById('startStatus');
     btn.disabled = true;
-    btn.textContent = 'Verificando...';
     status.textContent = '';
 
-    try {
-        // Testa se o APK de impressao esta rodando
-        const resp = await fetch('http://localhost:9876/imprimir', {
-            method: 'OPTIONS',
-            signal: AbortSignal.timeout(2000)
-        });
-        // APK esta ativo — pode entrar
+    // 1. Verifica se impressora já está ativa
+    if (await verificarImpressora()) {
         document.getElementById('overlayStart').style.display = 'none';
-    } catch(e) {
-        // APK nao esta ativo — orienta o usuario
-        status.innerHTML = '⚠️ Abra o app <b>OMG Impressora</b> e toque em INICIAR SERVICO,<br>depois toque aqui novamente.';
-        btn.disabled = false;
-        btn.textContent = '▶ INICIAR';
+        marcarAtiva();
+        return;
     }
+
+    // 2. Dispara o deeplink da impressora automaticamente (mesma técnica da Elgin)
+    btn.textContent = '⏳ Iniciando impressora...';
+    status.textContent = 'Aguarde...';
+    document.getElementById('linkImpressora').click();
+
+    // 3. Aguarda serviço subir (verifica a cada 1s por até 15s)
+    let n = 0;
+    const poll = setInterval(async () => {
+        n++;
+        status.textContent = 'Aguardando serviço... ' + n + 's';
+
+        if (await verificarImpressora()) {
+            clearInterval(poll);
+            marcarAtiva();
+            status.textContent = '✅ Pronto!';
+            setTimeout(() => {
+                document.getElementById('overlayStart').style.display = 'none';
+            }, 800);
+            return;
+        }
+
+        if (n >= 15) {
+            clearInterval(poll);
+            btn.disabled = false;
+            btn.textContent = '▶ TENTAR NOVAMENTE';
+            status.textContent = '⚠️ App não respondeu. Verifique se está instalado.';
+        }
+    }, 1000);
 }
 </script>
 
