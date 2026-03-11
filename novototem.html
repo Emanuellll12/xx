@@ -1200,25 +1200,24 @@ async function sendPost(rota, body) {
 
 function tefAprovado(venda) {
     if (!venda) return false;
-    // Testa todas as posições possíveis do campo mensagem
+    // Estrutura real: dados.resultado.mensagem === "Sucesso"
     const msg = (
-        venda?.mensagem ||
+        venda?.dados?.resultado?.mensagem ||
         venda?.resultado?.mensagem ||
-        venda?.dados?.mensagem ||
-        venda?.resultado?.tef?.mensagem ||
+        venda?.mensagem ||
         ""
     ).trim();
     return msg === "Sucesso";
 }
 
 function getMensagemTEF(venda) {
-    // Retorna a mensagem de erro/retorno para exibir ao operador
+    // Se não aprovado, pega a mensagem humana do tef (ex: "Leitura do cartão cancelada")
     return (
-        venda?.mensagem ||
-        venda?.resultado?.mensagem ||
-        venda?.dados?.mensagem ||
+        venda?.dados?.resultado?.tef?.mensagemResultado ||
+        venda?.dados?.resultado?.mensagem ||
         venda?.resultado?.tef?.mensagemResultado ||
-        venda?.resultado?.tef?.mensagem ||
+        venda?.resultado?.mensagem ||
+        venda?.mensagem ||
         "Transação não aprovada"
     ).trim();
 }
