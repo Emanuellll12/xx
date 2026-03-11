@@ -74,8 +74,8 @@
             background:linear-gradient(180deg, #4a0470 0%, #2d0450 100%);
             border-right:none;
             display:flex; flex-direction:column;
-            padding:8px 6px; gap:5px; flex-shrink:0;
-            overflow:hidden;
+            padding:8px 6px; gap:4px; flex-shrink:0;
+            overflow-y:auto; overflow-x:hidden;
         }
         .sidebar-label {
             font-size:8px; font-weight:700;
@@ -87,7 +87,7 @@
         .cat-btn {
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
-            gap:3px; padding:8px 4px;
+            gap:3px; padding:6px 4px;
             background:transparent;
             border:1.5px solid rgba(255,255,255,0.15);
             border-radius:var(--radius-sm);
@@ -96,7 +96,7 @@
             font-family:'DM Sans',sans-serif;
             font-size:9px; font-weight:700;
             text-transform:uppercase; letter-spacing:0.5px;
-            flex:1;
+            flex:0 0 auto; min-height:58px; width:100%;
         }
         .cat-btn .cat-icon { font-size:20px; line-height:1; }
         .cat-btn:hover { background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.4); color:white; }
@@ -1020,7 +1020,7 @@ async function verificarOuCriarCaixa() {
 
 async function carregarProdutos() {
     try {
-        const { data, error } = await supabaseClient.from('itens').select('codigo, nome, categoria, preco_venda, estoque, unidade, loja_id, foto_url').eq('ativo', true).eq('loja_id', lojaAtual.id).gt('estoque', 0).order('nome');
+        const { data, error } = await supabaseClient.from('itens').select('codigo, nome, categoria, preco_venda, estoque, unidade, loja_id, foto_url').eq('ativo', true).eq('loja_id', lojaAtual.id).neq('aparece_toten', true).gt('estoque', 0).order('nome');
         if (error) throw error;
         produtosTodos = data || [];
         renderizarSidebar(produtosTodos);
@@ -1047,7 +1047,7 @@ const CATEGORIAS_CONFIG = {
     'Salgados': { icon: '🍔', filtro: p => p.categoria === 'Salgados' && !p.codigo.toUpperCase().startsWith('X') },
     'Bebidas':  { icon: '🥤', filtro: p => p.categoria === 'Bebidas' && !p.codigo.toUpperCase().startsWith('X') },
     'Combos':   { icon: '🍟', filtro: p => p.categoria === 'Combos' && !p.codigo.toUpperCase().startsWith('X') },
-    // 'Outros' removido da tela
+    'Outros':   { icon: '🍰', filtro: p => p.categoria === 'Outros' && !p.codigo.toUpperCase().startsWith('X'), somenteNavBar: true },
 };
 function mostrarTelaBoasVindas() {
     const container = document.getElementById('bvParticles');
@@ -1064,8 +1064,7 @@ function mostrarTelaBoasVindas() {
     const catsVisiveis = Object.entries(CATEGORIAS_CONFIG).filter(([nome, cfg]) => produtosTodos.filter(cfg.filtro).length > 0);
     grid.className = 'bv-grid' + (catsVisiveis.length === 5 ? ' has-5' : '');
     Object.entries(CATEGORIAS_CONFIG).forEach(([nome, cfg]) => {
-        const count = produtosTodos.filter(cfg.filtro).length;
-        if (count === 0) return;
+        if (cfg.somenteNavBar) return;
         const imgUrl = CATEGORIAS_IMAGENS[nome];
         const card = document.createElement('div');
         card.className = 'bv-cat-card';
