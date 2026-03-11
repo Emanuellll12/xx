@@ -1497,95 +1497,78 @@ function abrirImpressora() {
     position:fixed; top:0; left:0; width:100%; height:100%;
     background: linear-gradient(135deg, #1a0a2e 0%, #2d1054 100%);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    z-index:99999; gap:20px; padding:32px; box-sizing:border-box;
+    z-index:99999; gap:24px; padding:32px; box-sizing:border-box;
 ">
     <!-- ETAPA 1: Iniciar Impressora -->
-    <div id="etapa1" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;">
+    <div id="etapa1" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:400px;">
         <div style="font-size:72px;">🖨️</div>
-        <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">
-            Casa do Salgado
-        </div>
-        <div style="color:#a78bfa;font-size:15px;text-align:center;">
-            Toque para ligar a impressora
-        </div>
-        <button onclick="passo1_iniciarImpressora()" style="
-            background:linear-gradient(135deg,#6c059b,#a21caf);
+        <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">Casa do Salgado</div>
+        <div style="color:#a78bfa;font-size:15px;text-align:center;">Toque para iniciar</div>
+        <button onclick="passo1()" id="btn1" style="
+            width:100%;background:linear-gradient(135deg,#6c059b,#a21caf);
             color:#fff;border:none;border-radius:20px;
-            padding:22px 60px;font-size:22px;font-weight:800;
+            padding:22px 0;font-size:22px;font-weight:800;
             font-family:'Nunito',sans-serif;cursor:pointer;
             box-shadow:0 8px 32px rgba(108,5,155,0.5);
-        ">🖨️ INICIAR IMPRESSORA</button>
-        <div id="status1" style="color:#a78bfa;font-size:13px;min-height:18px;text-align:center;"></div>
+        ">🖨️ INICIAR</button>
+        <div id="st1" style="color:#a78bfa;font-size:14px;min-height:20px;text-align:center;"></div>
     </div>
 
-    <!-- ETAPA 2: Iniciar TEF (aparece após voltar do app) -->
-    <div id="etapa2" style="display:none;flex-direction:column;align-items:center;gap:20px;width:100%;">
-        <div style="font-size:72px;">💳</div>
-        <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">
-            Impressora ativa!
-        </div>
-        <div style="color:#a78bfa;font-size:15px;text-align:center;">
-            Agora inicie o terminal de pagamento
-        </div>
-        <button onclick="passo2_iniciarTEF()" style="
-            background:linear-gradient(135deg,#0ea5e9,#6366f1);
+    <!-- ETAPA 2: Iniciar TEF -->
+    <div id="etapa2" style="display:none;flex-direction:column;align-items:center;gap:20px;width:100%;max-width:400px;">
+        <div style="font-size:72px;">✅</div>
+        <div style="color:#fff;font-size:26px;font-weight:800;font-family:'Nunito',sans-serif;text-align:center;">Impressora pronta!</div>
+        <div style="color:#a78bfa;font-size:15px;text-align:center;">Agora inicie o terminal de pagamento</div>
+        <button onclick="passo2()" id="btn2" style="
+            width:100%;background:linear-gradient(135deg,#0ea5e9,#6366f1);
             color:#fff;border:none;border-radius:20px;
-            padding:22px 60px;font-size:22px;font-weight:800;
+            padding:22px 0;font-size:22px;font-weight:800;
             font-family:'Nunito',sans-serif;cursor:pointer;
             box-shadow:0 8px 32px rgba(14,165,233,0.5);
         ">💳 INICIAR TEF</button>
-        <div id="status2" style="color:#a78bfa;font-size:13px;min-height:18px;text-align:center;"></div>
+        <div id="st2" style="color:#a78bfa;font-size:14px;min-height:20px;text-align:center;"></div>
     </div>
 </div>
 
 <script>
-// ---- PASSO 1: abre app impressora ----
-function passo1_iniciarImpressora() {
-    const btn = document.querySelector('#etapa1 button');
-    const status = document.getElementById('status1');
+// PASSO 1: abre impressora, quando voltar imprime teste e mostra etapa 2
+function passo1() {
+    const btn = document.getElementById('btn1');
+    const st = document.getElementById('st1');
     btn.disabled = true;
-    status.textContent = '⏳ Abrindo impressora...';
+    btn.textContent = '⏳ Abrindo...';
 
-    // Quando Chrome voltar ao foco → impressora já subiu → vai pro passo 2
     function aoVoltar() {
-        if (document.visibilityState === 'visible') {
-            document.removeEventListener('visibilitychange', aoVoltar);
-            // Mostra etapa 2
+        if (document.visibilityState !== 'visible') return;
+        document.removeEventListener('visibilitychange', aoVoltar);
+        st.textContent = '🖨️ Imprimindo teste...';
+        // Imprime teste
+        window.location.href = 'omgprinter://teste';
+        // Após enviar o deeplink, mostra etapa 2
+        setTimeout(() => {
             document.getElementById('etapa1').style.display = 'none';
-            document.getElementById('etapa2').style.display = 'flex';
-        }
+            const e2 = document.getElementById('etapa2');
+            e2.style.display = 'flex';
+        }, 800);
     }
     document.addEventListener('visibilitychange', aoVoltar);
-
-    // Abre o APK da impressora — minimiza sozinho e devolve foco ao Chrome
     window.location.href = 'omgprinter://start';
 }
 
-// ---- PASSO 2: abre TEF e imprime teste quando voltar ----
-function passo2_iniciarTEF() {
-    const btn = document.querySelector('#etapa2 button');
-    const status = document.getElementById('status2');
+// PASSO 2: abre TEF, quando voltar entra no PDV direto
+function passo2() {
+    const btn = document.getElementById('btn2');
+    const st = document.getElementById('st2');
     btn.disabled = true;
-    status.textContent = '⏳ Abrindo TEF...';
+    btn.textContent = '⏳ Abrindo TEF...';
 
-    // Quando Chrome voltar → TEF subiu → imprime teste → entra no PDV
-    function aoVoltarTEF() {
-        if (document.visibilityState === 'visible') {
-            document.removeEventListener('visibilitychange', aoVoltarTEF);
-            status.textContent = '🖨️ Imprimindo teste...';
-            // Imprime confirmação via deeplink
-            setTimeout(() => {
-                window.location.href = 'omgprinter://teste';
-                // Entra no PDV após enviar o teste
-                setTimeout(() => {
-                    document.getElementById('overlayStart').style.display = 'none';
-                }, 1500);
-            }, 800);
-        }
+    function aoVoltar() {
+        if (document.visibilityState !== 'visible') return;
+        document.removeEventListener('visibilitychange', aoVoltar);
+        // Entra no PDV
+        document.getElementById('overlayStart').style.display = 'none';
     }
-    document.addEventListener('visibilitychange', aoVoltarTEF);
-
-    // Abre o TEF — mesma técnica da Elgin
+    document.addEventListener('visibilitychange', aoVoltar);
     window.location.href = 'intent://connect/start';
 }
 </script>
