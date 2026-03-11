@@ -1543,25 +1543,49 @@ function passo1() {
     }, 4000);
 }
 
+function aplicarCustomElgin(grupo, extras, callback) {
+    // Monta a URL do Intent com os extras do grupo
+    let url = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=' + grupo;
+    for (const [k, v] of Object.entries(extras)) {
+        url += ';S.' + k + '=' + encodeURIComponent(v);
+    }
+    url += ';end';
+
+    // Usa iframe oculto para disparar o Intent sem navegar a página
+    const frame = document.createElement('iframe');
+    frame.style.display = 'none';
+    frame.src = url;
+    document.body.appendChild(frame);
+    setTimeout(() => {
+        document.body.removeChild(frame);
+        if (callback) callback();
+    }, 800);
+}
+
 function passo2() {
-    // 1. Customiza background do app Elgin IDH (roxo OMG)
-    window.location.href = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=application;S.gradienteInicio=%234a0470;S.gradienteFim=%236c059b;end';
+    document.getElementById('overlayStart').style.display = 'none';
 
-    setTimeout(() => {
-        // 2. Customiza header (botões e ícones roxo claro)
-        window.location.href = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=header;S.corBotao=%234a0470;S.corIcone=%23ffffff;S.corFonte=%23ffffff;end';
-    }, 500);
-
-    setTimeout(() => {
-        // 3. Customiza conteúdo central
-        window.location.href = 'intent://customizar#Intent;action=com.elgin.tefhub.CUSTOM;S.grupo=content;S.corBotao=%236c059b;S.corIcone=%23ffffff;S.corFonte=%23ffffff;S.corFonteMensagem=%23ffffff;end';
-    }, 1000);
-
-    setTimeout(() => {
-        // 4. Abre o TEF
-        window.location.href = 'intent://connect/start';
-        document.getElementById('overlayStart').style.display = 'none';
-    }, 1500);
+    // Aplica customização em sequência usando iframe (não navega a página)
+    aplicarCustomElgin('application', {
+        gradienteInicio: '#4a0470',
+        gradienteFim: '#6c059b'
+    }, () => {
+        aplicarCustomElgin('header', {
+            corBotao: '#4a0470',
+            corIcone: '#ffffff',
+            corFonte: '#ffffff'
+        }, () => {
+            aplicarCustomElgin('content', {
+                corBotao: '#6c059b',
+                corIcone: '#ffffff',
+                corFonte: '#ffffff',
+                corFonteMensagem: '#ffffff'
+            }, () => {
+                // Só abre o TEF depois de tudo customizado
+                window.location.href = 'intent://connect/start';
+            });
+        });
+    });
 }
 </script>
 
