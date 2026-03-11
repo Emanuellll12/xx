@@ -183,6 +183,17 @@
             cursor:pointer; transition:all 0.2s; width:100%;
         }
         .btn-adicionar-card:hover { background:var(--laranja-vivo); transform:translateY(-1px); }
+        .produto-estoque-badge {
+            font-size:11px; font-weight:700; color:var(--cinza);
+            background:rgba(255,255,255,0.06); border-radius:6px;
+            padding:3px 7px; display:inline-block;
+        }
+        .produto-estoque-badge.estoque-baixo { color:#f59e0b; }
+        .btn-adicionar-card.esgotado {
+            background:#444; color:#888; cursor:not-allowed;
+            transform:none !important; box-shadow:none !important;
+        }
+        .btn-adicionar-card:disabled { opacity:1; }
         .btn-adicionar-card.added {
             background:var(--verde);
             animation:pulseGreen 0.4s ease;
@@ -326,7 +337,7 @@
         .btn-pgto-pix { background:#00b37e; grid-column:span 2; font-size:16px; padding:16px; }
         .btn-pgto-credito { background:var(--laranja); }
         .btn-pgto-debito { background:#7C3AED; }
-        .btn-pgto-dividido { background:linear-gradient(135deg,var(--laranja),#7C3AED); grid-column:span 2; }
+
 
         /* ===== MODAL PAGAMENTO ===== */
         .modal-pagamento { display:none; position:fixed; inset:0; background:rgba(26,10,46,0.88); backdrop-filter:blur(10px); z-index:2000; align-items:center; justify-content:center; }
@@ -748,7 +759,7 @@
                 <button class="btn-pgto btn-pgto-pix" onclick="iniciarPagamento('PIX')">📱 PIX</button>
                 <button class="btn-pgto btn-pgto-credito" onclick="iniciarPagamento('CREDITO')">💳 Crédito</button>
                 <button class="btn-pgto btn-pgto-debito" onclick="iniciarPagamento('DEBITO')">💳 Débito</button>
-                <button class="btn-pgto btn-pgto-dividido" onclick="iniciarPagamentoDividido()">⚡ Pagamento Dividido</button>
+
             </div>
         </div>
     </div>
@@ -1122,7 +1133,7 @@ function renderizarProdutos(produtos) {
         const temFoto = p.foto_url && p.foto_url.trim() !== '';
         window.produtosRenderizados[index] = p;
         return `
-        <div class="produto-card" onclick="adicionarPorIndex(${index})">
+        <div class="produto-card" onclick="${p.estoque > 0 ? 'adicionarPorIndex(' + index + ')' : ''}">
             <div class="produto-img-wrapper">
                 ${temFoto
                     ? `<img src="${p.foto_url}" alt="${escapeHtml(p.nome)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"><span class="produto-img-placeholder" style="display:none;">${getCategoriaEmoji(p.categoria, p.codigo)}</span>`
@@ -1132,7 +1143,8 @@ function renderizarProdutos(produtos) {
             <div class="produto-info">
                 <div class="produto-nome-card">${escapeHtml(p.nome)}</div>
                 <div class="produto-preco-card">R$ ${parseFloat(p.preco_venda).toFixed(2).replace('.', ',')}</div>
-                <button class="btn-adicionar-card" onclick="event.stopPropagation(); adicionarPorIndex(${index})">ADICIONAR</button>
+                <div class="produto-estoque-badge ${p.estoque <= 3 ? 'estoque-baixo' : ''}">${p.estoque <= 0 ? '❌ Esgotado' : `📦 ${p.estoque} disponível${p.estoque > 1 ? 'is' : ''}`}</div>
+                <button class="btn-adicionar-card ${p.estoque <= 0 ? 'esgotado' : ''}" ${p.estoque <= 0 ? 'disabled' : `onclick="event.stopPropagation(); adicionarPorIndex(${index})"`}>${p.estoque <= 0 ? 'ESGOTADO' : 'ADICIONAR'}</button>
             </div>
         </div>`;
     }).join('');
