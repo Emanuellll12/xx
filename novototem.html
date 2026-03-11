@@ -70,34 +70,35 @@
 
         /* ===== SIDEBAR ===== */
         .sidebar-cats {
-            width:160px;
+            width:100px;
             background:linear-gradient(180deg, #4a0470 0%, #2d0450 100%);
             border-right:none;
             display:flex; flex-direction:column;
-            padding:16px 12px; gap:8px; flex-shrink:0;
+            padding:8px 6px; gap:5px; flex-shrink:0;
+            overflow:hidden;
         }
         .sidebar-label {
-            font-size:9px; font-weight:700;
+            font-size:8px; font-weight:700;
             color:rgba(255,255,255,0.45); letter-spacing:2px;
             text-transform:uppercase;
-            padding:0 4px 8px; border-bottom:1px solid rgba(255,255,255,0.12);
-            margin-bottom:4px;
+            padding:0 2px 6px; border-bottom:1px solid rgba(255,255,255,0.12);
+            margin-bottom:2px;
         }
         .cat-btn {
             display:flex; flex-direction:column;
             align-items:center; justify-content:center;
-            gap:6px; padding:14px 8px;
+            gap:3px; padding:8px 4px;
             background:transparent;
             border:1.5px solid rgba(255,255,255,0.15);
             border-radius:var(--radius-sm);
             cursor:pointer; transition:all 0.2s;
             color:rgba(255,255,255,0.7);
             font-family:'DM Sans',sans-serif;
-            font-size:11px; font-weight:700;
-            text-transform:uppercase; letter-spacing:1px;
-            min-height:72px;
+            font-size:9px; font-weight:700;
+            text-transform:uppercase; letter-spacing:0.5px;
+            flex:1;
         }
-        .cat-btn .cat-icon { font-size:24px; line-height:1; }
+        .cat-btn .cat-icon { font-size:20px; line-height:1; }
         .cat-btn:hover { background:rgba(255,255,255,0.15); border-color:rgba(255,255,255,0.4); color:white; }
         .cat-btn.active {
             background:white;
@@ -109,8 +110,8 @@
         /* ===== PRODUTOS ===== */
         .produtos-area { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--preto); }
         .categoria-header {
-            display:flex; align-items:center; gap:12px;
-            padding:16px 20px 10px;
+            display:flex; align-items:center; gap:8px;
+            padding:8px 12px 6px;
             flex-shrink:0;
         }
         .categoria-titulo {
@@ -129,12 +130,12 @@
         }
         .produtos-scroll {
             flex:1; overflow-y:auto;
-            padding:6px 16px 20px;
+            padding:4px 10px 8px;
             scrollbar-width:thin; scrollbar-color:var(--preto-border) transparent;
         }
         .produtos-scroll::-webkit-scrollbar { width:4px; }
         .produtos-scroll::-webkit-scrollbar-thumb { background:var(--preto-border); border-radius:2px; }
-        .produtos-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .produtos-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
 
         /* ===== CARD PRODUTO ===== */
         .produto-card {
@@ -153,26 +154,26 @@
         }
         .produto-card:active { transform:scale(0.97); }
         .produto-img-wrapper {
-            height:140px;
+            height:90px;
             background:var(--preto-surface);
             display:flex; align-items:center; justify-content:center;
             overflow:hidden; position:relative;
         }
         .produto-img-wrapper img { width:100%; height:100%; object-fit:cover; transition:transform 0.4s; }
         .produto-card:hover .produto-img-wrapper img { transform:scale(1.06); }
-        .produto-img-placeholder { font-size:52px; opacity:0.2; }
-        .produto-info { padding:12px 14px 14px; display:flex; flex-direction:column; gap:6px; flex:1; }
+        .produto-img-placeholder { font-size:36px; opacity:0.2; }
+        .produto-info { padding:6px 8px 8px; display:flex; flex-direction:column; gap:3px; flex:1; }
         .produto-nome-card {
-            font-size:14px; font-weight:700;
-            color:var(--texto); line-height:1.25; text-align:center;
+            font-size:11px; font-weight:700;
+            color:var(--texto); line-height:1.2; text-align:center;
         }
         .produto-preco-card {
             font-family:'Syne',sans-serif;
-            font-size:20px; font-weight:800;
+            font-size:15px; font-weight:800;
             color:var(--laranja); text-align:center;
         }
         .btn-adicionar-card {
-            margin-top:6px; padding:10px;
+            margin-top:4px; padding:7px;
             background:var(--laranja);
             color:var(--branco); border:none;
             border-radius:var(--radius-xs);
@@ -1008,7 +1009,7 @@ const CATEGORIAS_CONFIG = {
     'Salgados': { icon: '🍔', filtro: p => p.categoria === 'Salgados' && !p.codigo.toUpperCase().startsWith('X') },
     'Bebidas':  { icon: '🥤', filtro: p => p.categoria === 'Bebidas' && !p.codigo.toUpperCase().startsWith('X') },
     'Combos':   { icon: '🍟', filtro: p => p.categoria === 'Combos' && !p.codigo.toUpperCase().startsWith('X') },
-    'Outros':   { icon: '🍰', filtro: p => p.categoria === 'Outros' && !p.codigo.toUpperCase().startsWith('X') },
+    // 'Outros' removido da tela
 };
 function mostrarTelaBoasVindas() {
     const container = document.getElementById('bvParticles');
