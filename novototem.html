@@ -818,15 +818,9 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
             })),
             total: total.toFixed(2)
         };
-        // Envia para o APK de impressão via HTTP local (porta 3000)
-        fetch('http://localhost:17432/imprimir', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(cupom)
-        })
-        .then(r => r.json())
-        .then(r => console.log('Impressora:', r.msg || 'OK'))
-        .catch(e => console.warn('Impressora indisponivel:', e.message));
+        // Envia via deeplink — mesma técnica da Elgin, evita bloqueio de mixed content HTTPS->HTTP
+        const json64 = btoa(unescape(encodeURIComponent(JSON.stringify(cupom))));
+        window.location.href = 'omgprinter://imprimir?dados=' + json64;
     } catch(e) {
         console.error('Erro ao imprimir cupom:', e);
     }
@@ -1508,12 +1502,32 @@ function abrirImpressora() {
 
 <script>
 function iniciarSistema() {
-    // Abre o app da impressora exatamente como Elgin abre o TEF
+    // 1. Abre o app (igual Elgin)
     window.location.href = 'omgprinter://start';
-    // Some o overlay imediatamente — app vai subir em background
+    // 2. Some o overlay
     setTimeout(() => {
         document.getElementById('overlayStart').style.display = 'none';
     }, 1500);
+    // 3. Imprime teste após 4s (tempo para o app subir)
+    setTimeout(() => {
+        imprimirTeste();
+    }, 4000);
+}
+
+function imprimirTeste() {
+    const agora = new Date();
+    const cupomTeste = {
+        loja: 'CASA DO SALGADO',
+        codigo: '#TESTE',
+        data: agora.toLocaleDateString('pt-BR'),
+        hora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        metodo: 'TESTE',
+        itens: [{ nome: 'Impressora OK', qtd: 1, preco: '0.00', subtotal: '0.00' }],
+        total: '0.00',
+        teste: true
+    };
+    const json64 = btoa(unescape(encodeURIComponent(JSON.stringify(cupomTeste))));
+    window.location.href = 'omgprinter://imprimir?dados=' + json64;
 }
 </script>
 
