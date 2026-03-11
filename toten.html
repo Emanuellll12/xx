@@ -33,7 +33,7 @@
             --sombra-card: 0 2px 16px rgba(0,0,0,0.5);
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        body { font-family:'DM Sans',sans-serif; background:var(--preto); display:flex; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
+        body { font-family:'DM Sans',sans-serif; background:#ffffff; display:flex; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
 
         /* ===== WRAPPER ===== */
         .totem-wrapper { width:100vw; height:100vh; display:flex; flex-direction:column; background:var(--preto); overflow:hidden; position:relative; }
@@ -636,7 +636,7 @@
 </head>
 <body>
 
-<div id="telaLogin">
+<div id="telaLogin" class="active">
     <div class="login-box">
         <div class="login-logo">🍔</div>
         <div class="login-titulo">Bem-vindo!</div>
@@ -818,12 +818,9 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
             })),
             total: total.toFixed(2)
         };
-        if (window.AndroidPrinter) {
-            window.AndroidPrinter.imprimir(JSON.stringify(cupom));
-            console.log('Cupom enviado para impressora Android');
-        } else {
-            console.log('AndroidPrinter não disponível (modo browser)');
-        }
+        // Envia via deeplink — mesma técnica da Elgin, evita bloqueio de mixed content HTTPS->HTTP
+        const json64 = btoa(unescape(encodeURIComponent(JSON.stringify(cupom))));
+        window.location.href = 'omgprinter://imprimir?dados=' + json64;
     } catch(e) {
         console.error('Erro ao imprimir cupom:', e);
     }
@@ -831,33 +828,43 @@ function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
 
 // ==================== INICIALIZAÇÃO ====================
 document.addEventListener('DOMContentLoaded', async () => {
-    const credSalvas = localStorage.getItem('totem_credenciais');
-    if (credSalvas) {
-        try {
-            const { email, senha } = JSON.parse(credSalvas);
-            const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
-            if (!loginError && loginData?.user) {
-                usuarioAtual = loginData.user;
-                const { data: usuariosLoja } = await supabaseClient.from('usuarios_loja').select('loja_id, cargo').eq('user_id', usuarioAtual.id).limit(1);
-                if (usuariosLoja && usuariosLoja.length > 0) {
-                    const { data: lojaInfo } = await supabaseClient.from('lojas').select('*').eq('id', usuariosLoja[0].loja_id).maybeSingle();
-                    if (lojaInfo && lojaInfo.status === 'ATIVO') {
-                        lojaAtual = lojaInfo;
-                        await verificarOuCriarCaixa();
-                        carregarProdutos();
-                        aplicarCustomizacaoElgin().then(() => {
-                            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
-                        });
-                        return;
-                    }
-                }
-            }
-        } catch(e) {
-            console.warn('Sessão salva inválida, pedindo login:', e);
-        }
+    // telaLogin já está visível por padrão no HTML
+    // Esta função apenas limpa credenciais inválidas
+    function falharLogin() {
         localStorage.removeItem('totem_credenciais');
+        // telaLogin já está visível, não precisa fazer nada
     }
-    document.getElementById('telaLogin').classList.add('active');
+
+    const credSalvas = localStorage.getItem('totem_credenciais');
+    if (!credSalvas) return; // telaLogin já aparece
+
+    try {
+        const { email, senha } = JSON.parse(credSalvas);
+        if (!email || !senha) { falharLogin(); return; }
+
+        const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+        if (loginError || !loginData?.user) { falharLogin(); return; }
+
+        usuarioAtual = loginData.user;
+
+        const { data: usuariosLoja, error: e1 } = await supabaseClient.from('usuarios_loja').select('loja_id, cargo').eq('user_id', usuarioAtual.id).limit(1);
+        if (e1 || !usuariosLoja || usuariosLoja.length === 0) { falharLogin(); return; }
+
+        const { data: lojaInfo, error: e2 } = await supabaseClient.from('lojas').select('*').eq('id', usuariosLoja[0].loja_id).maybeSingle();
+        if (e2 || !lojaInfo || lojaInfo.status !== 'ATIVO') { falharLogin(); return; }
+
+        // Auto-login OK — esconder tela de login e entrar
+        lojaAtual = lojaInfo;
+        document.getElementById('telaLogin').classList.remove('active');
+        await verificarOuCriarCaixa();
+        carregarProdutos();
+        aplicarCustomizacaoElgin().then(() => {
+            setTimeout(() => { window.location.href = 'intent://connect/start'; }, 300);
+        });
+    } catch(e) {
+        console.warn('Erro no auto-login:', e);
+        falharLogin();
+    }
 });
 
 // ==================== CUSTOMIZAÇÃO ELGIN TEF ====================
@@ -972,7 +979,9 @@ async function carregarProdutos() {
         mostrarTelaBoasVindas();
     } catch(e) {
         console.error('Erro ao carregar produtos:', e);
-        document.getElementById('produtosGrid').innerHTML = '<div class="loading-state"><p>⚠️ Erro ao carregar cardápio</p></div>';
+        // NUNCA tela preta — mostra erro visível e volta pro login
+        document.getElementById('produtosGrid').innerHTML = '<div class="loading-state"><p>⚠️ Erro ao carregar cardápio<br><small>' + e.message + '</small></p></div>';
+        document.getElementById('telaLogin').classList.add('active');
     }
 }
 
@@ -984,6 +993,14 @@ const CATEGORIAS_IMAGENS = {
     'Outros':   'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=400&q=80',
 };
 
+
+const CATEGORIAS_CONFIG = {
+    'Sorvetes': { icon: '🍦', filtro: p => p.codigo.toUpperCase().startsWith('X') },
+    'Salgados': { icon: '🍔', filtro: p => p.categoria === 'Salgados' && !p.codigo.toUpperCase().startsWith('X') },
+    'Bebidas':  { icon: '🥤', filtro: p => p.categoria === 'Bebidas' && !p.codigo.toUpperCase().startsWith('X') },
+    'Combos':   { icon: '🍟', filtro: p => p.categoria === 'Combos' && !p.codigo.toUpperCase().startsWith('X') },
+    'Outros':   { icon: '🍰', filtro: p => p.categoria === 'Outros' && !p.codigo.toUpperCase().startsWith('X') },
+};
 function mostrarTelaBoasVindas() {
     const container = document.getElementById('bvParticles');
     container.innerHTML = '';
@@ -1024,13 +1041,6 @@ function irParaCategoria(nome) {
     selecionarCategoria(nome);
 }
 
-const CATEGORIAS_CONFIG = {
-    'Sorvetes': { icon: '🍦', filtro: p => p.codigo.toUpperCase().startsWith('X') },
-    'Salgados': { icon: '🍔', filtro: p => p.categoria === 'Salgados' && !p.codigo.toUpperCase().startsWith('X') },
-    'Bebidas':  { icon: '🥤', filtro: p => p.categoria === 'Bebidas' && !p.codigo.toUpperCase().startsWith('X') },
-    'Combos':   { icon: '🍟', filtro: p => p.categoria === 'Combos' && !p.codigo.toUpperCase().startsWith('X') },
-    'Outros':   { icon: '🍰', filtro: p => p.categoria === 'Outros' && !p.codigo.toUpperCase().startsWith('X') },
-};
 
 function renderizarSidebar(produtos) {
     const sidebar = document.getElementById('sidebarCats');
@@ -1222,6 +1232,10 @@ async function iniciarPagamento(metodo) {
             document.getElementById('btnCancelarPgto').disabled = false;
             return;
         }
+        // DEBUG — mostrar resposta bruta na tela
+        console.log('RESULTADO BRUTO:', JSON.stringify(resultado));
+        document.getElementById('pgtoStatus').innerHTML += '<p style="font-size:10px;word-break:break-all;color:#aaa">DEBUG: ' + JSON.stringify(resultado?.resultado || resultado).slice(0,300) + '</p>';
+
         if (tefAprovado(resultado)) {
             document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>';
             document.getElementById('btnCancelarPgto').disabled = true;
@@ -1445,5 +1459,89 @@ function mostrarToast(msg) {
     toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
 }
 </script>
+
+<!-- Botão flutuante para iniciar o APK da impressora -->
+<a id="linkImpressora" href="omgprinter://start" style="display:none;"></a>
+
+<div id="btnImpressoraWrap" style="position:fixed;bottom:24px;left:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
+  <button id="btnImpressora" onclick="abrirImpressora()"
+    style="background:#6c059b;color:#fff;border:none;border-radius:16px;padding:14px 22px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(108,5,155,0.5);display:flex;align-items:center;gap:10px;">
+    🖨️ Iniciar Impressora
+  </button>
+  <span id="statusImpressora" style="font-size:12px;color:#a78bfa;padding-left:4px;">Toque para iniciar impressora</span>
+</div>
+
+<script>
+function abrirImpressora() {
+    // Exatamente igual a Elgin: window.location.href com deeplink
+    window.location.href = 'omgprinter://start';
+}
+</script>
+
+
+<!-- ===== BOTÃO START APK IMPRESSORA ===== -->
+<div id="overlayStart" style="
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    background: linear-gradient(135deg, #1a0a2e 0%, #2d1054 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:99999; gap:24px;
+">
+    <div style="font-size:64px;">🖨️</div>
+    <div style="color:#fff; font-size:28px; font-weight:800; font-family:'Nunito',sans-serif; text-align:center;">
+        Casa do Salgado
+    </div>
+    <div style="color:#a78bfa; font-size:16px; text-align:center; padding:0 40px;">
+        Toque para iniciar o sistema
+    </div>
+    <button onclick="iniciarSistema()" style="
+        margin-top:16px;
+        background: linear-gradient(135deg, #6c059b, #a21caf);
+        color:#fff; border:none; border-radius:20px;
+        padding:24px 64px; font-size:22px; font-weight:800;
+        font-family:'Nunito',sans-serif; cursor:pointer;
+        box-shadow: 0 8px 32px rgba(108,5,155,0.5);
+    ">▶ INICIAR</button>
+    <div id="startStatus" style="color:#888; font-size:13px; min-height:20px; text-align:center;"></div>
+</div>
+
+<script>
+function iniciarSistema() {
+    const status = document.getElementById('startStatus');
+    const btn = document.querySelector('#overlayStart button');
+    btn.disabled = true;
+    status.textContent = 'Iniciando impressora...';
+
+    // 1. Abre app (inicia servico, minimiza sozinho)
+    window.location.href = 'omgprinter://start';
+
+    // 2. Imprime teste apos 3s
+    setTimeout(() => {
+        status.textContent = 'Imprimindo teste...';
+        window.location.href = 'omgprinter://teste';
+    }, 3000);
+
+    // 3. Some overlay apos 4s
+    setTimeout(() => {
+        document.getElementById('overlayStart').style.display = 'none';
+    }, 4500);
+}
+
+function imprimirTeste() {
+    const agora = new Date();
+    const cupomTeste = {
+        loja: 'CASA DO SALGADO',
+        codigo: '#TESTE',
+        data: agora.toLocaleDateString('pt-BR'),
+        hora: agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        metodo: 'TESTE',
+        itens: [{ nome: 'Impressora OK', qtd: 1, preco: '0.00', subtotal: '0.00' }],
+        total: '0.00',
+        teste: true
+    };
+    const json64 = btoa(unescape(encodeURIComponent(JSON.stringify(cupomTeste))));
+    window.location.href = 'omgprinter://imprimir?dados=' + json64;
+}
+</script>
+
 </body>
 </html>
