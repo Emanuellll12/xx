@@ -64,6 +64,19 @@
             padding:5px 12px; border-radius:50px;
             text-transform:uppercase; letter-spacing:1.5px;
         }
+        #realtimeBadge {
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+        #realtimeBadge.conectado {
+            background: rgba(0,210,106,0.15);
+            border-color: rgba(0,210,106,0.4);
+            color: #00D26A;
+        }
+        #realtimeBadge.desconectado {
+            background: rgba(255,59,59,0.15);
+            border-color: rgba(255,59,59,0.4);
+            color: #FF3B3B;
+        }
 
         /* ===== BODY ===== */
         .totem-body { display:flex; flex:1; overflow:hidden; padding-bottom:90px; }
@@ -715,7 +728,7 @@
             <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuAbLiXKpQYAp47ltDZJK6XpNXF-oInwK7jmH_LijndDK7ZDmAJloCik_wsbYw0x3JXXXPQG1A3NzHsOkK22xFB_zW1xbPx3QnNOK90_Q0b6hKNrNF2-CkRE1vOmLthEzb0xhLwoE-egn2-A9KlV3Hf90Qz1DOCOiAZLavPCmqYgNgFdS19FuBDwXzd1Tx/s320/ChatGPT%20Image%2024%20de%20fev.%20de%202026,%2016_53_37.png" alt="Logo" onerror="this.parentElement.innerHTML='🍔'">
         </div>
         <div class="header-title">Casa do <span>Salgado</span></div>
-        <div class="header-badge">Cardápio</div>
+        <div class="header-badge" id="realtimeBadge" title="Estoque em tempo real">● AO VIVO</div>
     </div>
     <div class="totem-body">
         <div class="sidebar-cats" id="sidebarCats">
@@ -839,6 +852,7 @@ let produtosTodos = [];
 let categoriaAtiva = '';
 let caixaAtual = null;
 const historicoVendas = [];
+let realtimeChannel = null;
 
 // ==================== IMPRESSÃO VIA BRIDGE ANDROID ====================
 function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
@@ -1025,12 +1039,98 @@ async function carregarProdutos() {
         produtosTodos = data || [];
         renderizarSidebar(produtosTodos);
         mostrarTelaBoasVindas();
+        iniciarRealtimeEstoque();
     } catch(e) {
         console.error('Erro ao carregar produtos:', e);
         // NUNCA tela preta — mostra erro visível e volta pro login
         document.getElementById('produtosGrid').innerHTML = '<div class="loading-state"><p>⚠️ Erro ao carregar cardápio<br><small>' + e.message + '</small></p></div>';
         document.getElementById('telaLogin').classList.add('active');
     }
+}
+
+function iniciarRealtimeEstoque() {
+    // Cancela canal anterior se existir
+    if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
+
+    realtimeChannel = supabaseClient
+        .channel('estoque-realtime-' + lojaAtual.id)
+        .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'itens',
+            filter: `loja_id=eq.${lojaAtual.id}`
+        }, (payload) => {
+            const atualizado = payload.new;
+            const idx = produtosTodos.findIndex(p => p.codigo === atualizado.codigo && p.loja_id === atualizado.loja_id);
+            if (idx === -1) return;
+
+            const estoqueAntigo = produtosTodos[idx].estoque;
+            produtosTodos[idx].estoque = atualizado.estoque;
+
+            // Se ficou sem estoque, remove da lista
+            if (atualizado.estoque <= 0 && estoqueAntigo > 0) {
+                produtosTodos.splice(idx, 1);
+                mostrarToast(`⚠️ ${atualizado.nome} esgotado em outro totem!`);
+                // Remove do carrinho se estiver lá
+                const noCarrinho = carrinho.findIndex(c => c.codigo === atualizado.codigo);
+                if (noCarrinho !== -1) {
+                    mostrarToast(`⚠️ ${atualizado.nome} foi removido do carrinho (esgotado)`);
+                    carrinho.splice(noCarrinho, 1);
+                    atualizarFooterCarrinho();
+                }
+            } else if (atualizado.estoque > 0 && estoqueAntigo <= 0) {
+                // Voltou ao estoque — recarrega lista completa
+                supabaseClient.from('itens').select('codigo, nome, categoria, preco_venda, estoque, unidade, loja_id, foto_url')
+                    .eq('ativo', true).eq('loja_id', lojaAtual.id).neq('aparece_toten', true).gt('estoque', 0).order('nome')
+                    .then(({ data }) => {
+                        if (data) {
+                            produtosTodos = data;
+                            renderizarSidebar(produtosTodos);
+                        }
+                    });
+                return;
+            }
+
+            // Ajusta estoque no carrinho se ultrapassar disponível
+            const itemCarrinho = carrinho.find(c => c.codigo === atualizado.codigo);
+            if (itemCarrinho && itemCarrinho.quantidade > atualizado.estoque) {
+                itemCarrinho.quantidade = atualizado.estoque;
+                itemCarrinho.estoque = atualizado.estoque;
+                if (atualizado.estoque === 0) {
+                    carrinho = carrinho.filter(c => c.codigo !== atualizado.codigo);
+                }
+                atualizarFooterCarrinho();
+                mostrarToast(`⚠️ Estoque de ${atualizado.nome} atualizado!`);
+            } else if (itemCarrinho) {
+                itemCarrinho.estoque = atualizado.estoque;
+            }
+
+            // Re-renderiza categoria ativa se o produto estiver nela
+            if (categoriaAtiva) {
+                const cfg = CATEGORIAS_CONFIG[categoriaAtiva];
+                if (cfg) {
+                    const produtosDaCat = produtosTodos.filter(cfg.filtro);
+                    document.getElementById('categoriaCount').textContent = `${produtosDaCat.length} ${produtosDaCat.length === 1 ? 'item' : 'itens'}`;
+                    renderizarProdutos(produtosDaCat);
+                }
+            }
+        })
+        .subscribe((status) => {
+            const badge = document.getElementById('realtimeBadge');
+            if (status === 'SUBSCRIBED') {
+                console.log('✅ Realtime estoque ativo');
+                if (badge) { badge.textContent = '● AO VIVO'; badge.className = 'header-badge conectado'; }
+            } else if (status === 'CHANNEL_ERROR') {
+                console.warn('⚠️ Realtime erro — tentando reconectar em 5s...');
+                if (badge) { badge.textContent = '● OFFLINE'; badge.className = 'header-badge desconectado'; }
+                setTimeout(iniciarRealtimeEstoque, 5000);
+            } else if (status === 'CLOSED') {
+                if (badge) { badge.textContent = '● OFFLINE'; badge.className = 'header-badge desconectado'; }
+            }
+        });
 }
 
 const CATEGORIAS_IMAGENS = {
