@@ -203,6 +203,25 @@
         .editable:hover {
             background: #f3e8ff;
         }
+        .btn-edit-row {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+            color: #6c059b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-edit-row:hover {
+            background: #f3e8ff;
+        }
+        .btn-edit-row:active {
+            background: #e9d5ff;
+        }
         /* MODAL */
         .modal {
             display: none;
@@ -981,6 +1000,7 @@
                             <th>Item</th>
                             <th>Estoque</th>
                             <th>Preço Venda</th>
+                            <th style="width:48px; text-align:center;">✏️</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyEdicao">
@@ -1133,6 +1153,14 @@
                 <div class="form-group">
                     <label class="form-label">Estoque Máximo</label>
                     <input type="number" class="form-input" id="estoqueMax" value="1000" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">📟 Aparece no Totem?</label>
+                    <select class="form-select" id="apareceToten">
+                        <option value="false" selected>Não</option>
+                        <option value="true">Sim</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -1410,7 +1438,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             const tbody = document.getElementById('tbodyEdicao');
            
             if (itens.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><div class="empty-icon">📦</div><p>Nenhum item cadastrado</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-icon">📦</div><p>Nenhum item cadastrado</p></td></tr>';
                 return;
             }
 
@@ -1420,6 +1448,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                     <td class="editable" ondblclick="editarCampo('${item.codigo}', 'nome', this)">${item.nome}</td>
                     <td class="editable" ondblclick="editarCampo('${item.codigo}', 'estoque', this)">${item.estoque}</td>
                     <td class="editable" ondblclick="editarCampo('${item.codigo}', 'preco_venda', this)">R$ ${parseFloat(item.preco_venda).toFixed(2)}</td>
+                    <td style="text-align:center; padding:8px;">
+                        <button class="btn-edit-row" onclick="abrirEdicaoItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Editar item">✏️</button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -1493,6 +1524,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             document.getElementById('modalTitulo').textContent = '📦 Novo Item';
             document.getElementById('formItem').reset();
             document.getElementById('categoria').value = 'Outros';
+            document.getElementById('apareceToten').value = 'false';
             document.getElementById('fotoUrlAtual').value = '';
             document.getElementById('previewImage').classList.remove('visible');
             selecionarCategoria('Outros');
@@ -1623,6 +1655,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                     categoria: document.getElementById('categoria').value,
                     produto_balanca: document.getElementById('produtoBalanca').value === 'true',
                     produto_sorvete: document.getElementById('produtoSorvete').value === 'true',
+                    aparece_toten: document.getElementById('apareceToten').value === 'true',
                     estoque_inicial: parseInt(document.getElementById('estoque').value),
                     valor_unitario: 0.0,
                     foto_url: fotoUrl
@@ -1668,13 +1701,17 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
         async function editarItem() {
             if (!itemSelecionado) return;
+            await abrirEdicaoItem(itemSelecionado);
+        }
+
+        async function abrirEdicaoItem(itemRef) {
             modoEdicao = true;
             fotoFile = null;
            
             const { data, error } = await supabaseClient
                 .from('itens')
                 .select('*')
-                .eq('codigo', itemSelecionado.codigo)
+                .eq('codigo', itemRef.codigo)
                 .eq('loja_id', lojaAtual.id)
                 .single();
 
@@ -1695,6 +1732,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             document.getElementById('produtoSorvete').value = data.produto_sorvete;
             document.getElementById('fotoUrlAtual').value = data.foto_url || '';
             selecionarCategoriaById(data.categoria);
+            document.getElementById('apareceToten').value = data.aparece_toten ? 'true' : 'false';
 
             const preview = document.getElementById('previewImage');
             if (data.foto_url) {
