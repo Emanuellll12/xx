@@ -1703,6 +1703,32 @@
         let produtosTodos = [];
         let caixaAtual = null;
 
+        // ==================== HELPERS DE FUSO HORÁRIO (Brasília UTC-3) ====================
+        // Retorna a data/hora atual como string ISO no fuso de Brasília
+        function nowBrasilia() {
+            return new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T') + '-03:00';
+        }
+
+        // Retorna 'YYYY-MM-DD' de hoje no fuso de Brasília
+        function hojeBrasilia() {
+            return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        }
+
+        // Dado um string 'YYYY-MM-DD', retorna ISO início do dia em Brasília
+        function inicioDiaBrasilia(dataStr) {
+            return new Date(dataStr + 'T00:00:00-03:00').toISOString();
+        }
+
+        // Dado um string 'YYYY-MM-DD', retorna ISO fim do dia em Brasília
+        function fimDiaBrasilia(dataStr) {
+            return new Date(dataStr + 'T23:59:59-03:00').toISOString();
+        }
+
+        // Formata uma data ISO do banco para exibição em pt-BR no fuso de Brasília
+        function formatarDataBrasilia(isoString) {
+            return new Date(isoString).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        }
+
         // ==================== INICIALIZAÇÃO ====================
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('DOM carregado, verificando autenticação...');
@@ -2006,7 +2032,7 @@
                 `📊 *Estoque Anterior:* ${produto.estoque}\n` +
                 `✅ *Estoque Novo:* ${novoEstoque}\n` +
                 `👤 *Responsável:* ${usuarioAtual.email}\n` +
-                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR')}`;
+                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
 
             const url = `https://api.telegram.org/bot${token}/sendMessage`;
 
@@ -2056,7 +2082,7 @@
                 `🏪 *Loja:* ${lojaAtual.nome}\n` +
                 `✅ *Status:* Sorvete foi reposto\n` +
                 `👤 *Responsável:* ${usuarioAtual.email}\n` +
-                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR')}\n\n` +
+                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
                 `_Notificação enviada via PDV_`;
 
             const url = `https://api.telegram.org/bot${token}/sendMessage`;
@@ -2084,7 +2110,7 @@
                         '✅ NOTIFICAÇÃO ENVIADA!\n\n' +
                         '🍦 Telegram notificado que o sorvete foi reposto.\n\n' +
                         `Loja: ${lojaAtual.nome}\n` +
-                        `Horário: ${new Date().toLocaleString('pt-BR')}`
+                        `Horário: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`
                     );
                 } else {
                     console.error('❌ Erro ao enviar Telegram:', data);
@@ -2147,7 +2173,7 @@
                 `💰 *Total Sorvetes:* R$ ${totalSorvetes.toFixed(2)}\n` +
                 `💵 *Total Venda:* R$ ${valorTotal.toFixed(2)}\n` +
                 `👤 *Vendedor:* ${usuarioAtual.email}\n` +
-                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR')}\n\n` +
+                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
                 `_Notificação automática via PDV_`;
 
             console.log('Mensagem a enviar:', mensagem);
@@ -2262,7 +2288,7 @@
                 `${icone} *${titulo}*\n\n` +
                 `🏪 *Loja:* ${lojaAtual.nome}\n` +
                 `👤 *Usuário:* ${usuarioAtual.email}\n` +
-                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR')}\n\n` +
+                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
                 `${detalhes}\n\n` +
                 `_Notificação automática via PDV_`;
 
@@ -3220,7 +3246,7 @@
                     .from('caixas')
                     .update({
                         status:                  'FECHADO',
-                        data_fechamento:         new Date().toISOString(),
+                        data_fechamento:         nowBrasilia(),
                         usuario_fechamento:      usuarioAtual.id,
                         valor_vendas:            d.totalGeral,
                         valor_final:             d.valorContado,
@@ -3710,7 +3736,7 @@
             }
 
             // Definir data de hoje como padrão
-            const hoje = new Date().toISOString().split('T')[0];
+            const hoje = hojeBrasilia();
             document.getElementById('dataFiltro').value = hoje;
             
             document.getElementById('modalHistorico').classList.add('active');
@@ -3736,15 +3762,15 @@
 
             try {
                 // Buscar vendas do dia selecionado
-                const dataInicio = new Date(dataInput + 'T00:00:00');
-                const dataFim = new Date(dataInput + 'T23:59:59');
+                const dataInicio = inicioDiaBrasilia(dataInput);
+                const dataFim    = fimDiaBrasilia(dataInput);
 
                 const { data: vendas, error } = await supabaseClient
                     .from('vendas')
                     .select('*')
                     .eq('loja_id', lojaAtual.id)
-                    .gte('data_venda', dataInicio.toISOString())
-                    .lte('data_venda', dataFim.toISOString())
+                    .gte('data_venda', dataInicio)
+                    .lte('data_venda', dataFim)
                     .order('data_venda', { ascending: false });
 
                 if (error) throw error;
@@ -3755,7 +3781,7 @@
                     listaDiv.innerHTML = `
                         <div class="empty-vendas">
                             <div class="empty-vendas-icon">📊</div>
-                            <p>Nenhuma venda encontrada para ${new Date(dataInput).toLocaleDateString('pt-BR')}</p>
+                            <p>Nenhuma venda encontrada para ${new Date(dataInput + 'T12:00:00-03:00').toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>
                         </div>
                     `;
                     return;
@@ -3787,7 +3813,7 @@
         }
 
         function renderizarVendaCard(venda, itens) {
-            const dataFormatada = new Date(venda.data_venda).toLocaleString('pt-BR');
+            const dataFormatada = formatarDataBrasilia(venda.data_venda);
             const isCancelada = venda.status === 'CANCELADA';
             
             const metodoClass = {
@@ -3906,7 +3932,7 @@
                     .from('vendas')
                     .update({ 
                         status: 'CANCELADA',
-                        observacao: (venda.observacao || '') + ` | CANCELADA em ${new Date().toLocaleString()} por ${usuarioAtual.email}`
+                        observacao: (venda.observacao || '') + ` | CANCELADA em ${formatarDataBrasilia(new Date().toISOString())} por ${usuarioAtual.email}`
                     })
                     .eq('id', vendaId)
                     .eq('loja_id', lojaAtual.id);
