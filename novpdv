@@ -3439,7 +3439,7 @@
             if (!caixaAtual) { alert('Nenhum caixa aberto'); return; }
             const senhaDigitada = prompt('🔒 FECHAR CAIXA\n\nDigite a senha de gerente para continuar:');
             if (senhaDigitada === null) return; // Cancelou
-            if (senhaDigitada !== 'novello01' && senhaDigitada !== 'usuario01') {
+            if (senhaDigitada !== 'novello01' && senhaDigitada !== 'salgado01') {
                 alert('❌ Senha incorreta! Acesso negado.');
                 return;
             }
