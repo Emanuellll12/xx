@@ -7,7 +7,7 @@
     <title>OMG PDV - Sistema de Vendas</title>
     
     <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -3058,9 +3058,9 @@
             const btnRetirada = document.getElementById('btnRetirada');
 
             if (aberto) {
-                btn.className = 'btn-caixa aberto';
-                icone.textContent = '✅';
-                texto.textContent = 'CAIXA ABERTO';
+                btn.className = 'btn-caixa fechado';
+                icone.textContent = '🔒';
+                texto.textContent = 'FINALIZAR CAIXA';
                 btnRetirada.style.display = 'block'; // ✅ MOSTRAR BOTÃO RETIRADA
             } else {
                 btn.className = 'btn-caixa fechado';
@@ -3261,6 +3261,16 @@
 
                 if (error) throw error;
 
+                // Buscar vendas do dia para o relatório
+                const hoje = hojeBrasilia();
+                const { data: vendasDia } = await supabaseClient
+                    .from('vendas')
+                    .select('id, valor_total, metodo_pagamento, data_venda, status, itens_venda')
+                    .eq('loja_id', lojaAtual.id)
+                    .gte('data_venda', inicioDiaBrasilia(hoje))
+                    .lte('data_venda', fimDiaBrasilia(hoje))
+                    .order('data_venda', { ascending: true });
+
                 fecharModalFechamento();
 
                 await notificarAcaoCaixa('FECHAR', {
@@ -3272,6 +3282,9 @@
                     diferenca:     d.diferenca
                 });
 
+                // Gerar e enviar relatório HTML pro Telegram
+                await enviarRelatorioHTMLTelegram(vendasDia || [], d);
+
                 caixaAtual = null;
                 atualizarBotaoCaixa(false);
                 showVendaSucesso('Caixa fechado com sucesso!');
@@ -3282,8 +3295,154 @@
             }
         }
 
+        // ==================== RELATÓRIO HTML AO FECHAR CAIXA ====================
+        async function enviarRelatorioHTMLTelegram(vendas, dados) {
+            const fmt = v => `R$ ${v.toFixed(2).replace('.', ',')}`;
+            const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+            const vendasConcluidas = vendas.filter(v => v.status === 'CONCLUIDA');
+            const vendasCanceladas = vendas.filter(v => v.status !== 'CONCLUIDA');
+
+            let linhasVendas = '';
+            vendasConcluidas.forEach((v, i) => {
+                const hora = new Date(v.data_venda).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+                let itensHtml = '';
+                try {
+                    const itens = Array.isArray(v.itens_venda) ? v.itens_venda : JSON.parse(v.itens_venda || '[]');
+                    itensHtml = itens.map(it => `<span style="color:#6b7280;font-size:11px;">• ${it.nome} x${it.quantidade} = R$ ${(it.preco * it.quantidade).toFixed(2)}</span>`).join('<br>');
+                } catch(e) { itensHtml = ''; }
+                const metodoColor = { PIX: '#059669', CREDITO: '#1d4ed8', DEBITO: '#92400e', DINHEIRO: '#065f46' }[v.metodo_pagamento] || '#374151';
+                const metodoIcon = { PIX: '🔵', CREDITO: '💳', DEBITO: '🟡', DINHEIRO: '💵' }[v.metodo_pagamento] || '💰';
+                linhasVendas += `
+                <tr style="border-bottom:1px solid #f3f4f6;">
+                    <td style="padding:8px 6px;font-weight:600;color:#6c059b;">#${v.id}</td>
+                    <td style="padding:8px 6px;color:#374151;font-size:12px;">${hora}<br><div style="margin-top:4px">${itensHtml}</div></td>
+                    <td style="padding:8px 6px;text-align:center;"><span style="background:${metodoColor}15;color:${metodoColor};padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;">${metodoIcon} ${v.metodo_pagamento}</span></td>
+                    <td style="padding:8px 6px;font-weight:700;color:#22c55e;text-align:right;">${fmt(parseFloat(v.valor_total))}</td>
+                </tr>`;
+            });
+
+            const difClass = dados.diferenca > 0.009 ? '#059669' : (dados.diferenca < -0.009 ? '#dc2626' : '#059669');
+            const difText = dados.diferenca > 0.009 ? `+${fmt(dados.diferenca)} (sobra)` : (dados.diferenca < -0.009 ? `${fmt(dados.diferenca)} (falta)` : '✅ Bateu certinho!');
+
+            const html = `<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Relatório de Caixa - ${hoje}</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f5f5f5;margin:0;padding:20px;color:#333}
+  .container{max-width:800px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+  .header{background:linear-gradient(135deg,#6c059b,#4a0470);color:white;padding:28px 32px;text-align:center}
+  .header h1{margin:0;font-size:24px;font-weight:800}
+  .header p{margin:6px 0 0;opacity:.85;font-size:14px}
+  .resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:24px 32px;background:#fafafa;border-bottom:2px solid #f3f4f6}
+  .card{background:white;border-radius:10px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center}
+  .card-label{font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .card-valor{font-size:20px;font-weight:800;color:#1f2937}
+  .card-valor.green{color:#22c55e}
+  .card-valor.blue{color:#3b82f6}
+  .card-valor.purple{color:#6c059b}
+  .metodos{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px 32px;background:#fafafa;border-bottom:2px solid #f3f4f6}
+  .metodo-box{background:white;border-radius:8px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .metodo-icon{font-size:20px;margin-bottom:4px}
+  .metodo-nome{font-size:10px;color:#9ca3af;font-weight:700;text-transform:uppercase}
+  .metodo-val{font-size:15px;font-weight:700;color:#1f2937;margin-top:4px}
+  .fechamento{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:20px 32px;border-bottom:2px solid #f3f4f6}
+  .fech-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fafafa;border-radius:8px}
+  .fech-label{font-size:13px;color:#6b7280;font-weight:500}
+  .fech-val{font-size:14px;font-weight:700;color:#1f2937}
+  .vendas-section{padding:24px 32px}
+  .vendas-title{font-size:18px;font-weight:700;color:#1f2937;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  table{width:100%;border-collapse:collapse}
+  th{background:#f9fafb;padding:10px 6px;text-align:left;font-size:12px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  th:last-child,td:last-child{text-align:right}
+  .footer{background:#f9fafb;padding:16px 32px;text-align:center;font-size:12px;color:#9ca3af;border-top:2px solid #f3f4f6}
+  .diferenca-box{margin:0 32px 20px;padding:14px 18px;border-radius:10px;background:${difClass}15;border:2px solid ${difClass}30;display:flex;justify-content:space-between;align-items:center}
+  .diferenca-label{font-size:13px;font-weight:600;color:${difClass}}
+  .diferenca-val{font-size:16px;font-weight:800;color:${difClass}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📊 Relatório de Fechamento de Caixa</h1>
+    <p>🏪 ${lojaAtual.nome} &nbsp;|&nbsp; 📅 ${hoje} &nbsp;|&nbsp; ⏰ ${agora}</p>
+  </div>
+  <div class="resumo">
+    <div class="card"><div class="card-label">Total Vendido</div><div class="card-valor green">${fmt(dados.totalGeral)}</div></div>
+    <div class="card"><div class="card-label">Qtd. Vendas</div><div class="card-valor purple">${dados.qtdVendas}</div></div>
+    <div class="card"><div class="card-label">Ticket Médio</div><div class="card-valor blue">${dados.qtdVendas > 0 ? fmt(dados.totalGeral / dados.qtdVendas) : fmt(0)}</div></div>
+  </div>
+  <div class="metodos">
+    <div class="metodo-box"><div class="metodo-icon">🔵</div><div class="metodo-nome">PIX</div><div class="metodo-val">${fmt(dados.totalPix)}</div></div>
+    <div class="metodo-box"><div class="metodo-icon">💳</div><div class="metodo-nome">Crédito</div><div class="metodo-val">${fmt(dados.totalCredito)}</div></div>
+    <div class="metodo-box"><div class="metodo-icon">🟡</div><div class="metodo-nome">Débito</div><div class="metodo-val">${fmt(dados.totalDebito)}</div></div>
+    <div class="metodo-box"><div class="metodo-icon">💵</div><div class="metodo-nome">Dinheiro</div><div class="metodo-val">${fmt(dados.totalDinheiro)}</div></div>
+  </div>
+  <div class="fechamento">
+    <div class="fech-item"><span class="fech-label">💰 Saldo Inicial</span><span class="fech-val">${fmt(dados.saldoInicial)}</span></div>
+    <div class="fech-item"><span class="fech-label">💸 Retiradas</span><span class="fech-val">${fmt(dados.totalRetiradas)}</span></div>
+    <div class="fech-item"><span class="fech-label">📊 Esperado em caixa</span><span class="fech-val">${fmt(dados.esperado)}</span></div>
+    <div class="fech-item"><span class="fech-label">🖐️ Contado</span><span class="fech-val">${fmt(dados.valorContado)}</span></div>
+  </div>
+  <div class="diferenca-box">
+    <span class="diferenca-label">⚖️ Diferença de Caixa</span>
+    <span class="diferenca-val">${difText}</span>
+  </div>
+  <div class="vendas-section">
+    <div class="vendas-title">🧾 Vendas do Dia <span style="font-size:13px;color:#9ca3af;font-weight:400">(${vendasConcluidas.length} concluídas${vendasCanceladas.length > 0 ? ` · ${vendasCanceladas.length} canceladas` : ''})</span></div>
+    <table>
+      <thead><tr><th>#</th><th>Hora / Itens</th><th>Método</th><th>Valor</th></tr></thead>
+      <tbody>${linhasVendas || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#9ca3af">Nenhuma venda no dia</td></tr>'}</tbody>
+    </table>
+  </div>
+  <div class="footer">
+    Relatório gerado automaticamente pelo OMG PDV &nbsp;·&nbsp; ${agora}<br>
+    👤 Operador: ${usuarioAtual.email}
+  </div>
+<\/div>
+<\/body>
+<\/html>`;
+
+            // Enviar como arquivo HTML pro Telegram via sendDocument
+            const token = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
+            const chatId = '-5010685791';
+
+            try {
+                const blob = new Blob([html], { type: 'text/html' });
+                const nomeArquivo = `relatorio_caixa_${hoje.replace(/\//g, '-')}.html`;
+                const formData = new FormData();
+                formData.append('chat_id', chatId);
+                formData.append('document', blob, nomeArquivo);
+                formData.append('caption', `📊 *Relatório de Fechamento de Caixa*\n🏪 ${lojaAtual.nome}\n📅 ${hoje}\n💰 Total: ${fmt(dados.totalGeral)}\n🧾 Vendas: ${dados.qtdVendas}\n👤 ${usuarioAtual.email}`);
+                formData.append('parse_mode', 'Markdown');
+
+                const resp = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await resp.json();
+                if (result.ok) {
+                    console.log('✅ Relatório HTML enviado ao Telegram!');
+                } else {
+                    console.error('❌ Erro ao enviar relatório:', result);
+                }
+            } catch(e) {
+                console.error('❌ Erro ao enviar relatório HTML:', e);
+            }
+        }
+
         async function fecharCaixa() {
             if (!caixaAtual) { alert('Nenhum caixa aberto'); return; }
+            const senhaDigitada = prompt('🔒 FECHAR CAIXA\n\nDigite a senha de gerente para continuar:');
+            if (senhaDigitada === null) return; // Cancelou
+            if (senhaDigitada !== 'novello01' && senhaDigitada !== 'usuario01') {
+                alert('❌ Senha incorreta! Acesso negado.');
+                return;
+            }
             console.log('💰 Abrindo gaveta (fechar caixa)...');
             await abrirGaveta();
             abrirModalFechamento();
@@ -3456,7 +3615,7 @@
                                     class="form-input" 
                                     step="0.01" 
                                     min="0" 
-                                    value="${parcela.valor}"
+                                    value="${parseFloat(parcela.valor) || ''}"
                                     onchange="atualizarParcela(${parcela.id}, 'valor', parseFloat(this.value) || 0)"
                                     placeholder="0,00"
                                 >
