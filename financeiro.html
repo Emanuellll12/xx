@@ -501,6 +501,7 @@
                 <button class="tab-btn" onclick="abrirTab('vendas', this)">💳 Vendas</button>
                 <button class="tab-btn" onclick="abrirTab('caixas', this)">💰 Caixas</button>
                 <button class="tab-btn" onclick="abrirTab('detalhado', this)">📈 Relatórios</button>
+                <button class="tab-btn" onclick="abrirTab('produtos', this)">🛒 Produtos do Dia</button>
             </div>
 
             <!-- TAB: VISÃO GERAL -->
@@ -534,8 +535,8 @@
                         <div class="table-scroll">
                             <table>
                                 <thead><tr>
-                                    <th>ID</th><th>Data/Hora</th><th>Método</th>
-                                    <th>Itens</th><th class="r">Valor</th><th>Status</th>
+                                    <th>#Venda</th><th>Produto</th><th>Qtd</th>
+                                    <th>Data/Hora</th><th>Método</th><th class="r">Valor Total</th><th>Status</th>
                                 </tr></thead>
                                 <tbody id="tabelaVendas">
                                     <tr><td colspan="6" class="loading-state"><div class="spinner">⏳</div><div>Carregando vendas...</div></td></tr>
@@ -611,6 +612,29 @@
                                 </tr></thead>
                                 <tbody id="tabelaMesAMes">
                                     <tr><td colspan="5" class="loading-state"><div class="spinner">⏳</div><div>Carregando...</div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: PRODUTOS DO DIA -->
+            <div id="tabProdutos" class="tab-pane">
+                <div class="table-section">
+                    <div class="table-card">
+                        <div class="table-title">🛒 Produtos Vendidos no Período</div>
+                        <div class="scroll-hint">← deslize para ver mais →</div>
+                        <div class="table-scroll">
+                            <table>
+                                <thead><tr>
+                                    <th>Produto</th>
+                                    <th class="r">Qtd Vendida</th>
+                                    <th class="r">Valor Total</th>
+                                    <th class="r">Preço Médio</th>
+                                </tr></thead>
+                                <tbody id="tabelaProdutosDia">
+                                    <tr><td colspan="4" class="loading-state"><div class="spinner">⏳</div><div>Carregando...</div></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -700,7 +724,7 @@
                 carregarResumo(di, df), carregarVendas(di, df),
                 carregarCaixas(di, df), carregarRetiradas(di, df),
                 carregarTabelaDiaDia(di, df), carregarTabelaMesAMes(),
-                carregarGraficos(di, df)
+                carregarGraficos(di, df), carregarProdutosDia(di, df)
             ]);
         }
 
@@ -727,19 +751,65 @@
                 .order('data_venda',{ascending:false}).limit(100);
             const tbody = document.getElementById('tabelaVendas');
             if (error || !vendas?.length) {
-                tbody.innerHTML = `<tr><td colspan="6" class="empty"><div class="empty-icon">📭</div>Nenhuma venda no período</td></tr>`; return;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty"><div class="empty-icon">📭</div>Nenhuma venda no período</td></tr>`; return;
             }
-            tbody.innerHTML = vendas.map(v => {
+
+            // Buscar itens pelo período usando data_registro
+            const { data: todosItens } = await supabaseClient.from('itens_venda')
+                .select('venda_id, nome_produto, quantidade')
+                .gte('data_registro', di + 'T00:00:00-03:00')
+                .lte('data_registro', df + 'T23:59:59-03:00');
+
+            // Map de venda por id
+            const vendaMap = {};
+            vendas.forEach(v => vendaMap[v.id] = v);
+
+            // Agrupar itens por venda_id mantendo a ordem das vendas
+            const itensPorVenda = {};
+            (todosItens || []).forEach(i => {
+                if (!itensPorVenda[i.venda_id]) itensPorVenda[i.venda_id] = [];
+                itensPorVenda[i.venda_id].push(i);
+            });
+
+            // Gerar uma linha por item, agrupando visualmente por venda
+            const linhas = [];
+            let vendaAnterior = null;
+            vendas.forEach(v => {
+                const itens = itensPorVenda[v.id] || [];
                 const d = new Date(v.data_venda);
-                return `<tr>
-                    <td><strong>#${v.id}</strong></td>
-                    <td>${d.toLocaleString('pt-BR')}</td>
-                    <td><span class="badge badge-${(v.metodo_pagamento||'').toLowerCase()}">${v.metodo_pagamento}</span></td>
-                    <td>${v.quantidade_itens} ${v.quantidade_itens===1?'item':'itens'}</td>
-                    <td class="r">${brl(v.valor_total)}</td>
-                    <td><span class="badge badge-${v.status==='CONCLUIDA'?'concluida':'cancelada'}">${v.status}</span></td>
-                </tr>`;
-            }).join('');
+                const dataStr = d.toLocaleString('pt-BR');
+                const metodo = `<span class="badge badge-${(v.metodo_pagamento||'').toLowerCase()}">${v.metodo_pagamento}</span>`;
+                const status = `<span class="badge badge-${v.status==='CONCLUIDA'?'concluida':'cancelada'}">${v.status}</span>`;
+                const idStr = v.id.toString().substring(0,8);
+                const isNovaVenda = vendaAnterior !== v.id;
+                const rowStyle = isNovaVenda && vendaAnterior !== null ? 'border-top:2px solid var(--border)' : '';
+                vendaAnterior = v.id;
+
+                if (itens.length === 0) {
+                    linhas.push(`<tr style="${rowStyle}">
+                        <td><strong title="${v.id}">#${idStr}</strong></td>
+                        <td style="color:var(--text-light);font-style:italic">—</td>
+                        <td>—</td>
+                        <td>${dataStr}</td>
+                        <td>${metodo}</td>
+                        <td class="r">${brl(v.valor_total)}</td>
+                        <td>${status}</td>
+                    </tr>`);
+                } else {
+                    itens.forEach((item, idx) => {
+                        linhas.push(`<tr style="${idx===0 ? rowStyle : ''}">
+                            <td><strong title="${v.id}">#${idStr}</strong></td>
+                            <td><strong>${item.nome_produto}</strong></td>
+                            <td>${item.quantidade}</td>
+                            <td>${idx===0 ? dataStr : ''}</td>
+                            <td>${idx===0 ? metodo : ''}</td>
+                            <td class="r">${idx===0 ? brl(v.valor_total) : ''}</td>
+                            <td>${idx===0 ? status : ''}</td>
+                        </tr>`);
+                    });
+                }
+            });
+            tbody.innerHTML = linhas.join('');
         }
 
         async function carregarCaixas(di, df) {
@@ -817,6 +887,34 @@
             }).join('');
         }
 
+        async function carregarProdutosDia(di, df) {
+            const tbody = document.getElementById('tabelaProdutosDia');
+            const { data: itens, error } = await supabaseClient.from('itens_venda')
+                .select('nome_produto, quantidade, subtotal')
+                .gte('data_registro', di + 'T00:00:00-03:00')
+                .lte('data_registro', df + 'T23:59:59-03:00')
+                .eq('loja_id', lojaAtual.id);
+            if (error || !itens?.length) {
+                tbody.innerHTML = `<tr><td colspan="4" class="empty"><div class="empty-icon">📭</div>Nenhum produto vendido no período</td></tr>`; return;
+            }
+            // Agrupar por produto
+            const pp = {};
+            itens.forEach(i => {
+                const nome = i.nome_produto;
+                if (!pp[nome]) pp[nome] = { qtd: 0, total: 0 };
+                pp[nome].qtd += Number(i.quantidade);
+                pp[nome].total += parseFloat(i.subtotal || 0);
+            });
+            // Ordenar por quantidade desc
+            const sorted = Object.entries(pp).sort((a, b) => b[1].qtd - a[1].qtd);
+            tbody.innerHTML = sorted.map(([nome, d]) => `<tr>
+                <td><strong>${nome}</strong></td>
+                <td class="r">${d.qtd}</td>
+                <td class="r pos">${brl(d.total)}</td>
+                <td class="r">${brl(d.qtd > 0 ? d.total / d.qtd : 0)}</td>
+            </tr>`).join('');
+        }
+
         async function carregarGraficos(di, df) {
             const { data: v } = await supabaseClient.from('vendas').select('*')
                 .eq('loja_id', lojaAtual.id).gte('data_venda', di).lte('data_venda', df+' 23:59:59').neq('status','CANCELADA');
@@ -855,11 +953,11 @@
         }
 
         async function carregarGraficoProdutos(di, df) {
-            const { data: itens } = await supabaseClient.from('itens_venda').select('item_nome, quantidade, preco_unitario')
-                .gte('created_at', di).lte('created_at', df+' 23:59:59');
+            const { data: itens } = await supabaseClient.from('itens_venda').select('nome_produto, quantidade, preco_unitario')
+                .gte('data_registro', di + 'T00:00:00-03:00').lte('data_registro', df + 'T23:59:59-03:00');
             if (!itens?.length) return;
             const pp = {};
-            itens.forEach(i => { pp[i.item_nome] = (pp[i.item_nome]||0) + i.quantidade * parseFloat(i.preco_unitario); });
+            itens.forEach(i => { pp[i.nome_produto] = (pp[i.nome_produto]||0) + i.quantidade * parseFloat(i.preco_unitario); });
             const top = Object.entries(pp).sort((a,b)=>b[1]-a[1]).slice(0,10);
             if (chartProdutos) chartProdutos.destroy();
             chartProdutos = new Chart(document.getElementById('chartProdutos'), {
