@@ -2262,14 +2262,20 @@
                     titulo = 'CAIXA FECHADO';
                     detalhes = 
                         `💰 *Valor Inicial:* R$ ${parseFloat(dados.valorInicial || 0).toFixed(2)}\n` +
-                        `💵 *Valor Final:* R$ ${parseFloat(dados.valorFinal || 0).toFixed(2)}\n` +
                         `📊 *Total Vendas:* R$ ${parseFloat(dados.valorVendas || 0).toFixed(2)}\n` +
-                        `🛒 *Quantidade Vendas:* ${dados.qtdVendas || 0}\n` +
+                        `🛒 *Qtd Vendas:* ${dados.qtdVendas || 0}\n\n` +
+                        `*Por método de pagamento:*\n` +
+                        `🔵 *PIX:* R$ ${parseFloat(dados.totalPix || 0).toFixed(2)}\n` +
+                        `💳 *Crédito:* R$ ${parseFloat(dados.totalCredito || 0).toFixed(2)}\n` +
+                        `🟡 *Débito:* R$ ${parseFloat(dados.totalDebito || 0).toFixed(2)}\n` +
+                        `💵 *Dinheiro:* R$ ${parseFloat(dados.totalDinheiro || 0).toFixed(2)}\n\n` +
+                        `*Fechamento do caixa:*\n` +
                         `💸 *Retiradas:* R$ ${parseFloat(dados.totalRetiradas || 0).toFixed(2)}\n` +
+                        `🖐️ *Valor Contado:* R$ ${parseFloat(dados.valorFinal || 0).toFixed(2)}\n` +
                         `${dados.diferenca !== undefined ? 
-                            (dados.diferenca > 0 ? 
+                            (dados.diferenca > 0.009 ? 
                                 `📈 *Sobra:* R$ ${Math.abs(dados.diferenca).toFixed(2)}` : 
-                                dados.diferenca < 0 ? 
+                                dados.diferenca < -0.009 ? 
                                 `📉 *Falta:* R$ ${Math.abs(dados.diferenca).toFixed(2)}` : 
                                 `✅ *Caixa bateu certinho!*`) : ''}`;
                     break;
@@ -3274,12 +3280,16 @@
                 fecharModalFechamento();
 
                 await notificarAcaoCaixa('FECHAR', {
-                    valorInicial:  d.saldoInicial,
-                    valorFinal:    d.valorContado,
-                    valorVendas:   d.totalGeral,
-                    qtdVendas:     d.qtdVendas,
-                    totalRetiradas:d.totalRetiradas,
-                    diferenca:     d.diferenca
+                    valorInicial:   d.saldoInicial,
+                    valorFinal:     d.valorContado,
+                    valorVendas:    d.totalGeral,
+                    qtdVendas:      d.qtdVendas,
+                    totalRetiradas: d.totalRetiradas,
+                    diferenca:      d.diferenca,
+                    totalPix:       d.totalPix,
+                    totalCredito:   d.totalCredito,
+                    totalDebito:    d.totalDebito,
+                    totalDinheiro:  d.totalDinheiro
                 });
 
                 // Gerar e enviar relatório HTML pro Telegram
@@ -3409,7 +3419,7 @@
 
             // Enviar como arquivo HTML pro Telegram via sendDocument
             const token = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
-            const chatId = '-5010685791';
+            const chatId = '-1002732995273';
 
             try {
                 const blob = new Blob([html], { type: 'text/html' });
