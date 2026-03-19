@@ -1553,6 +1553,23 @@
             <button class="btn-pagamento btn-pix" onclick="finalizarVendaDinheiro()"> DINHEIRO</button>
             <button class="btn-pagamento btn-credito" onclick="abrirPagamentoDividido()"> DIVIDIDO</button>
         </div>
+
+        <!-- Botões de impressão -->
+        <div style="padding: 10px 15px; display: flex; gap: 8px;">
+            <button id="btnImprimirUltimo" onclick="imprimirUltimaVenda()"
+                style="flex:1; padding:12px 8px; background:linear-gradient(135deg,#1e7e34,#28a745); color:#fff;
+                       border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer;
+                       display:flex; align-items:center; justify-content:center; gap:6px; opacity:0.45;
+                       transition:all 0.2s;" title="Imprimir última venda na térmica">
+                🖨️ Imprimir Último
+            </button>
+            <button onclick="abrirConfigImpressora()"
+                style="padding:12px 12px; background:rgba(108,5,155,0.15); color:#6c059b;
+                       border:2px solid #6c059b; border-radius:10px; font-size:18px; cursor:pointer;
+                       transition:all 0.2s;" title="Configurar impressora">
+                ⚙️
+            </button>
+        </div>
     </div>
 
     <!-- PAINEL ADMINISTRATIVO -->
@@ -1581,7 +1598,7 @@
         //   unique(loja_id, codigo)
         // );
         const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+        const SUPABASE_KEY = 'sb_publishable_sgp56pE__TvW2T53WKf-qA_WntFKqhr';
         
         
         let supabaseClient;
@@ -4230,6 +4247,146 @@
         function intpos_venda() { alert('ℹ️ IntPos não aplicável — use os botões CRÉDITO / DÉBITO.'); }
         function intpos_adm()   { alert('ℹ️ IntPos ADM não aplicável no PagBank.'); }
 
+        // ==================== IMPRESSÃO TÉRMICA ====================
+
+        // Armazena dados da última venda concluída para impressão
+        let _ultimaVenda = null;
+
+        function _salvarUltimaVenda(dados) {
+            _ultimaVenda = dados;
+            // Habilitar botão Imprimir Último
+            const btn = document.getElementById('btnImprimirUltimo');
+            if (btn) {
+                btn.style.opacity = '1';
+                btn.style.boxShadow = '0 4px 12px rgba(40,167,69,0.4)';
+                btn.title = `Imprimir venda #${dados.codigo_venda || ''} — ${dados.metodo_pagamento} R$ ${parseFloat(dados.total).toFixed(2).replace('.',',')}`;
+            }
+        }
+
+        async function imprimirUltimaVenda() {
+            if (!_ultimaVenda) {
+                alert('ℹ️ Nenhuma venda realizada nesta sessão ainda.\n\nConclua uma venda primeiro e depois clique em Imprimir Último.');
+                return;
+            }
+
+            const btn = document.getElementById('btnImprimirUltimo');
+            const textoOriginal = btn ? btn.innerHTML : '';
+            if (btn) { btn.innerHTML = '⏳ Imprimindo...'; btn.disabled = true; }
+
+            try {
+                const resp = await fetch(`${PAGBANK_URL}/imprimir-cupom`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(_ultimaVenda),
+                    signal: AbortSignal.timeout(10000)
+                });
+                const data = await resp.json();
+
+                if (data.sucesso) {
+                    // Feedback visual rápido no botão
+                    if (btn) btn.innerHTML = '✅ Impresso!';
+                    setTimeout(() => {
+                        if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
+                    }, 2000);
+                } else {
+                    if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
+                    alert(`❌ Erro na impressão:\n\n${data.erro}\n\nVerifique:\n• Impressora ligada e online\n• Nome configurado corretamente (botão ⚙️)\n• Papel instalado`);
+                }
+            } catch (e) {
+                if (btn) { btn.innerHTML = textoOriginal; btn.disabled = false; }
+                alert('❌ Não foi possível comunicar com o servidor Flask.\n\nVerifique se o VENDASPDV.py está rodando.');
+                console.error('Erro imprimir cupom:', e);
+            }
+        }
+
+        // ==================== CONFIG IMPRESSORA ====================
+
+        async function abrirConfigImpressora() {
+            const modal = document.getElementById('modalConfigImpressora');
+            modal.style.display = 'flex';
+            document.getElementById('configImpressoraFeedback').textContent = '';
+
+            // Carregar lista de impressoras do servidor
+            try {
+                const resp = await fetch(`${PAGBANK_URL}/listar-impressoras`, {
+                    signal: AbortSignal.timeout(5000)
+                });
+                const data = await resp.json();
+
+                const lista = document.getElementById('listaImpressorasConfig');
+                if (data.sucesso && data.impressoras && data.impressoras.length > 0) {
+                    lista.innerHTML = data.impressoras.map(nome => `
+                        <div onclick="selecionarImpressora('${nome.replace(/'/g,"\\'")}', this)"
+                             style="padding:10px 16px; cursor:pointer; font-size:13px; border-bottom:1px solid #f0e8f8;
+                                    display:flex; align-items:center; gap:10px; transition:background 0.15s;
+                                    ${nome === data.atual ? 'background:#f0e8f8; font-weight:700; color:#6c059b;' : 'color:#333;'}"
+                             onmouseover="this.style.background='#f8f0ff'" onmouseout="this.style.background='${nome === data.atual ? '#f0e8f8' : ''}'">
+                            <span style="font-size:16px;">🖨️</span>
+                            <span>${nome}</span>
+                            ${nome === data.atual ? '<span style="margin-left:auto;font-size:11px;background:#6c059b;color:#fff;padding:2px 8px;border-radius:20px;">atual</span>' : ''}
+                        </div>
+                    `).join('');
+                    // Preencher input com o atual
+                    if (data.atual) document.getElementById('inputNomeImpressora').value = data.atual;
+                } else {
+                    lista.innerHTML = '<div style="padding:12px;color:#999;text-align:center;font-size:13px;">Nenhuma impressora encontrada</div>';
+                }
+            } catch (e) {
+                document.getElementById('listaImpressorasConfig').innerHTML =
+                    '<div style="padding:12px;color:#e74c3c;text-align:center;font-size:13px;">⚠️ Servidor offline — preencha manualmente</div>';
+            }
+        }
+
+        function selecionarImpressora(nome, el) {
+            document.getElementById('inputNomeImpressora').value = nome;
+            // Highlight visual na lista
+            document.querySelectorAll('#listaImpressorasConfig > div').forEach(d => {
+                d.style.background = '';
+                d.style.fontWeight = '';
+                d.style.color = '#333';
+            });
+            el.style.background = '#f0e8f8';
+            el.style.fontWeight = '700';
+            el.style.color = '#6c059b';
+        }
+
+        async function salvarConfigImpressora() {
+            const nome = document.getElementById('inputNomeImpressora').value.trim();
+            const feedback = document.getElementById('configImpressoraFeedback');
+
+            if (!nome) {
+                feedback.style.color = '#e74c3c';
+                feedback.textContent = '⚠️ Digite ou selecione o nome da impressora.';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${PAGBANK_URL}/config-impressora`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome }),
+                    signal: AbortSignal.timeout(5000)
+                });
+                const data = await resp.json();
+
+                if (data.sucesso) {
+                    feedback.style.color = '#28a745';
+                    feedback.textContent = `✅ ${data.mensagem}`;
+                    setTimeout(() => fecharConfigImpressora(), 1200);
+                } else {
+                    feedback.style.color = '#e74c3c';
+                    feedback.textContent = `❌ ${data.erro}`;
+                }
+            } catch (e) {
+                feedback.style.color = '#e74c3c';
+                feedback.textContent = '❌ Servidor offline. Não foi possível salvar.';
+            }
+        }
+
+        function fecharConfigImpressora() {
+            document.getElementById('modalConfigImpressora').style.display = 'none';
+        }
+
         // ==================== NORMALIZAÇÃO DE RESPOSTA ====================
         // Converte o retorno do PlugPag para o formato {resultado: {tef: {...}}}
         // que o restante do VENDAS.HTML já conhece e usa para aprovar vendas.
@@ -4260,6 +4417,43 @@
                 }
             };
         }
+
+        // Fechar modal clicando fora (aguarda DOM completo)
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalCI = document.getElementById('modalConfigImpressora');
+            if (modalCI) modalCI.addEventListener('click', function(e) {
+                if (e.target === this) fecharConfigImpressora();
+            });
+        });
+
+        // ==================== INTEGRAÇÃO COM FLUXO DE VENDAS ====================
+        // Intercepta cada finalização bem-sucedida para salvar dados da última venda.
+        // Funciona envolvendo registrarVenda e capturando o retorno.
+
+        const _registrarVendaOriginal = registrarVenda;
+        registrarVenda = async function(tipoPagamento, dadosTEF) {
+            const resultado = await _registrarVendaOriginal(tipoPagamento, dadosTEF);
+            if (resultado && resultado.sucesso) {
+                // Monta payload de impressão com os dados do carrinho atual
+                const itensParaImprimir = carrinho.map(item => ({
+                    nome:           item.nome,
+                    quantidade:     item.quantidade,
+                    preco_unitario: parseFloat(item.preco)
+                }));
+                _salvarUltimaVenda({
+                    loja:              lojaAtual ? lojaAtual.nome : 'ESTABELECIMENTO',
+                    endereco:          lojaAtual ? (lojaAtual.endereco || '') : '',
+                    cidade:            lojaAtual ? (lojaAtual.cidade   || '') : '',
+                    telefone:          lojaAtual ? (lojaAtual.telefone || '') : '',
+                    cnpj:              lojaAtual ? (lojaAtual.cnpj     || '') : '',
+                    metodo_pagamento:  tipoPagamento,
+                    total:             parseFloat(getValorTotal()),
+                    codigo_venda:      resultado.codigo_venda || '',
+                    itens:             itensParaImprimir
+                });
+            }
+            return resultado;
+        };
     </script>
     <!-- MODAL HISTÓRICO DE VENDAS -->
     <!-- MODAL FECHAR CAIXA -->
@@ -4443,6 +4637,53 @@
             <div class="modal-dinheiro-btns">
                 <button class="modal-dinheiro-btn-cancel" onclick="fecharModalDinheiro()">Cancelar</button>
                 <button class="modal-dinheiro-btn-ok" id="mdBtnOk" onclick="confirmarDinheiro()" disabled>✅ Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIG IMPRESSORA -->
+    <div id="modalConfigImpressora" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+         z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:16px; padding:32px 28px; width:420px; max-width:95vw;
+                    box-shadow:0 20px 60px rgba(0,0,0,0.3); position:relative;">
+            <div style="font-size:20px; font-weight:700; color:#6c059b; margin-bottom:6px;">⚙️ Configurar Impressora</div>
+            <div style="font-size:13px; color:#666; margin-bottom:20px;">Selecione a impressora térmica para impressão de cupons.</div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:6px;">
+                    Impressoras instaladas:
+                </label>
+                <div id="listaImpressorasConfig" style="border:2px solid #e0d0f0; border-radius:10px;
+                     max-height:200px; overflow-y:auto; padding:6px 0;">
+                    <div style="padding:12px; color:#999; text-align:center; font-size:13px;">
+                        Carregando...
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label style="font-size:13px; font-weight:600; color:#333; display:block; margin-bottom:6px;">
+                    Ou digite o nome manualmente:
+                </label>
+                <input id="inputNomeImpressora" type="text" placeholder="Ex: EPSON TM-T20, DANI..."
+                    style="width:100%; padding:10px 14px; border:2px solid #e0d0f0; border-radius:10px;
+                           font-size:14px; outline:none; transition:border 0.2s;"
+                    onfocus="this.style.borderColor='#6c059b'" onblur="this.style.borderColor='#e0d0f0'">
+            </div>
+
+            <div id="configImpressoraFeedback" style="min-height:20px; font-size:13px; margin-bottom:14px; text-align:center;"></div>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="fecharConfigImpressora()"
+                    style="flex:1; padding:12px; border:2px solid #ccc; background:#fff; color:#555;
+                           border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;">
+                    Cancelar
+                </button>
+                <button onclick="salvarConfigImpressora()"
+                    style="flex:2; padding:12px; background:linear-gradient(135deg,#6c059b,#4a0470);
+                           color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer;">
+                    ✅ Salvar
+                </button>
             </div>
         </div>
     </div>
