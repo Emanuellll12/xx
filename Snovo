@@ -1721,9 +1721,9 @@
         let caixaAtual = null;
 
         // ==================== HELPERS DE FUSO HORÁRIO (Brasília UTC-3) ====================
-        // Retorna a data/hora atual como string ISO no fuso de Brasília
+        // Retorna a data/hora atual como ISO UTC (formato que Supabase aceita sem ambiguidade)
         function nowBrasilia() {
-            return new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T') + '-03:00';
+            return new Date().toISOString();
         }
 
         // Retorna 'YYYY-MM-DD' de hoje no fuso de Brasília
@@ -2003,6 +2003,7 @@
                 const { error: movError } = await supabaseClient
                     .from('movimentacoes')
                     .insert([{
+                        loja_id: lojaAtual.id,
                         item_codigo: produto.codigo,
                         tipo: 'REPOSICAO',
                         quantidade: qtdReposicao,
@@ -2580,8 +2581,9 @@
                 console.log('Quantidade de Itens:', quantidadeItens);
                 console.log('Produtos:', carrinho);
                 
-                // 1. INSERIR VENDA NA TABELA VENDAS (loja_id será adicionado automaticamente pelo trigger)
+                // 1. INSERIR VENDA NA TABELA VENDAS
                 const vendaData = {
+                    loja_id: lojaAtual.id,
                     valor_total: valorTotal,
                     metodo_pagamento: tipoPagamento,
                     quantidade_itens: quantidadeItens,
@@ -2607,6 +2609,7 @@
                 
                 // 2. INSERIR ITENS DA VENDA NA TABELA ITENS_VENDA
                 const itensVenda = carrinho.map(item => ({
+                    loja_id: lojaAtual.id,
                     venda_id: vendaRegistrada.id,
                     codigo_produto: item.codigo,
                     nome_produto: item.nome,
@@ -2662,6 +2665,7 @@
                     const { error: movError } = await supabaseClient
                         .from('movimentacoes')
                         .insert([{
+                            loja_id: lojaAtual.id,
                             item_codigo: item.codigo,
                             tipo: 'VENDA',
                             quantidade: -item.quantidade,
@@ -3043,35 +3047,91 @@
         
         // Verificar status do caixa ao carregar
         async function verificarStatusCaixa() {
-            console.log('Verificando status do caixa...');
+            console.log('🔍 Verificando status do caixa...');
+            console.log('🏪 Loja ID:', lojaAtual ? lojaAtual.id : 'NÃO DEFINIDA');
             
+            if (!lojaAtual || !lojaAtual.id) {
+                console.error('❌ lojaAtual não definida, impossível verificar caixa');
+                atualizarBotaoCaixa(false);
+                return;
+            }
+
             try {
-                const { data, error } = await supabaseClient
+                // Busca TODOS os caixas ABERTOS desta loja (detectar fantasmas)
+                const { data: caixasAbertos, error: errAbertos } = await supabaseClient
                     .from('caixas')
-                    .select('*')
+                    .select('id, status, data_abertura, data_fechamento')
                     .eq('loja_id', lojaAtual.id)
                     .eq('status', 'ABERTO')
-                    .order('data_abertura', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+                    .order('data_abertura', { ascending: false });
 
-                if (error && error.code !== 'PGRST116') {
-                    console.error('Erro ao verificar caixa:', error);
+                console.log('📋 Caixas ABERTOS encontrados:', JSON.stringify(caixasAbertos, null, 2));
+
+                if (!caixasAbertos || caixasAbertos.length === 0) {
+                    console.log('❌ Nenhum caixa aberto encontrado para loja:', lojaAtual.id);
+                    caixaAtual = null;
+                    atualizarBotaoCaixa(false);
                     return;
                 }
 
-                if (data) {
-                    caixaAtual = data;
-                    console.log('✅ Caixa aberto encontrado:', data.id);
+                // Se tem mais de 1 caixa aberto, fechar os antigos (fantasmas)
+                if (caixasAbertos.length > 1) {
+                    console.warn(`⚠️ ENCONTRADOS ${caixasAbertos.length} CAIXAS ABERTOS! Fechando fantasmas...`);
+                    const fantasmas = caixasAbertos.slice(1); // todos menos o mais recente
+                    for (const fantasma of fantasmas) {
+                        console.warn('🧹 Fechando caixa fantasma ID:', fantasma.id, '| Abertura:', fantasma.data_abertura);
+                        await supabaseClient
+                            .from('caixas')
+                            .update({
+                                status: 'FECHADO',
+                                data_fechamento: new Date().toISOString(),
+                                observacao_fechamento: 'FECHADO AUTOMATICAMENTE - caixa fantasma detectado'
+                            })
+                            .eq('id', fantasma.id);
+                    }
+                }
+
+                // Pegar o mais recente (que sobrou)
+                const maisRecente = caixasAbertos[0];
+
+                // CONFERÊNCIA EXTRA: buscar este caixa completo de novo pelo ID
+                const { data: caixaCompleto } = await supabaseClient
+                    .from('caixas')
+                    .select('*')
+                    .eq('id', maisRecente.id)
+                    .single();
+
+                console.log('🔄 Re-check do caixa:', caixaCompleto?.id, '| Status:', caixaCompleto?.status);
+
+                if (caixaCompleto && caixaCompleto.status === 'ABERTO') {
+                    caixaAtual = caixaCompleto;
+                    console.log('✅ Caixa ABERTO confirmado. ID:', caixaCompleto.id, '| Abertura:', caixaCompleto.data_abertura);
                     atualizarBotaoCaixa(true);
                 } else {
-                    console.log('❌ Nenhum caixa aberto');
+                    console.warn('⚠️ Caixa encontrado como ABERTO mas re-check diz:', caixaCompleto?.status);
+                    caixaAtual = null;
                     atualizarBotaoCaixa(false);
                 }
             } catch (error) {
-                console.error('Erro ao verificar caixa:', error);
+                console.error('❌ Erro ao verificar caixa:', error);
             }
         }
+
+        // Re-verificar caixa quando a aba volta a ficar visível (ex: operador volta no dia seguinte)
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && lojaAtual && lojaAtual.id) {
+                console.log('👁️ Aba voltou a ficar visível, re-verificando caixa...');
+                await verificarStatusCaixa();
+            }
+        });
+
+        // Re-verificar caixa quando a janela recebe foco
+        window.addEventListener('focus', async () => {
+            if (lojaAtual && lojaAtual.id) {
+                console.log('🎯 Janela recebeu foco, re-verificando caixa...');
+                await verificarStatusCaixa();
+            }
+        });
 
         // Atualizar visual do botão de caixa
         function atualizarBotaoCaixa(aberto) {
@@ -3135,6 +3195,7 @@
                 const { data, error } = await supabaseClient
                     .from('caixas')
                     .insert([{
+                        loja_id: lojaAtual.id,
                         usuario_abertura: usuarioAtual.id,
                         valor_inicial: valor,
                         observacao_abertura: observacao,
@@ -3265,6 +3326,9 @@
             const d = _mfcDados;
 
             try {
+                const caixaId = caixaAtual.id;
+                console.log('🔒 Fechando caixa ID:', caixaId);
+
                 const { error } = await supabaseClient
                     .from('caixas')
                     .update({
@@ -3280,9 +3344,49 @@
                         qtd_vendas:              d.qtdVendas,
                         observacao_fechamento:   ''
                     })
-                    .eq('id', caixaAtual.id);
+                    .eq('id', caixaId);
 
                 if (error) throw error;
+
+                // VERIFICAÇÃO PÓS-UPDATE: confirmar que realmente fechou no banco
+                const { data: verificacao } = await supabaseClient
+                    .from('caixas')
+                    .select('id, status')
+                    .eq('id', caixaId)
+                    .single();
+
+                console.log('🔄 Verificação pós-fechamento:', verificacao);
+
+                if (!verificacao || verificacao.status !== 'FECHADO') {
+                    // O update NÃO funcionou! Tentar de novo
+                    console.error('❌ ALERTA: Caixa NÃO foi fechado no banco! Status:', verificacao?.status);
+                    
+                    // Segunda tentativa
+                    const { error: err2 } = await supabaseClient
+                        .from('caixas')
+                        .update({ status: 'FECHADO', data_fechamento: nowBrasilia() })
+                        .eq('id', caixaId);
+
+                    if (err2) {
+                        alert('❌ ERRO CRÍTICO: Não foi possível fechar o caixa no banco de dados.\n\nO caixa pode aparecer como aberto amanhã.\nContate o suporte técnico.');
+                        throw err2;
+                    }
+
+                    // Verificar a segunda tentativa
+                    const { data: recheck2 } = await supabaseClient
+                        .from('caixas')
+                        .select('id, status')
+                        .eq('id', caixaId)
+                        .single();
+
+                    if (!recheck2 || recheck2.status !== 'FECHADO') {
+                        alert('❌ ERRO CRÍTICO: Mesmo após 2 tentativas, o caixa NÃO fechou no banco.\n\nContate o suporte técnico IMEDIATAMENTE.');
+                        return;
+                    }
+                    console.log('✅ Caixa fechado na segunda tentativa');
+                } else {
+                    console.log('✅ Caixa fechado com sucesso no banco. ID:', caixaId);
+                }
 
                 // Buscar vendas do dia para o relatório
                 const hoje = hojeBrasilia();
@@ -3516,6 +3620,7 @@
                 const { data, error } = await supabaseClient
                     .from('retiradas_caixa')
                     .insert([{
+                        loja_id: lojaAtual.id,
                         caixa_id: caixaAtual.id,
                         valor: valorRetirada,
                         motivo: motivo,
@@ -4104,6 +4209,7 @@
                     await supabaseClient
                         .from('movimentacoes')
                         .insert([{
+                            loja_id: lojaAtual.id,
                             item_codigo: item.codigo_produto,
                             tipo: 'DEVOLUCAO',
                             quantidade: item.quantidade,
