@@ -3042,9 +3042,70 @@
         // ==================== SISTEMA DE CAIXA ====================
         
         // Verificar status do caixa ao carregar
+        // ==================== STATUS DO CAIXA — BLINDADO PARA O DIA INTEIRO ====================
+        // 3 camadas: (1) consulta imediata no banco, (2) Realtime Supabase,
+        // (3) polling 30s + reconexão automática, (4) visibilitychange ao voltar foco.
+        // É INADMISSÍVEL mostrar caixa aberto quando ele já foi fechado.
+
+        let _caixaRealtimeCanal = null;
+        let _caixaPollingTimer  = null;
+
         async function verificarStatusCaixa() {
-            console.log('Verificando status do caixa...');
-            
+            // 1. Consulta imediata — fonte de verdade absoluta
+            await _sincronizarCaixaDoBanco();
+
+            // 2. Realtime: escuta qualquer UPDATE/INSERT na tabela caixas desta loja
+            _inscreverRealtimeCaixa();
+
+            // 3. Polling a cada 30s — seguro caso o WebSocket caia após horas de uso
+            _caixaPollingTimer = setInterval(async () => {
+                console.log('⏱️ Polling caixa...');
+                await _sincronizarCaixaDoBanco();
+            }, 30000);
+
+            // 4. Ao voltar o foco na aba (operador minimizou e voltou), re-consulta imediatamente
+            document.addEventListener('visibilitychange', async () => {
+                if (document.visibilityState === 'visible') {
+                    console.log('👁️ Aba voltou ao foco — re-sincronizando caixa...');
+                    await _sincronizarCaixaDoBanco();
+                }
+            });
+        }
+
+        function _inscreverRealtimeCaixa() {
+            // Remove canal anterior se existir (evita duplicatas em reconexão)
+            if (_caixaRealtimeCanal) {
+                supabaseClient.removeChannel(_caixaRealtimeCanal);
+            }
+
+            _caixaRealtimeCanal = supabaseClient
+                .channel('caixa_rt_' + lojaAtual.id)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'caixas',
+                        filter: 'loja_id=eq.' + lojaAtual.id
+                    },
+                    async (payload) => {
+                        console.log('🔔 Realtime caixa:', payload.eventType, payload.new?.status);
+                        await _sincronizarCaixaDoBanco();
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('📡 Realtime caixa status:', status);
+                    // Se o canal fechar por timeout, reconecta
+                    if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                        console.warn('⚠️ Canal Realtime caiu — reconectando em 5s...');
+                        setTimeout(() => _inscreverRealtimeCaixa(), 5000);
+                    }
+                });
+        }
+
+        // Consulta o banco e atualiza caixaAtual + botão.
+        // Chamada na init, a cada evento Realtime, a cada 30s e ao voltar o foco.
+        async function _sincronizarCaixaDoBanco() {
             try {
                 const { data, error } = await supabaseClient
                     .from('caixas')
@@ -3056,20 +3117,23 @@
                     .maybeSingle();
 
                 if (error && error.code !== 'PGRST116') {
-                    console.error('Erro ao verificar caixa:', error);
+                    console.error('Erro ao sincronizar caixa:', error);
                     return;
                 }
 
                 if (data) {
                     caixaAtual = data;
-                    console.log('✅ Caixa aberto encontrado:', data.id);
+                    console.log('✅ Caixa ABERTO confirmado pelo banco:', data.id);
                     atualizarBotaoCaixa(true);
                 } else {
-                    console.log('❌ Nenhum caixa aberto');
+                    if (caixaAtual !== null) {
+                        console.warn('⚠️ Caixa estava aberto em memória mas banco diz FECHADO — corrigindo.');
+                    }
+                    caixaAtual = null;
                     atualizarBotaoCaixa(false);
                 }
             } catch (error) {
-                console.error('Erro ao verificar caixa:', error);
+                console.error('Erro ao sincronizar caixa:', error);
             }
         }
 
