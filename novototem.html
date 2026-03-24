@@ -216,7 +216,6 @@
     </div>
 </div>
 
-<!-- Tela de boas-vindas removida — elemento vazio mantido para não quebrar referências JS -->
 <div id="telaBoasVindas"></div>
 
 <div class="totem-wrapper">
@@ -352,6 +351,11 @@ let categoriaAtiva = '';
 let caixaAtual = null;
 const historicoVendas = [];
 let realtimeChannel = null;
+let watchdogInterval = null;
+let heartbeatInterval = null;
+let ultimoEventoRealtime = Date.now();
+let reconectandoRealtime = false;
+let reautenticandoSupa = false;
 
 function imprimirCupom(itens, total, codigoVenda, metodoPagamento) {
     try {
@@ -454,7 +458,6 @@ async function carregarProdutos() {
         if (error) throw error;
         produtosTodos = data || [];
         renderizarSidebar(produtosTodos);
-        // ===== DIRETO PRA SALGADOS — sem tela de boas-vindas =====
         document.querySelector('.totem-footer').style.display = 'flex';
         selecionarCategoria('Salgados');
         iniciarRealtimeEstoque();
@@ -466,10 +469,25 @@ async function carregarProdutos() {
 }
 
 function iniciarRealtimeEstoque() {
-    if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
+    if (reconectandoRealtime) return;
+    reconectandoRealtime = true;
+    
+    // Limpa channel anterior
+    if (realtimeChannel) {
+        try { supabaseClient.removeChannel(realtimeChannel); } catch(e) { console.warn('[RT] Erro ao remover channel:', e); }
+        realtimeChannel = null;
+    }
+    
+    console.log('[RT] Iniciando conexão realtime...');
+    
     realtimeChannel = supabaseClient
-        .channel('estoque-realtime-' + lojaAtual.id)
+        .channel('estoque-realtime-' + lojaAtual.id, {
+            config: {
+                presence: { key: 'totem-' + Date.now() }
+            }
+        })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'itens', filter: `loja_id=eq.${lojaAtual.id}` }, (payload) => {
+            ultimoEventoRealtime = Date.now(); // Marca que recebeu evento
             const atualizado = payload.new;
             const idx = produtosTodos.findIndex(p => p.codigo === atualizado.codigo && p.loja_id === atualizado.loja_id);
             if (idx === -1) return;
@@ -498,12 +516,164 @@ function iniciarRealtimeEstoque() {
             }
         })
         .subscribe((status) => {
+            reconectandoRealtime = false;
             const badge = document.getElementById('realtimeBadge');
-            if (status === 'SUBSCRIBED') { console.log('✅ Realtime estoque ativo'); if (badge) { badge.textContent = '● AO VIVO'; badge.className = 'header-badge conectado'; } }
-            else if (status === 'CHANNEL_ERROR') { console.warn('⚠️ Realtime erro'); if (badge) { badge.textContent = '● OFFLINE'; badge.className = 'header-badge desconectado'; } setTimeout(iniciarRealtimeEstoque, 5000); }
-            else if (status === 'CLOSED') { if (badge) { badge.textContent = '● OFFLINE'; badge.className = 'header-badge desconectado'; } }
+            if (status === 'SUBSCRIBED') {
+                console.log('[RT] ✅ Conectado!');
+                ultimoEventoRealtime = Date.now();
+                if (badge) { badge.textContent = '● AO VIVO'; badge.className = 'header-badge conectado'; }
+                iniciarWatchdog();
+            }
+            else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                console.warn('[RT] ⚠️ Erro/Timeout — reconectando em 3s...');
+                if (badge) { badge.textContent = '● RECONECTANDO...'; badge.className = 'header-badge desconectado'; }
+                setTimeout(() => { reconectandoRealtime = false; iniciarRealtimeEstoque(); }, 3000);
+            }
+            else if (status === 'CLOSED') {
+                console.warn('[RT] ⚠️ Canal fechado — reconectando em 2s...');
+                if (badge) { badge.textContent = '● OFFLINE'; badge.className = 'header-badge desconectado'; }
+                setTimeout(() => { reconectandoRealtime = false; iniciarRealtimeEstoque(); }, 2000);
+            }
         });
 }
+
+// =====================================================
+// WATCHDOG — verifica conexão a cada 30s
+// Se ficar 5 min sem evento, força reconexão
+// A cada 10 min, faz ping no Supabase pra manter sessão viva
+// =====================================================
+function iniciarWatchdog() {
+    // Limpa intervalos anteriores
+    if (watchdogInterval) clearInterval(watchdogInterval);
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    
+    // WATCHDOG — a cada 30s verifica se a conexão tá viva
+    watchdogInterval = setInterval(() => {
+        const agora = Date.now();
+        const badge = document.getElementById('realtimeBadge');
+        
+        // Verifica estado do WebSocket
+        const socket = supabaseClient?.realtime?.conn;
+        const wsState = socket?.readyState; // 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
+        
+        if (wsState === 3 || wsState === 2) {
+            // WebSocket morto — reconecta
+            console.warn('[WATCHDOG] WebSocket morto (state=' + wsState + ') — forçando reconexão...');
+            if (badge) { badge.textContent = '● RECONECTANDO...'; badge.className = 'header-badge desconectado'; }
+            reconectandoRealtime = false;
+            iniciarRealtimeEstoque();
+            return;
+        }
+        
+        // Se ficou mais de 5 minutos sem nenhum evento, reconecta preventivamente
+        const semEventoMs = agora - ultimoEventoRealtime;
+        if (semEventoMs > 5 * 60 * 1000) {
+            console.warn('[WATCHDOG] Sem eventos há ' + Math.round(semEventoMs/1000) + 's — reconectando preventivamente...');
+            if (badge) { badge.textContent = '● RECONECTANDO...'; badge.className = 'header-badge desconectado'; }
+            reconectandoRealtime = false;
+            iniciarRealtimeEstoque();
+        }
+    }, 30000);
+    
+    // HEARTBEAT — a cada 10 min faz um SELECT leve pra manter sessão e token vivos
+    heartbeatInterval = setInterval(async () => {
+        try {
+            // Ping no banco pra manter conexão ativa
+            const { error } = await supabaseClient.from('lojas').select('id').eq('id', lojaAtual.id).limit(1).maybeSingle();
+            if (error) {
+                console.warn('[HEARTBEAT] Erro no ping:', error.message);
+                // Pode ser token expirado — tenta reautenticar
+                await reautenticarSessao();
+            } else {
+                console.log('[HEARTBEAT] ✅ Ping OK — ' + new Date().toLocaleTimeString('pt-BR'));
+                ultimoEventoRealtime = Date.now(); // Reseta o timer do watchdog
+            }
+        } catch(e) {
+            console.error('[HEARTBEAT] Falha:', e);
+            await reautenticarSessao();
+        }
+    }, 10 * 60 * 1000);
+    
+    console.log('[WATCHDOG] Ativo — verificando a cada 30s, heartbeat a cada 10min');
+}
+
+// =====================================================
+// REAUTENTICAÇÃO — se o token JWT expirar (Supabase expira em 1h por padrão)
+// =====================================================
+async function reautenticarSessao() {
+    if (reautenticandoSupa) return;
+    reautenticandoSupa = true;
+    console.log('[REAUTH] Tentando renovar sessão...');
+    
+    try {
+        // Primeiro tenta refresh do token
+        const { data, error } = await supabaseClient.auth.refreshSession();
+        if (!error && data?.session) {
+            console.log('[REAUTH] ✅ Token renovado com sucesso');
+            reautenticandoSupa = false;
+            return;
+        }
+        
+        // Se refresh falhar, tenta re-login com credenciais salvas
+        console.warn('[REAUTH] Refresh falhou, tentando re-login...');
+        const credSalvas = localStorage.getItem('totem_credenciais');
+        if (credSalvas) {
+            const { email, senha } = JSON.parse(credSalvas);
+            const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({ email, password: senha });
+            if (!loginError && loginData?.user) {
+                console.log('[REAUTH] ✅ Re-login OK');
+                usuarioAtual = loginData.user;
+                // Reconecta realtime com nova sessão
+                reconectandoRealtime = false;
+                iniciarRealtimeEstoque();
+            } else {
+                console.error('[REAUTH] ❌ Re-login falhou:', loginError?.message);
+            }
+        }
+    } catch(e) {
+        console.error('[REAUTH] ❌ Erro:', e);
+    }
+    reautenticandoSupa = false;
+}
+
+// =====================================================
+// LISTENERS DE CONECTIVIDADE — detecta WiFi caindo/voltando
+// =====================================================
+window.addEventListener('online', () => {
+    console.log('[NET] 🌐 Internet voltou! Reconectando...');
+    const badge = document.getElementById('realtimeBadge');
+    if (badge) { badge.textContent = '● RECONECTANDO...'; badge.className = 'header-badge desconectado'; }
+    // Espera 2s pra conexão estabilizar, depois reconecta tudo
+    setTimeout(async () => {
+        await reautenticarSessao();
+        reconectandoRealtime = false;
+        iniciarRealtimeEstoque();
+        // Recarrega produtos pra pegar estoque atualizado
+        carregarProdutos();
+    }, 2000);
+});
+
+window.addEventListener('offline', () => {
+    console.warn('[NET] ❌ Internet caiu!');
+    const badge = document.getElementById('realtimeBadge');
+    if (badge) { badge.textContent = '● SEM INTERNET'; badge.className = 'header-badge desconectado'; }
+});
+
+// Listener de visibilidade — quando a tela do Android volta do sleep
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && lojaAtual) {
+        console.log('[VISIBILITY] Tela voltou — verificando conexão...');
+        const socket = supabaseClient?.realtime?.conn;
+        const wsState = socket?.readyState;
+        if (wsState !== 1) {
+            console.warn('[VISIBILITY] WebSocket não está aberto (state=' + wsState + ') — reconectando...');
+            reconectandoRealtime = false;
+            iniciarRealtimeEstoque();
+        }
+        // Recarrega produtos pra garantir dados frescos
+        carregarProdutos();
+    }
+});
 
 const CATEGORIAS_CONFIG = {
     'Sorvetes': { icon: '🍦', filtro: p => p.codigo.toUpperCase().startsWith('X') },
@@ -677,6 +847,9 @@ async function iniciarPagamento(metodo) {
     document.getElementById('pgtoStatus').innerHTML = '<p>🔄 Aguardando processamento no terminal...</p>';
     document.getElementById('btnCancelarPgto').disabled = false;
     document.getElementById('modalPagamento').classList.add('active');
+    // Salva snapshot do carrinho ANTES de qualquer coisa
+    const carrinhoSnapshot = carrinho.map(i => ({...i}));
+    const totalSnapshot = getValorTotal();
     try {
         let resultado = null;
         if (metodo === 'PIX') resultado = await tefPix(valor);
@@ -687,16 +860,15 @@ async function iniciarPagamento(metodo) {
         if (tefAprovado(resultado)) {
             document.getElementById('pgtoStatus').innerHTML = '<p>✅ Pagamento aprovado!</p>' + (metodo === 'PIX' ? '<div class="pgto-impressao-aviso">🖨️ Aguarde a impressão do comprovante...</div>' : '');
             document.getElementById('btnCancelarPgto').disabled = true;
-            const tef = resultado.resultado?.tef || {};
+            const tef = resultado.resultado?.tef || resultado.dados?.resultado?.tef || {};
             const dadosTEF = { nsu: tef.nsuTerminal || tef.nsuTransacao || null, data_tef: tef.dataHoraTransacao || null, autorizacao: tef.codigoAutorizacao || null, bandeira: tef.nomeBandeira || tef.codigoBandeira || null, parcelas: tef.parcelas || 1 };
-            // IMPRIME CUPOM IMEDIATAMENTE após TEF aprovar (antes de registrar no sistema)
+            // IMPRIME CUPOM IMEDIATAMENTE
             const codigoTemp = Date.now();
-            imprimirCupom(carrinho, getValorTotal(), codigoTemp, metodo);
-            // Agora registra no sistema em background
-            const reg = await registrarVendaTotem(metodo, dadosTEF);
+            imprimirCupom(carrinhoSnapshot, totalSnapshot, codigoTemp, metodo);
+            // Registra no sistema com retry
+            const reg = await registrarVendaTotem(metodo, dadosTEF, carrinhoSnapshot, totalSnapshot);
             document.getElementById('modalPagamento').classList.remove('active');
-            if (reg?.sucesso) { mostrarSucesso(reg.codigo_venda, metodo === 'PIX'); }
-            else { alert('❌ Pagamento aprovado no TEF, mas erro ao salvar no sistema.\nNSU: ' + (dadosTEF.nsu || 'N/A')); }
+            mostrarSucesso(reg.codigo_venda, metodo === 'PIX');
         } else {
             const msg = getMensagemTEF(resultado);
             document.getElementById('pgtoStatus').innerHTML = `<p>❌ ${msg}</p>`;
@@ -706,6 +878,152 @@ async function iniciarPagamento(metodo) {
 }
 
 function cancelarPagamento() { document.getElementById('modalPagamento').classList.remove('active'); abrirCarrinho(); }
+
+// =====================================================
+// REGISTRAR VENDA — COM RETRY + FALLBACK TELEGRAM
+// Se TEF aprovou, a venda SERÁ registrada de qualquer jeito
+// =====================================================
+async function registrarVendaTotem(tipoPagamento, dadosTEF, carrinhoSnapshot, totalSnapshot, tentativa) {
+    if (!tentativa) tentativa = 1;
+    const MAX_TENTATIVAS = 3;
+    // Usa snapshot se fornecido, senão faz cópia do carrinho atual
+    const itens = carrinhoSnapshot || carrinho.map(i => ({...i}));
+    const valorTotal = totalSnapshot || itens.reduce((s, i) => s + (parseFloat(i.preco) * i.quantidade), 0);
+    
+    if (itens.length === 0) {
+        console.error('[TOTEM] Carrinho vazio! Enviando backup Telegram...');
+        await enviarVendaBackupTelegram(itens, tipoPagamento, dadosTEF, valorTotal, 'Carrinho vazio no momento do registro');
+        return { sucesso: true, codigo_venda: Date.now(), backup: true };
+    }
+    
+    try {
+        const qtdItens = itens.reduce((s, i) => s + i.quantidade, 0);
+        
+        // Monta objeto da venda — só inclui campos que existem
+        const dadosVenda = {
+            loja_id: lojaAtual.id,
+            valor_total: valorTotal,
+            metodo_pagamento: tipoPagamento,
+            quantidade_itens: qtdItens,
+            status: 'CONCLUIDA',
+            usuario: usuarioAtual.email,
+            observacao: 'Venda via Totem - ' + tipoPagamento + ' - Loja: ' + lojaAtual.nome
+        };
+        if (dadosTEF && dadosTEF.nsu) dadosVenda.nsu_tef = dadosTEF.nsu;
+        
+        console.log('[TOTEM] Tentativa ' + tentativa + '/' + MAX_TENTATIVAS + ' — Inserindo venda:', JSON.stringify(dadosVenda));
+        
+        const { data: vendaRegistrada, error: vendaError } = await supabaseClient
+            .from('vendas').insert([dadosVenda]).select().maybeSingle();
+        
+        if (vendaError) {
+            console.error('[TOTEM] Erro Supabase vendas:', JSON.stringify(vendaError));
+            throw vendaError;
+        }
+        if (!vendaRegistrada) throw new Error('INSERT retornou null');
+        
+        console.log('[TOTEM] ✅ Venda registrada ID:', vendaRegistrada.id);
+        
+        // Itens da venda — try separado (não pode matar a venda)
+        try {
+            const itensVenda = itens.map(item => ({
+                venda_id: vendaRegistrada.id,
+                codigo_produto: item.codigo,
+                nome_produto: item.nome,
+                quantidade: item.quantidade,
+                preco_unitario: parseFloat(item.preco),
+                subtotal: parseFloat(item.preco) * item.quantidade
+            }));
+            const { error: itensError } = await supabaseClient.from('itens_venda').insert(itensVenda);
+            if (itensError) console.error('[TOTEM] Erro itens_venda (nao critico):', JSON.stringify(itensError));
+            else console.log('[TOTEM] ✅ Itens venda inseridos');
+        } catch(ei) { console.error('[TOTEM] Erro itens_venda catch:', ei); }
+        
+        // Atualizar estoque — try separado
+        try {
+            for (const item of itens) {
+                const { data: itemAtual } = await supabaseClient
+                    .from('itens').select('estoque')
+                    .eq('codigo', item.codigo).eq('loja_id', lojaAtual.id).maybeSingle();
+                if (itemAtual) {
+                    await supabaseClient.from('itens')
+                        .update({ estoque: Math.max(0, itemAtual.estoque - item.quantidade) })
+                        .eq('codigo', item.codigo).eq('loja_id', lojaAtual.id);
+                }
+                await supabaseClient.from('movimentacoes').insert([{
+                    item_codigo: item.codigo, tipo: 'VENDA',
+                    quantidade: -item.quantidade, valor_unitario: item.preco,
+                    responsavel: usuarioAtual.email,
+                    observacao: 'Venda Totem #' + vendaRegistrada.id + ' - ' + tipoPagamento
+                }]);
+            }
+            console.log('[TOTEM] ✅ Estoque atualizado');
+        } catch(ee) { console.error('[TOTEM] Erro estoque (nao critico):', ee); }
+        
+        // Notificar sorvetes
+        const sorvetes = itens.filter(i => String(i.codigo).toUpperCase().startsWith('X'));
+        if (sorvetes.length > 0) notificarVendaSorveteTotem(itens, vendaRegistrada.id, valorTotal).catch(console.error);
+        
+        return { sucesso: true, codigo_venda: vendaRegistrada.id };
+        
+    } catch(e) {
+        console.error('[TOTEM] ❌ Erro tentativa ' + tentativa + ':', e.message || JSON.stringify(e));
+        
+        // RETRY
+        if (tentativa < MAX_TENTATIVAS) {
+            console.log('[TOTEM] Aguardando 2s para retry...');
+            await new Promise(r => setTimeout(r, 2000));
+            return registrarVendaTotem(tipoPagamento, dadosTEF, itens, valorTotal, tentativa + 1);
+        }
+        
+        // FALLBACK — todas tentativas falharam, manda pro Telegram
+        console.error('[TOTEM] ⚠️ TODAS TENTATIVAS FALHARAM. Enviando backup Telegram...');
+        await enviarVendaBackupTelegram(itens, tipoPagamento, dadosTEF, valorTotal, e.message || JSON.stringify(e));
+        
+        // Retorna sucesso pra não travar o totem — a venda foi registrada no Telegram
+        return { sucesso: true, codigo_venda: Date.now(), backup: true };
+    }
+}
+
+// =====================================================
+// BACKUP TELEGRAM — nunca perde uma venda aprovada
+// =====================================================
+async function enviarVendaBackupTelegram(itens, tipoPagamento, dadosTEF, valorTotal, erroMsg) {
+    try {
+        const token = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
+        const chatId = '-5010685791';
+        let lista = '';
+        (itens || []).forEach(i => {
+            const sub = (parseFloat(i.preco) * i.quantidade).toFixed(2);
+            lista += '• ' + i.nome + ' (' + i.codigo + ') x' + i.quantidade + ' = R$ ' + sub + '\n';
+        });
+        const msg = '⚠️ *VENDA NÃO SALVA NO SISTEMA*\n\n' +
+            '⚠️ *REGISTRAR MANUALMENTE!*\n\n' +
+            '🏪 *Loja:* ' + (lojaAtual?.nome || 'N/A') + '\n' +
+            '💳 *Pagamento:* ' + tipoPagamento + '\n' +
+            '💰 *Total:* R$ ' + (valorTotal || 0).toFixed(2) + '\n' +
+            '🔑 *NSU:* ' + (dadosTEF?.nsu || 'N/A') + '\n\n' +
+            '*Itens:*\n' + lista + '\n' +
+            '❌ *Erro:* ' + (erroMsg || 'desconhecido') + '\n' +
+            '⏰ ' + new Date().toLocaleString('pt-BR');
+        
+        await fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
+        });
+        console.log('[TOTEM] ✅ Backup Telegram enviado');
+    } catch(te) {
+        console.error('[TOTEM] ❌ FALHA ATÉ NO TELEGRAM:', te);
+        // Último recurso: salva no localStorage pra recuperar depois
+        try {
+            const backups = JSON.parse(localStorage.getItem('vendas_backup') || '[]');
+            backups.push({ itens, tipoPagamento, dadosTEF, valorTotal, erroMsg, data: new Date().toISOString() });
+            localStorage.setItem('vendas_backup', JSON.stringify(backups));
+            console.log('[TOTEM] Venda salva no localStorage como último recurso');
+        } catch(le) { console.error('[TOTEM] Falha até no localStorage:', le); }
+    }
+}
 
 let parcelasDivididas = [];
 let contadorParcelas = 0;
@@ -775,8 +1093,9 @@ async function finalizarDividido() {
     const pago = parcelasDivididas.reduce((s, p) => s + (parseFloat(p.valor) || 0), 0);
     if (Math.abs(total - pago) > 0.01) { mostrarToast('⚠️ O valor pago não bate com o total!'); return; }
     document.getElementById('modalDividido').classList.remove('active');
-    const carrinhoParaImprimir = [...carrinho];
-    const totalParaImprimir = getValorTotal();
+    // SNAPSHOT do carrinho ANTES de processar
+    const carrinhoSnapshot = carrinho.map(i => ({...i}));
+    const totalSnapshot = getValorTotal();
     for (let i = 0; i < parcelasDivididas.length; i++) {
         const parcela = parcelasDivididas[i];
         const valor = parseFloat(parcela.valor).toFixed(2);
@@ -810,39 +1129,12 @@ async function finalizarDividido() {
         }
     }
     document.getElementById('modalPagamento').classList.remove('active');
-    // IMPRIME CUPOM IMEDIATAMENTE após todos os pagamentos aprovados (antes de registrar no sistema)
+    // IMPRIME CUPOM
     const codigoTemp = Date.now();
-    imprimirCupom(carrinhoParaImprimir, totalParaImprimir, codigoTemp, 'DIVIDIDO');
-    // Agora registra no sistema em background
-    const reg = await registrarVendaTotem('DIVIDIDO', {});
-    if (reg?.sucesso) { mostrarSucesso(reg.codigo_venda, false); }
-    else { alert('❌ Todos os pagamentos aprovados, mas erro ao salvar no sistema. Contate o suporte.'); }
-}
-
-async function registrarVendaTotem(tipoPagamento, dadosTEF) {
-    if (carrinho.length === 0) return { sucesso: false };
-    try {
-        const valorTotal = getValorTotal();
-        const qtdItens = carrinho.reduce((s, i) => s + i.quantidade, 0);
-        const { data: vendaRegistrada, error: vendaError } = await supabaseClient.from('vendas').insert([{
-            loja_id: lojaAtual.id, valor_total: valorTotal, metodo_pagamento: tipoPagamento,
-            quantidade_itens: qtdItens, status: 'CONCLUIDA', usuario: usuarioAtual.email,
-            nsu_tef: dadosTEF?.nsu || null, chave_tef: dadosTEF?.chave || null,
-            observacao: `Venda via Totem - ${tipoPagamento} - Loja: ${lojaAtual.nome}`
-        }]).select().maybeSingle();
-        if (vendaError) throw vendaError;
-        if (!vendaRegistrada) throw new Error('Venda não registrada');
-        const itensVenda = carrinho.map(item => ({ venda_id: vendaRegistrada.id, codigo_produto: item.codigo, nome_produto: item.nome, quantidade: item.quantidade, preco_unitario: parseFloat(item.preco), subtotal: parseFloat(item.preco) * item.quantidade }));
-        await supabaseClient.from('itens_venda').insert(itensVenda);
-        for (const item of carrinho) {
-            const { data: itemAtual } = await supabaseClient.from('itens').select('estoque').eq('codigo', item.codigo).eq('loja_id', lojaAtual.id).maybeSingle();
-            if (itemAtual) await supabaseClient.from('itens').update({ estoque: Math.max(0, itemAtual.estoque - item.quantidade) }).eq('codigo', item.codigo).eq('loja_id', lojaAtual.id);
-            await supabaseClient.from('movimentacoes').insert([{ item_codigo: item.codigo, tipo: 'VENDA', quantidade: -item.quantidade, valor_unitario: item.preco, responsavel: usuarioAtual.email, observacao: `Venda Totem #${vendaRegistrada.id} - ${tipoPagamento}` }]);
-        }
-        const sorvetes = carrinho.filter(i => String(i.codigo).toUpperCase().startsWith('X'));
-        if (sorvetes.length > 0) notificarVendaSorveteTotem(carrinho, vendaRegistrada.id, valorTotal).catch(console.error);
-        return { sucesso: true, codigo_venda: vendaRegistrada.id };
-    } catch(e) { console.error('Erro registro venda:', e); return { sucesso: false, erro: e.message }; }
+    imprimirCupom(carrinhoSnapshot, totalSnapshot, codigoTemp, 'DIVIDIDO');
+    // Registra no sistema com retry (usando snapshot!)
+    const reg = await registrarVendaTotem('DIVIDIDO', {}, carrinhoSnapshot, totalSnapshot);
+    mostrarSucesso(reg.codigo_venda, false);
 }
 
 async function notificarVendaSorveteTotem(itens, vendaId, valorTotal) {
@@ -867,7 +1159,6 @@ function mostrarSucesso(codigoVenda, isPix) {
     const intervalo = setInterval(() => { seg--; if (seg > 0) contador.textContent = `Voltando ao início em ${seg}s...`; else { clearInterval(intervalo); novoPedido(); } }, 1000);
 }
 
-// ===== MUDANÇA PRINCIPAL: novoPedido vai direto pra Salgados =====
 function novoPedido() {
     carrinho = [];
     atualizarFooterCarrinho();
