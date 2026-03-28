@@ -3349,10 +3349,11 @@
                 if (error) throw error;
 
                 // Buscar vendas do dia para o relatório
+// Buscar vendas do dia para o relatório (join correto com itens_venda)
                 const hoje = hojeBrasilia();
                 const { data: vendasDia } = await supabaseClient
                     .from('vendas')
-                    .select('id, valor_total, metodo_pagamento, data_venda, status, itens_venda')
+                    .select('id, valor_total, metodo_pagamento, data_venda, status, itens_venda(nome_produto, quantidade, preco_unitario)')
                     .eq('loja_id', lojaAtual.id)
                     .gte('data_venda', inicioDiaBrasilia(hoje))
                     .lte('data_venda', fimDiaBrasilia(hoje))
@@ -3386,7 +3387,7 @@
             }
         }
 
-        // ==================== RELATÓRIO HTML AO FECHAR CAIXA ====================
+// ==================== RELATÓRIO HTML AO FECHAR CAIXA ====================
         async function enviarRelatorioHTMLTelegram(vendas, dados) {
             const fmt = v => `R$ ${v.toFixed(2).replace('.', ',')}`;
             const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
@@ -3395,27 +3396,43 @@
             const vendasConcluidas = vendas.filter(v => v.status === 'CONCLUIDA');
             const vendasCanceladas = vendas.filter(v => v.status !== 'CONCLUIDA');
 
-            let linhasVendas = '';
-            vendasConcluidas.forEach((v, i) => {
-                const hora = new Date(v.data_venda).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
-                let itensHtml = '';
-                try {
-                    const itens = Array.isArray(v.itens_venda) ? v.itens_venda : JSON.parse(v.itens_venda || '[]');
-                    itensHtml = itens.map(it => `<span style="color:#6b7280;font-size:11px;">• ${it.nome} x${it.quantidade} = R$ ${(it.preco * it.quantidade).toFixed(2)}</span>`).join('<br>');
-                } catch(e) { itensHtml = ''; }
-                const metodoColor = { PIX: '#059669', CREDITO: '#1d4ed8', DEBITO: '#92400e', DINHEIRO: '#065f46' }[v.metodo_pagamento] || '#374151';
-                const metodoIcon = { PIX: '🔵', CREDITO: '💳', DEBITO: '🟡', DINHEIRO: '💵' }[v.metodo_pagamento] || '💰';
-                linhasVendas += `
+            // Agrupa produtos por nome somando qtd e total
+            const produtosAgrupados = {};
+            vendasConcluidas.forEach(v => {
+                const itens = Array.isArray(v.itens_venda) ? v.itens_venda : [];
+                itens.forEach(it => {
+                    const nome  = it.nome_produto || '—';
+                    const qtd   = Number(it.quantidade) || 0;
+                    const preco = parseFloat(it.preco_unitario) || 0;
+                    if (!produtosAgrupados[nome]) produtosAgrupados[nome] = { qtd: 0, total: 0 };
+                    produtosAgrupados[nome].qtd   += qtd;
+                    produtosAgrupados[nome].total += preco * qtd;
+                });
+            });
+
+            const produtosOrdenados = Object.entries(produtosAgrupados)
+                .sort((a, b) => b[1].qtd - a[1].qtd);
+
+            const totalItensVendidos = produtosOrdenados.reduce((s, [, d]) => s + d.qtd, 0);
+
+            let linhasProdutos = '';
+            produtosOrdenados.forEach(([nome, d]) => {
+                const precoMedio = d.qtd > 0 ? d.total / d.qtd : 0;
+                linhasProdutos += `
                 <tr style="border-bottom:1px solid #f3f4f6;">
-                    <td style="padding:8px 6px;font-weight:600;color:#6c059b;">#${v.id}</td>
-                    <td style="padding:8px 6px;color:#374151;font-size:12px;">${hora}<br><div style="margin-top:4px">${itensHtml}</div></td>
-                    <td style="padding:8px 6px;text-align:center;"><span style="background:${metodoColor}15;color:${metodoColor};padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;">${metodoIcon} ${v.metodo_pagamento}</span></td>
-                    <td style="padding:8px 6px;font-weight:700;color:#22c55e;text-align:right;">${fmt(parseFloat(v.valor_total))}</td>
+                    <td style="padding:10px 8px;font-weight:600;color:#1f2937;">${nome}</td>
+                    <td style="padding:10px 8px;text-align:center;font-weight:700;color:#6c059b;font-size:16px;">${d.qtd}</td>
+                    <td style="padding:10px 8px;text-align:right;font-weight:600;color:#22c55e;">${fmt(d.total)}</td>
+                    <td style="padding:10px 8px;text-align:right;color:#6b7280;font-size:12px;">${fmt(precoMedio)}</td>
                 </tr>`;
             });
 
             const difClass = dados.diferenca > 0.009 ? '#059669' : (dados.diferenca < -0.009 ? '#dc2626' : '#059669');
-            const difText = dados.diferenca > 0.009 ? `+${fmt(dados.diferenca)} (sobra)` : (dados.diferenca < -0.009 ? `${fmt(dados.diferenca)} (falta)` : '✅ Bateu certinho!');
+            const difText  = dados.diferenca > 0.009
+                ? `+${fmt(dados.diferenca)} (sobra)`
+                : dados.diferenca < -0.009
+                    ? `${fmt(dados.diferenca)} (falta)`
+                    : '✅ Bateu certinho!';
 
             const html = `<!DOCTYPE html>
 <html lang="pt-br">
@@ -3448,8 +3465,9 @@
   .vendas-section{padding:24px 32px}
   .vendas-title{font-size:18px;font-weight:700;color:#1f2937;margin-bottom:16px;display:flex;align-items:center;gap:8px}
   table{width:100%;border-collapse:collapse}
-  th{background:#f9fafb;padding:10px 6px;text-align:left;font-size:12px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-  th:last-child,td:last-child{text-align:right}
+  th{background:#f9fafb;padding:10px 8px;text-align:left;font-size:12px;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+  th:nth-child(2){text-align:center}
+  th:nth-child(3),th:nth-child(4){text-align:right}
   .footer{background:#f9fafb;padding:16px 32px;text-align:center;font-size:12px;color:#9ca3af;border-top:2px solid #f3f4f6}
   .diferenca-box{margin:0 32px 20px;padding:14px 18px;border-radius:10px;background:${difClass}15;border:2px solid ${difClass}30;display:flex;justify-content:space-between;align-items:center}
   .diferenca-label{font-size:13px;font-weight:600;color:${difClass}}
@@ -3484,10 +3502,10 @@
     <span class="diferenca-val">${difText}</span>
   </div>
   <div class="vendas-section">
-    <div class="vendas-title">🧾 Vendas do Dia <span style="font-size:13px;color:#9ca3af;font-weight:400">(${vendasConcluidas.length} concluídas${vendasCanceladas.length > 0 ? ` · ${vendasCanceladas.length} canceladas` : ''})</span></div>
+    <div class="vendas-title">🛒 Produtos Vendidos <span style="font-size:13px;color:#9ca3af;font-weight:400">(${totalItensVendidos} itens · ${vendasConcluidas.length} vendas${vendasCanceladas.length > 0 ? ` · ${vendasCanceladas.length} canceladas` : ''})</span></div>
     <table>
-      <thead><tr><th>#</th><th>Hora / Itens</th><th>Método</th><th>Valor</th></tr></thead>
-      <tbody>${linhasVendas || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#9ca3af">Nenhuma venda no dia</td></tr>'}</tbody>
+      <thead><tr><th>Produto</th><th>Qtd</th><th>Total</th><th>Preço Méd.</th></tr></thead>
+      <tbody>${linhasProdutos || '<tr><td colspan="4" style="text-align:center;padding:20px;color:#9ca3af">Nenhum produto vendido</td></tr>'}</tbody>
     </table>
   </div>
   <div class="footer">
@@ -3498,7 +3516,6 @@
 <\/body>
 <\/html>`;
 
-            // Enviar como arquivo HTML pro Telegram via sendDocument
             const token = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
             const chatId = '-1002732995273';
 
@@ -3508,7 +3525,7 @@
                 const formData = new FormData();
                 formData.append('chat_id', chatId);
                 formData.append('document', blob, nomeArquivo);
-                formData.append('caption', `📊 *Relatório de Fechamento de Caixa*\n🏪 ${lojaAtual.nome}\n📅 ${hoje}\n💰 Total: ${fmt(dados.totalGeral)}\n🧾 Vendas: ${dados.qtdVendas}\n👤 ${usuarioAtual.email}`);
+                formData.append('caption', `📊 *Relatório de Fechamento de Caixa*\n🏪 ${lojaAtual.nome}\n📅 ${hoje}\n💰 Total: ${fmt(dados.totalGeral)}\n🧾 Vendas: ${dados.qtdVendas}\n🛒 Itens: ${totalItensVendidos}\n👤 ${usuarioAtual.email}`);
                 formData.append('parse_mode', 'Markdown');
 
                 const resp = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
@@ -3525,7 +3542,6 @@
                 console.error('❌ Erro ao enviar relatório HTML:', e);
             }
         }
-
         async function fecharCaixa() {
             if (!caixaAtual) { alert('Nenhum caixa aberto'); return; }
             const senhaDigitada = prompt('🔒 FECHAR CAIXA\n\nDigite a senha de gerente para continuar:');
