@@ -2821,6 +2821,9 @@
                 return;
             }
 
+            const total = parseFloat(getValorTotal()).toFixed(2).replace('.', ',');
+            if (!confirm(`📱 Confirmar venda no PIX?\n\nTotal: R$ ${total}`)) return;
+
             const registroVenda = await registrarVenda('PIX', null);
             if (registroVenda && registroVenda.sucesso) {
                 limparCarrinho(true);
@@ -2841,34 +2844,15 @@
                 return;
             }
 
-            const valor = getValorTotal();
-            abrirPopupPagamento('CRÉDITO', valor);
+            const total = parseFloat(getValorTotal()).toFixed(2).replace('.', ',');
+            if (!confirm(`💳 Confirmar venda no CRÉDITO?\n\nTotal: R$ ${total}`)) return;
 
-            try {
-                const resultado = await credito();
-
-                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    const dadosTEF = {
-                        nsu:        resultado.resultado.tef.nsu         || null,
-                        autorizacao:resultado.resultado.tef.codigoAutorizacao,
-                        bandeira:   resultado.resultado.tef.codigoBandeira || null,
-                        parcelas:   resultado.resultado.tef.numeroParcelas || 1
-                    };
-                    const registroVenda = await registrarVenda('CREDITO', dadosTEF);
-                    if (registroVenda && registroVenda.sucesso) {
-                        fecharPopupPagamento();
-                        limparCarrinho(true);
-                        showVendaSucesso(`CRÉDITO • Cód. ${registroVenda.codigo_venda}`);
-                    } else {
-                        mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
-                    }
-                } else {
-                    const motivo = resultado?.resultado?.tef?.mensagemResultado || 'Sem resposta da maquininha';
-                    mostrarResultadoPopup(false, motivo);
-                }
-            } catch (error) {
-                mostrarResultadoPopup(false, 'Erro de comunicação. Tente novamente.');
-                console.error('Erro CRÉDITO:', error);
+            const registroVenda = await registrarVenda('CREDITO', null);
+            if (registroVenda && registroVenda.sucesso) {
+                limparCarrinho(true);
+                showVendaSucesso(`CRÉDITO • Cód. ${registroVenda.codigo_venda}`);
+            } else {
+                alert('❌ Erro ao registrar venda no sistema.');
             }
         }
 
@@ -2883,34 +2867,15 @@
                 return;
             }
 
-            const valor = getValorTotal();
-            abrirPopupPagamento('DÉBITO', valor);
+            const total = parseFloat(getValorTotal()).toFixed(2).replace('.', ',');
+            if (!confirm(`💳 Confirmar venda no DÉBITO?\n\nTotal: R$ ${total}`)) return;
 
-            try {
-                const resultado = await debito();
-
-                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    const dadosTEF = {
-                        nsu:        resultado.resultado.tef.nsu         || null,
-                        autorizacao:resultado.resultado.tef.codigoAutorizacao,
-                        bandeira:   resultado.resultado.tef.codigoBandeira || null,
-                        parcelas:   1
-                    };
-                    const registroVenda = await registrarVenda('DEBITO', dadosTEF);
-                    if (registroVenda && registroVenda.sucesso) {
-                        fecharPopupPagamento();
-                        limparCarrinho(true);
-                        showVendaSucesso(`DÉBITO • Cód. ${registroVenda.codigo_venda}`);
-                    } else {
-                        mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
-                    }
-                } else {
-                    const motivo = resultado?.resultado?.tef?.mensagemResultado || 'Sem resposta da maquininha';
-                    mostrarResultadoPopup(false, motivo);
-                }
-            } catch (error) {
-                mostrarResultadoPopup(false, 'Erro de comunicação. Tente novamente.');
-                console.error('Erro DÉBITO:', error);
+            const registroVenda = await registrarVenda('DEBITO', null);
+            if (registroVenda && registroVenda.sucesso) {
+                limparCarrinho(true);
+                showVendaSucesso(`DÉBITO • Cód. ${registroVenda.codigo_venda}`);
+            } else {
+                alert('❌ Erro ao registrar venda no sistema.');
             }
         }
 
@@ -3159,34 +3124,64 @@
 
         // Gerenciar caixa (abrir ou fechar)
         async function gerenciarCaixa() {
-            // NOTIFICAR IMEDIATAMENTE AO CLICAR NO BOTÃO
+            // SEMPRE re-sincroniza com o banco antes de decidir
+            await _sincronizarCaixaDoBanco();
+
             if (caixaAtual && caixaAtual.status === 'ABERTO') {
                 // Clicou para FECHAR
                 await notificarAcaoCaixa('CLIQUE_FECHAR', {});
-                
                 fecharCaixa();
             } else {
                 // Clicou para ABRIR
                 await notificarAcaoCaixa('CLIQUE_ABRIR', {});
-                
-                // ABRIR GAVETA IMEDIATAMENTE
                 console.log('💰 Abrindo gaveta (clique abrir caixa)...');
                 await abrirGaveta();
-                
                 abrirCaixa();
             }
         }
 
         // Abrir caixa
+        let _caixaAbrindo = false;
         async function abrirCaixa() {
+            // LOCK: impede dupla chamada simultânea
+            if (_caixaAbrindo) {
+                console.warn('abrirCaixa ja em andamento, ignorando duplicata.');
+                return;
+            }
+            _caixaAbrindo = true;
+
+            try {
+                // VERIFICA NO BANCO se ja existe caixa ABERTO
+                const { data: caixaExistente, error: checkError } = await supabaseClient
+                    .from('caixas')
+                    .select('id, status, data_abertura, valor_inicial')
+                    .eq('loja_id', lojaAtual.id)
+                    .eq('status', 'ABERTO')
+                    .order('data_abertura', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (caixaExistente) {
+                    console.warn('Caixa ja aberto no banco:', caixaExistente.id);
+                    caixaAtual = caixaExistente;
+                    atualizarBotaoCaixa(true);
+                    alert('⚠️ Já existe um caixa aberto!\n\nO sistema sincronizou com o caixa existente.');
+                    _caixaAbrindo = false;
+                    return;
+                }
+            } catch (e) {
+                console.error('Erro na verificação prévia de caixa:', e);
+            }
+
             const valorInicial = prompt('Digite o valor inicial em caixa (R$):\n\nExemplo: 100.00');
             
-            if (valorInicial === null) return; // Cancelou
+            if (valorInicial === null) { _caixaAbrindo = false; return; }
 
             const valor = parseFloat(valorInicial.replace(',', '.'));
             
             if (isNaN(valor) || valor < 0) {
                 alert('❌ Valor inválido! Digite um número positivo.');
+                _caixaAbrindo = false;
                 return;
             }
 
@@ -3199,6 +3194,7 @@
                 const { data, error } = await supabaseClient
                     .from('caixas')
                     .insert([{
+                        loja_id: lojaAtual.id,
                         usuario_abertura: usuarioAtual.id,
                         valor_inicial: valor,
                         observacao_abertura: observacao,
@@ -3224,6 +3220,8 @@
             } catch (error) {
                 console.error('Erro ao abrir caixa:', error);
                 alert('❌ Erro ao abrir caixa: ' + error.message);
+            } finally {
+                _caixaAbrindo = false;
             }
         }
 
