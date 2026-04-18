@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#6c059b">
     <title>💰 Financeiro - OMG PDV</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -647,8 +647,8 @@
 
     <script>
         const SUPABASE_URL = 'https://azfpzrqnkjifgfvxxnch.supabase.co';
-        const SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6ZnB6cnFua2ppZmdmdnh4bmNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMDY4MTQsImV4cCI6MjA4OTY4MjgxNH0.z8YZ6lfsweb_6ty7a6Px6r8dFPAHBA1sWZoGIMZ1P-U';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const SUPABASE_KEY = 'sb_publishable_GGFVLYVtjOv59khwvY-RTQ_ZGi9qWbF';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let usuarioAtual = null, lojaAtual = null;
         let chartMetodos = null, chartEvolucao = null, chartProdutos = null, chartHoras = null;
