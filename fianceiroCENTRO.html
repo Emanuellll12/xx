@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#6c059b">
     <title>💰 Financeiro - OMG PDV</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -646,11 +646,9 @@
     </div><!-- /main -->
 
     <script>
-        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        const LOJA_ID_FIXO = 'a028e141-2c6e-4eae-86b3-042d665e6785';
+        const SUPABASE_URL = 'https://azfpzrqnkjifgfvxxnch.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_GGFVLYVtjOv59khwvY-RTQ_ZGi9qWbF';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let usuarioAtual = null, lojaAtual = null;
         let chartMetodos = null, chartEvolucao = null, chartProdutos = null, chartHoras = null;
@@ -661,6 +659,8 @@
         Chart.defaults.color = '#7c6b92';
 
         async function init() {
+            const LOJA_ID_FIXO = 'a028e141-2c6e-4eae-86b3-042d665e6785';
+
             const { data: loja, error } = await supabaseClient.from('lojas').select('*').eq('id', LOJA_ID_FIXO).single();
             if (error || !loja) { alert('Erro ao carregar loja.'); return; }
 
