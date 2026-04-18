@@ -646,9 +646,11 @@
     </div><!-- /main -->
 
     <script>
-        const SUPABASE_URL = 'https://azfpzrqnkjifgfvxxnch.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_GGFVLYVtjOv59khwvY-RTQ_ZGi9qWbF';
+        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const LOJA_ID_FIXO = 'a028e141-2c6e-4eae-86b3-042d665e6785';
 
         let usuarioAtual = null, lojaAtual = null;
         let chartMetodos = null, chartEvolucao = null, chartProdutos = null, chartHoras = null;
@@ -659,20 +661,8 @@
         Chart.defaults.color = '#7c6b92';
 
         async function init() {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-            if (error || !session?.user) {
-                alert('Você precisa estar logado!\n\nFaça login no PDV primeiro.');
-                window.location.href = 'vendas.html';
-                return;
-            }
-            usuarioAtual = session.user;
-
-            const { data: ul } = await supabaseClient.from('usuarios_loja')
-                .select('loja_id').eq('user_id', session.user.id).maybeSingle();
-            if (!ul?.loja_id) { alert('Erro: usuário sem loja.'); return; }
-
-            const { data: loja } = await supabaseClient.from('lojas').select('*').eq('id', ul.loja_id).single();
-            if (!loja) { alert('Erro ao carregar loja.'); return; }
+            const { data: loja, error } = await supabaseClient.from('lojas').select('*').eq('id', LOJA_ID_FIXO).single();
+            if (error || !loja) { alert('Erro ao carregar loja.'); return; }
 
             lojaAtual = loja;
             document.getElementById('lojaInfo').textContent = '🏪 ' + loja.nome;
