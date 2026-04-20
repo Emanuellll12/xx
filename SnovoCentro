@@ -1577,8 +1577,8 @@
 
         <div class="pagamento-btns">
             <button class="btn-pagamento btn-pix" onclick="finalizarVendaPix()">PIX</button>
-            <button class="btn-pagamento btn-credito" onclick="finalizarVendaCredito()">CRÉDITO</button>
-            <button class="btn-pagamento btn-debito" onclick="finalizarVendaDebito()">DÉBITO</button>
+            <button id="btnFinalizarCredito" class="btn-pagamento btn-credito" onclick="finalizarVendaCredito()">CRÉDITO</button>
+            <button id="btnFinalizarDebito" class="btn-pagamento btn-debito" onclick="finalizarVendaDebito()">DÉBITO</button>
             <button class="btn-pagamento btn-pix" onclick="finalizarVendaDinheiro()"> DINHEIRO</button>
             <button class="btn-pagamento btn-credito" onclick="abrirPagamentoDividido()"> DIVIDIDO</button>
         </div>
@@ -2864,6 +2864,58 @@
             }
         }
 
+        // ==================== MODAL CONFIRMAÇÃO CRÉDITO/DÉBITO (SEM PAGBANK) ====================
+        let _confirmCardTipo = null; // 'CREDITO' ou 'DEBITO'
+
+        function abrirConfirmacaoCartao(tipo) {
+            _confirmCardTipo = tipo;
+            const valor = getValorTotal();
+            const label = tipo === 'CREDITO' ? 'Crédito' : 'Débito';
+            const emoji = tipo === 'CREDITO' ? '💳' : '💳';
+            document.getElementById('confirmCardEmoji').textContent = emoji;
+            document.getElementById('confirmCardLabel').textContent = `Pagamento no ${label}`;
+            document.getElementById('confirmCardValor').textContent =
+                `R$ ${parseFloat(valor).toFixed(2).replace('.', ',')}`;
+            document.getElementById('confirmCardMsg').textContent =
+                `O pagamento de R$ ${parseFloat(valor).toFixed(2).replace('.', ',')} foi realizado na maquininha (${label})?`;
+            document.getElementById('modalConfirmCard').style.display = 'flex';
+        }
+
+        function fecharConfirmacaoCartao() {
+            document.getElementById('modalConfirmCard').style.display = 'none';
+            _confirmCardTipo = null;
+        }
+
+        async function confirmarPagamentoCartao() {
+            if (!_confirmCardTipo) return;
+            const tipo = _confirmCardTipo;
+            fecharConfirmacaoCartao();
+
+            // Desabilitar botões para evitar duplo clique
+            const btnCred = document.getElementById('btnFinalizarCredito');
+            const btnDeb  = document.getElementById('btnFinalizarDebito');
+            if (btnCred) btnCred.disabled = true;
+            if (btnDeb)  btnDeb.disabled  = true;
+
+            try {
+                const registroVenda = await registrarVenda(tipo, { manual: true, autorizacao: 'MANUAL', nsu: null, bandeira: null, parcelas: 1 });
+
+                if (registroVenda && registroVenda.sucesso) {
+                    limparCarrinho(true);
+                    const label = tipo === 'CREDITO' ? 'CRÉDITO' : 'DÉBITO';
+                    showVendaSucesso(`${label} • Cód. ${registroVenda.codigo_venda}`);
+                } else {
+                    alert('❌ Erro ao registrar venda no sistema:\n' + (registroVenda?.erro || 'Erro desconhecido'));
+                }
+            } catch (err) {
+                alert('❌ Erro inesperado ao registrar venda:\n' + err.message);
+                console.error('Erro confirmarPagamentoCartao:', err);
+            } finally {
+                if (btnCred) btnCred.disabled = false;
+                if (btnDeb)  btnDeb.disabled  = false;
+            }
+        }
+
         // ==================== FINALIZAR VENDA CRÉDITO ====================
         async function finalizarVendaCredito() {
             if (!caixaAtual || caixaAtual.status !== 'ABERTO') {
@@ -2874,36 +2926,7 @@
                 alert('Carrinho vazio! Adicione produtos primeiro.');
                 return;
             }
-
-            const valor = getValorTotal();
-            abrirPopupPagamento('CRÉDITO', valor);
-
-            try {
-                const resultado = await credito();
-
-                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    const dadosTEF = {
-                        nsu:        resultado.resultado.tef.nsu         || null,
-                        autorizacao:resultado.resultado.tef.codigoAutorizacao,
-                        bandeira:   resultado.resultado.tef.codigoBandeira || null,
-                        parcelas:   resultado.resultado.tef.numeroParcelas || 1
-                    };
-                    const registroVenda = await registrarVenda('CREDITO', dadosTEF);
-                    if (registroVenda && registroVenda.sucesso) {
-                        fecharPopupPagamento();
-                        limparCarrinho(true);
-                        showVendaSucesso(`CRÉDITO • Cód. ${registroVenda.codigo_venda}`);
-                    } else {
-                        mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
-                    }
-                } else {
-                    const motivo = resultado?.resultado?.tef?.mensagemResultado || 'Sem resposta da maquininha';
-                    mostrarResultadoPopup(false, motivo);
-                }
-            } catch (error) {
-                mostrarResultadoPopup(false, 'Erro de comunicação. Tente novamente.');
-                console.error('Erro CRÉDITO:', error);
-            }
+            abrirConfirmacaoCartao('CREDITO');
         }
 
         // ==================== FINALIZAR VENDA DÉBITO ====================
@@ -2916,36 +2939,7 @@
                 alert('Carrinho vazio! Adicione produtos primeiro.');
                 return;
             }
-
-            const valor = getValorTotal();
-            abrirPopupPagamento('DÉBITO', valor);
-
-            try {
-                const resultado = await debito();
-
-                if (resultado && resultado.resultado && resultado.resultado.tef && resultado.resultado.tef.codigoAutorizacao) {
-                    const dadosTEF = {
-                        nsu:        resultado.resultado.tef.nsu         || null,
-                        autorizacao:resultado.resultado.tef.codigoAutorizacao,
-                        bandeira:   resultado.resultado.tef.codigoBandeira || null,
-                        parcelas:   1
-                    };
-                    const registroVenda = await registrarVenda('DEBITO', dadosTEF);
-                    if (registroVenda && registroVenda.sucesso) {
-                        fecharPopupPagamento();
-                        limparCarrinho(true);
-                        showVendaSucesso(`DÉBITO • Cód. ${registroVenda.codigo_venda}`);
-                    } else {
-                        mostrarResultadoPopup(false, 'Erro ao registrar venda no sistema.');
-                    }
-                } else {
-                    const motivo = resultado?.resultado?.tef?.mensagemResultado || 'Sem resposta da maquininha';
-                    mostrarResultadoPopup(false, motivo);
-                }
-            } catch (error) {
-                mostrarResultadoPopup(false, 'Erro de comunicação. Tente novamente.');
-                console.error('Erro DÉBITO:', error);
-            }
+            abrirConfirmacaoCartao('DEBITO');
         }
 
         // ==================== FINALIZAR VENDA DINHEIRO ====================
@@ -4788,6 +4782,31 @@
             <div class="modal-dinheiro-btns">
                 <button class="modal-dinheiro-btn-cancel" onclick="fecharModalDinheiro()">Cancelar</button>
                 <button class="modal-dinheiro-btn-ok" id="mdBtnOk" onclick="confirmarDinheiro()" disabled>✅ Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAÇÃO CRÉDITO/DÉBITO -->
+    <div id="modalConfirmCard" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65);
+         z-index:99999; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:20px; padding:36px 32px; width:420px; max-width:92vw;
+                    box-shadow:0 24px 70px rgba(0,0,0,0.35); text-align:center; position:relative;">
+            <div id="confirmCardEmoji" style="font-size:52px; margin-bottom:10px;">💳</div>
+            <div id="confirmCardLabel" style="font-size:20px; font-weight:700; color:#6c059b; margin-bottom:6px;"></div>
+            <div id="confirmCardValor" style="font-size:38px; font-weight:800; color:#1f2937; margin-bottom:14px;"></div>
+            <div id="confirmCardMsg" style="font-size:15px; color:#555; margin-bottom:28px; line-height:1.5;"></div>
+            <div style="display:flex; gap:14px;">
+                <button onclick="fecharConfirmacaoCartao()"
+                    style="flex:1; padding:14px; border:2px solid #d1d5db; background:#fff; color:#374151;
+                           border-radius:12px; font-size:16px; font-weight:700; cursor:pointer;">
+                    ✖ Não
+                </button>
+                <button onclick="confirmarPagamentoCartao()"
+                    style="flex:2; padding:14px; background:linear-gradient(135deg,#6c059b,#4a0470);
+                           color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:700;
+                           cursor:pointer; box-shadow:0 4px 14px rgba(108,5,155,0.35);">
+                    ✅ Sim, confirmar venda
+                </button>
             </div>
         </div>
     </div>
