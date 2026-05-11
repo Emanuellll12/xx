@@ -853,8 +853,11 @@ async function registrarVendaTotem(tipoPagamento, dadosTEF, carrinhoSnapshot, to
         const qtdItens = itens.reduce((s, i) => s + i.quantidade, 0);
         
         // Monta objeto da venda — só inclui campos que existem
+        const _agora = new Date().toISOString();
         const dadosVenda = {
             loja_id: lojaAtual.id,
+            data_hora: _agora,
+            data_venda: _agora,
             valor_total: valorTotal,
             metodo_pagamento: tipoPagamento,
             quantidade_itens: qtdItens,
@@ -881,11 +884,13 @@ async function registrarVendaTotem(tipoPagamento, dadosTEF, carrinhoSnapshot, to
         try {
             const itensVenda = itens.map(item => ({
                 venda_id: vendaRegistrada.id,
-                codigo_produto: item.codigo,
+                loja_id: lojaAtual.id,
+                codigo_produto: String(item.codigo),
                 nome_produto: item.nome,
                 quantidade: item.quantidade,
                 preco_unitario: parseFloat(item.preco),
-                subtotal: parseFloat(item.preco) * item.quantidade
+                subtotal: parseFloat(item.preco) * item.quantidade,
+                data_registro: _agora
             }));
             const { error: itensError } = await supabaseClient.from('itens_venda').insert(itensVenda);
             if (itensError) console.error('[TOTEM] Erro itens_venda (nao critico):', JSON.stringify(itensError));
@@ -904,9 +909,10 @@ async function registrarVendaTotem(tipoPagamento, dadosTEF, carrinhoSnapshot, to
                         .eq('codigo', item.codigo).eq('loja_id', lojaAtual.id);
                 }
                 await supabaseClient.from('movimentacoes').insert([{
-                    item_codigo: item.codigo, tipo: 'VENDA',
+                    item_codigo: String(item.codigo), tipo: 'VENDA',
                     quantidade: -item.quantidade, valor_unitario: item.preco,
                     responsavel: usuarioAtual.email,
+                    loja_id: lojaAtual.id,
                     observacao: 'Venda Totem #' + vendaRegistrada.id + ' - ' + tipoPagamento
                 }]);
             }
