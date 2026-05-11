@@ -1597,8 +1597,8 @@
         //   codigo text not null,
         //   unique(loja_id, codigo)
         // );
-        const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_sgp56pE__TvW2T53WKf-qA_WntFKqhr';
+        const SUPABASE_URL = 'https://bsvbtfylaqlhnpajdwnp.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_jq1hqwLe8BfFOLIXUGDaFQ_dMqNqbp1';
         
         
         let supabaseClient;
@@ -1612,91 +1612,40 @@
             console.error('Erro ao inicializar Supabase:', error);
         }
 
-        // ==================== VERIFICAR AUTENTICAÇÃO ====================
+        // ==================== AUTENTICAÇÃO FIXA — SEM LOGIN ====================
         async function verificarAutenticacao() {
-            console.log('Verificando autenticação...');
-            
+            console.log('✅ Modo sem login — loja fixa IBITURUNA');
+
+            // Usuário fixo (sem auth)
+            usuarioAtual = {
+                id: 'a70bc65d-96bf-46a1-915e-176647cabb34',
+                email: 'ibituruna@gmail.com'
+            };
+
+            // Buscar dados da loja diretamente pelo ID fixo
+            const LOJA_ID = 'd4682e9a-5f6d-494a-a871-ae08f1651f1d';
+
             try {
-                // Verificar sessão do Supabase
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-                
-                if (error) {
-                    console.error('❌ Erro ao buscar sessão:', error);
-                    return false; // NÃO redirecionar em erro de rede
-                }
-
-                if (!session || !session.user) {
-                    console.log('❌ Usuário não autenticado, redirecionando para login...');
-                    window.location.href = 'login.html';
-                    return false;
-                }
-
-                console.log('✅ Sessão ativa:', session.user.email);
-                usuarioAtual = session.user;
-
-                // Buscar loja do usuário (CORRIGIDO - query mais simples)
-                console.log('Buscando loja do usuário:', session.user.id);
-                
-                const { data: usuarioLoja, error: lojaError } = await supabaseClient
-                    .from('usuarios_loja')
-                    .select('loja_id, cargo')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle(); // ✅ USA maybeSingle PARA NÃO DAR ERRO SE NÃO ENCONTRAR
-
-                if (lojaError) {
-                    console.error('❌ Erro SQL ao buscar loja:', lojaError);
-                    alert('Erro ao buscar loja: ' + lojaError.message);
-                    return false; // NÃO redirecionar em erro SQL
-                }
-
-                if (!usuarioLoja || !usuarioLoja.loja_id) {
-                    console.error('❌ Usuário sem loja associada');
-                    alert('Erro: Usuário sem loja associada.\n\nAbra diagnostico.html e clique em "Tentar Corrigir"');
-                    await supabaseClient.auth.signOut();
-                    window.location.href = 'login.html';
-                    return false;
-                }
-
-                console.log('✅ Registro encontrado em usuarios_loja:', usuarioLoja);
-
-                // Agora buscar dados completos da loja
                 const { data: lojaInfo, error: lojaInfoError } = await supabaseClient
                     .from('lojas')
                     .select('*')
-                    .eq('id', usuarioLoja.loja_id)
+                    .eq('id', LOJA_ID)
                     .single();
 
                 if (lojaInfoError || !lojaInfo) {
-                    console.error('❌ Erro ao buscar informações da loja:', lojaInfoError);
-                    alert('Erro ao carregar informações da loja');
-                    await supabaseClient.auth.signOut();
-                    window.location.href = 'login.html';
+                    console.error('❌ Erro ao buscar loja:', lojaInfoError);
+                    alert('Erro ao carregar informações da loja: ' + (lojaInfoError?.message || 'Loja não encontrada'));
                     return false;
                 }
 
                 lojaAtual = lojaInfo;
                 console.log('✅ Loja carregada:', lojaAtual.nome);
-                console.log('📊 Plano:', lojaAtual.plano);
-                console.log('👤 Cargo:', usuarioLoja.cargo);
-
-                // Verificar status da loja
-                if (lojaAtual.status !== 'ATIVO') {
-                    alert('Loja suspensa ou cancelada. Entre em contato com o suporte.');
-                    await supabaseClient.auth.signOut();
-                    window.location.href = 'login.html';
-                    return false;
-                }
-
-                // Atualizar interface com nome da loja
                 atualizarInfoLoja();
-                
                 return true;
 
             } catch (error) {
-                console.error('❌ Erro crítico na verificação:', error);
-                // NÃO redirecionar automaticamente em erro de rede
-                // Apenas mostrar erro e permitir que o usuário tente novamente
-                alert('Erro ao verificar autenticação: ' + error.message + '\n\nVerifique sua conexão e recarregue a página.');
+                console.error('❌ Erro ao buscar loja:', error);
+                alert('Erro ao carregar loja: ' + error.message);
                 return false;
             }
         }
@@ -1709,9 +1658,8 @@
 
         // ==================== LOGOUT ====================
         async function fazerLogout() {
-            if (confirm('Deseja sair do sistema?')) {
-                await supabaseClient.auth.signOut();
-                window.location.href = 'login.html';
+            if (confirm('Deseja recarregar o sistema?')) {
+                window.location.reload();
             }
         }
 
@@ -2580,8 +2528,12 @@
                 console.log('Quantidade de Itens:', quantidadeItens);
                 console.log('Produtos:', carrinho);
                 
-                // 1. INSERIR VENDA NA TABELA VENDAS (loja_id será adicionado automaticamente pelo trigger)
+                // 1. INSERIR VENDA NA TABELA VENDAS
+                const agora = new Date().toISOString();
                 const vendaData = {
+                    loja_id: lojaAtual.id,
+                    data_hora: agora,
+                    data_venda: agora,
                     valor_total: valorTotal,
                     metodo_pagamento: tipoPagamento,
                     quantidade_itens: quantidadeItens,
@@ -2608,11 +2560,13 @@
                 // 2. INSERIR ITENS DA VENDA NA TABELA ITENS_VENDA
                 const itensVenda = carrinho.map(item => ({
                     venda_id: vendaRegistrada.id,
-                    codigo_produto: item.codigo,
+                    loja_id: lojaAtual.id,
+                    codigo_produto: String(item.codigo),
                     nome_produto: item.nome,
                     quantidade: item.quantidade,
                     preco_unitario: parseFloat(item.preco),
-                    subtotal: parseFloat(item.preco) * item.quantidade
+                    subtotal: parseFloat(item.preco) * item.quantidade,
+                    data_registro: agora
                 }));
                 
                 const { error: itensError } = await supabaseClient
@@ -3198,7 +3152,8 @@
                         usuario_abertura: usuarioAtual.id,
                         valor_inicial: valor,
                         observacao_abertura: observacao,
-                        status: 'ABERTO'
+                        status: 'ABERTO',
+                        data_abertura: new Date().toISOString()
                     }])
                     .select()
                     .single();
@@ -3262,13 +3217,14 @@
                 return;
             }
 
-            // Buscar vendas do caixa
+            // Buscar vendas do caixa — apenas após abertura do caixa atual
             const { data: vendas } = await supabaseClient
                 .from('vendas')
                 .select('valor_total, metodo_pagamento')
                 .eq('loja_id', lojaAtual.id)
+                .eq('status', 'CONCLUIDA')
                 .gte('data_venda', caixaAtual.data_abertura)
-                .eq('status', 'CONCLUIDA');
+                .lte('data_venda', new Date().toISOString());
 
             const { data: retiradas } = await supabaseClient
                 .from('retiradas_caixa')
@@ -4196,7 +4152,7 @@
                     .from('vendas')
                     .update({ 
                         status: 'CANCELADA',
-                        observacao: (venda.observacao || '') + ` | CANCELADA em ${formatarDataBrasilia(new Date().toISOString())} por ${usuarioAtual.email}`
+                        observacao: `CANCELADA em ${formatarDataBrasilia(new Date().toISOString())} por ${usuarioAtual.email}`
                     })
                     .eq('id', vendaId)
                     .eq('loja_id', lojaAtual.id);
