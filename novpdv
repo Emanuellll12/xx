@@ -3991,7 +3991,8 @@
                     .eq('loja_id', lojaAtual.id)
                     .gte('data_venda', dataInicio)
                     .lte('data_venda', dataFim)
-                    .order('data_venda', { ascending: false });
+                    .order('data_venda', { ascending: false })
+                    .limit(3);
 
                 if (error) throw error;
 
@@ -4085,6 +4086,13 @@
         }
 
         async function reverterVenda(vendaId) {
+            const senhaReverter = prompt('🔒 REVERSÃO DE VENDA\n\nDigite a senha para reverter:');
+            if (senhaReverter === null) return;
+            if (senhaReverter !== 'salgado01' && senhaReverter !== 'novello01') {
+                alert('❌ Senha incorreta! Reversão negada.');
+                return;
+            }
+
             if (!confirm('⚠️ ATENÇÃO!\n\nReverter esta venda irá:\n\n• Cancelar a venda\n• Devolver produtos ao estoque\n• Impedir contabilização financeira\n\nDeseja continuar?')) {
                 return;
             }
@@ -4160,6 +4168,35 @@
                 if (vendaError) throw vendaError;
 
                 console.log('✅ Venda cancelada:', vendaId);
+
+                // Notificar grupo financeiro no Telegram
+                try {
+                    const { data: vendaCancelada } = await supabaseClient
+                        .from('vendas')
+                        .select('*')
+                        .eq('id', vendaId)
+                        .single();
+
+                    const tokenTg = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
+                    const chatIdFinanceiro = '-1002732995273';
+                    const msgReversao =
+                        `🚨 *VENDA REVERTIDA*\n\n` +
+                        `🏪 *Loja:* ${lojaAtual.nome}\n` +
+                        `🆔 *Venda:* #${vendaId}\n` +
+                        `💰 *Valor:* R$ ${vendaCancelada ? parseFloat(vendaCancelada.valor_total).toFixed(2) : '—'}\n` +
+                        `💳 *Pagamento:* ${vendaCancelada ? vendaCancelada.metodo_pagamento : '—'}\n` +
+                        `👤 *Revertido por:* ${usuarioAtual.email}\n` +
+                        `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
+                        `_Estoque devolvido automaticamente_`;
+
+                    await fetch(`https://api.telegram.org/bot${tokenTg}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ chat_id: chatIdFinanceiro, text: msgReversao, parse_mode: 'Markdown' })
+                    });
+                } catch (tgErr) {
+                    console.error('Erro ao notificar Telegram reversão:', tgErr);
+                }
 
                 alert('✅ VENDA REVERTIDA COM SUCESSO!\n\n• Estoque devolvido\n• Venda cancelada\n• Não será contabilizada');
 
