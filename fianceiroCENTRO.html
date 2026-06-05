@@ -557,8 +557,8 @@
                             <table>
                                 <thead><tr>
                                     <th>Abertura</th><th>Fechamento</th><th class="r">Inicial</th>
-                                    <th class="r">Vendas</th><th class="r">Final</th>
-                                    <th class="r">Diferença</th><th>Status</th>
+                                    <th class="r">Vendas (Todos Métodos)</th><th class="r">Dinheiro Contado</th>
+                                    <th class="r">Total Geral</th><th>Status</th>
                                 </tr></thead>
                                 <tbody id="tabelaCaixas">
                                     <tr><td colspan="7" class="loading-state"><div class="spinner">⏳</div><div>Carregando...</div></td></tr>
@@ -721,8 +721,13 @@
         const brl = v => `R$ ${parseFloat(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 
         async function carregarResumo(di, df) {
-            const { data: v } = await supabaseClient.from('vendas').select('valor_total')
-                .eq('loja_id', lojaAtual.id).gte('data_venda', di).lte('data_venda', df+' 23:59:59').neq('status','CANCELADA');
+            const v = await buscarTodosRegistros('vendas', {
+                select: 'valor_total',
+                eq:  [['loja_id', lojaAtual.id]],
+                gte: [['data_venda', di]],
+                lte: [['data_venda', df+' 23:59:59']],
+                neq: [['status', 'CANCELADA']]
+            });
             if (!v) return;
             const total = v.reduce((s,x) => s + parseFloat(x.valor_total), 0);
             const qtd = v.length;
@@ -735,20 +740,48 @@
             document.getElementById('caixasAbertos').textContent = ca?.length ?? 0;
         }
 
+        async function buscarTodosRegistros(tabela, filtros) {
+            // Busca paginada — supera o limite de 1000 do Supabase
+            const PAGINA = 1000;
+            let todos = [], pagina = 0, continuar = true;
+            while (continuar) {
+                let query = supabaseClient.from(tabela).select(filtros.select || '*');
+                if (filtros.eq)    filtros.eq.forEach(([col, val]) => { query = query.eq(col, val); });
+                if (filtros.gte)   filtros.gte.forEach(([col, val]) => { query = query.gte(col, val); });
+                if (filtros.lte)   filtros.lte.forEach(([col, val]) => { query = query.lte(col, val); });
+                if (filtros.neq)   filtros.neq.forEach(([col, val]) => { query = query.neq(col, val); });
+                if (filtros.order) query = query.order(filtros.order.col, { ascending: filtros.order.asc ?? false });
+                query = query.range(pagina * PAGINA, (pagina + 1) * PAGINA - 1);
+                const { data, error } = await query;
+                if (error || !data?.length) break;
+                todos = todos.concat(data);
+                continuar = data.length === PAGINA;
+                pagina++;
+            }
+            return todos;
+        }
+
         async function carregarVendas(di, df) {
-            const { data: vendas, error } = await supabaseClient.from('vendas').select('*')
-                .eq('loja_id', lojaAtual.id).gte('data_venda', di).lte('data_venda', df+' 23:59:59')
-                .order('data_venda',{ascending:false}).limit(100);
+            const vendas = await buscarTodosRegistros('vendas', {
+                eq:    [['loja_id', lojaAtual.id]],
+                gte:   [['data_venda', di]],
+                lte:   [['data_venda', df+' 23:59:59']],
+                neq:   [],
+                order: { col: 'data_venda', asc: false }
+            });
+            // Remover canceladas da exibição não é necessário aqui (mostra todas)
             const tbody = document.getElementById('tabelaVendas');
-            if (error || !vendas?.length) {
+            if (!vendas?.length) {
                 tbody.innerHTML = `<tr><td colspan="7" class="empty"><div class="empty-icon">📭</div>Nenhuma venda no período</td></tr>`; return;
             }
 
-            // Buscar itens pelo período usando data_registro
-            const { data: todosItens } = await supabaseClient.from('itens_venda')
-                .select('venda_id, nome_produto, quantidade')
-                .gte('data_registro', di + 'T00:00:00-03:00')
-                .lte('data_registro', df + 'T23:59:59-03:00');
+            // Buscar itens pelo período usando paginação também
+            const todosItens = await buscarTodosRegistros('itens_venda', {
+                select: 'venda_id, nome_produto, quantidade',
+                eq:    [['loja_id', lojaAtual.id]],
+                gte:   [['data_registro', di + 'T00:00:00-03:00']],
+                lte:   [['data_registro', df + 'T23:59:59-03:00']]
+            });
 
             // Map de venda por id
             const vendaMap = {};
@@ -812,12 +845,12 @@
             }
             tbody.innerHTML = caixas.map(c => {
                 const vi = parseFloat(c.valor_inicial||0), vv = parseFloat(c.valor_vendas||0), vf = parseFloat(c.valor_final||0);
-                const diff = vf - (vi + vv);
+                const totalGeral = vi + vv;
                 return `<tr>
                     <td>${new Date(c.data_abertura).toLocaleString('pt-BR')}</td>
                     <td>${c.data_fechamento ? new Date(c.data_fechamento).toLocaleString('pt-BR') : '-'}</td>
                     <td class="r">${brl(vi)}</td><td class="r">${brl(vv)}</td><td class="r">${brl(vf)}</td>
-                    <td class="r ${diff>0?'pos':diff<0?'neg':''}">${brl(Math.abs(diff))}</td>
+                    <td class="r pos">${brl(totalGeral)}</td>
                     <td><span class="badge badge-${c.status==='ABERTO'?'aberto':'fechado'}">${c.status}</span></td>
                 </tr>`;
             }).join('');
@@ -839,10 +872,15 @@
         }
 
         async function carregarTabelaDiaDia(di, df) {
-            const { data: v, error } = await supabaseClient.from('vendas').select('data_venda, valor_total')
-                .eq('loja_id', lojaAtual.id).gte('data_venda', di).lte('data_venda', df+' 23:59:59').neq('status','CANCELADA');
+            const v = await buscarTodosRegistros('vendas', {
+                select: 'data_venda, valor_total',
+                eq:  [['loja_id', lojaAtual.id]],
+                gte: [['data_venda', di]],
+                lte: [['data_venda', df+' 23:59:59']],
+                neq: [['status', 'CANCELADA']]
+            });
             const tbody = document.getElementById('tabelaDiaDia');
-            if (error || !v?.length) {
+            if (!v?.length) {
                 tbody.innerHTML = `<tr><td colspan="5" class="empty"><div class="empty-icon">📭</div>Nenhuma venda no período</td></tr>`; return;
             }
             const pd = {};
@@ -857,10 +895,15 @@
 
         async function carregarTabelaMesAMes() {
             const ano = new Date().getFullYear();
-            const { data: v, error } = await supabaseClient.from('vendas').select('data_venda, valor_total')
-                .eq('loja_id', lojaAtual.id).gte('data_venda',`${ano}-01-01`).lte('data_venda',`${ano}-12-31 23:59:59`).neq('status','CANCELADA');
+            const v = await buscarTodosRegistros('vendas', {
+                select: 'data_venda, valor_total',
+                eq:  [['loja_id', lojaAtual.id]],
+                gte: [['data_venda', `${ano}-01-01`]],
+                lte: [['data_venda', `${ano}-12-31 23:59:59`]],
+                neq: [['status', 'CANCELADA']]
+            });
             const tbody = document.getElementById('tabelaMesAMes');
-            if (error || !v?.length) {
+            if (!v?.length) {
                 tbody.innerHTML = `<tr><td colspan="5" class="empty"><div class="empty-icon">📭</div>Nenhuma venda no ano</td></tr>`; return;
             }
             const pm = {};
@@ -879,12 +922,13 @@
 
         async function carregarProdutosDia(di, df) {
             const tbody = document.getElementById('tabelaProdutosDia');
-            const { data: itens, error } = await supabaseClient.from('itens_venda')
-                .select('nome_produto, quantidade, subtotal')
-                .gte('data_registro', di + 'T00:00:00-03:00')
-                .lte('data_registro', df + 'T23:59:59-03:00')
-                .eq('loja_id', lojaAtual.id);
-            if (error || !itens?.length) {
+            const itens = await buscarTodosRegistros('itens_venda', {
+                select: 'nome_produto, quantidade, subtotal',
+                eq:  [['loja_id', lojaAtual.id]],
+                gte: [['data_registro', di + 'T00:00:00-03:00']],
+                lte: [['data_registro', df + 'T23:59:59-03:00']]
+            });
+            if (!itens?.length) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty"><div class="empty-icon">📭</div>Nenhum produto vendido no período</td></tr>`; return;
             }
             // Agrupar por produto
@@ -906,8 +950,12 @@
         }
 
         async function carregarGraficos(di, df) {
-            const { data: v } = await supabaseClient.from('vendas').select('*')
-                .eq('loja_id', lojaAtual.id).gte('data_venda', di).lte('data_venda', df+' 23:59:59').neq('status','CANCELADA');
+            const v = await buscarTodosRegistros('vendas', {
+                eq:  [['loja_id', lojaAtual.id]],
+                gte: [['data_venda', di]],
+                lte: [['data_venda', df+' 23:59:59']],
+                neq: [['status', 'CANCELADA']]
+            });
             if (!v) return;
             criarGraficoMetodos(v); criarGraficoEvolucao(v);
             await carregarGraficoProdutos(di, df); criarGraficoHoras(v);
@@ -943,8 +991,12 @@
         }
 
         async function carregarGraficoProdutos(di, df) {
-            const { data: itens } = await supabaseClient.from('itens_venda').select('nome_produto, quantidade, preco_unitario')
-                .gte('data_registro', di + 'T00:00:00-03:00').lte('data_registro', df + 'T23:59:59-03:00');
+            const itens = await buscarTodosRegistros('itens_venda', {
+                select: 'nome_produto, quantidade, preco_unitario',
+                eq:  [['loja_id', lojaAtual.id]],
+                gte: [['data_registro', di + 'T00:00:00-03:00']],
+                lte: [['data_registro', df + 'T23:59:59-03:00']]
+            });
             if (!itens?.length) return;
             const pp = {};
             itens.forEach(i => { pp[i.nome_produto] = (pp[i.nome_produto]||0) + i.quantidade * parseFloat(i.preco_unitario); });
