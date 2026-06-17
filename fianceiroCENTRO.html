@@ -8,6 +8,7 @@
     <title>💰 Financeiro - OMG PDV</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -412,6 +413,194 @@
 
         input[type="date"] { min-height: 44px; }
 
+        /* ── MODAL EDITAR CAIXA ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(26,10,46,0.55);
+            z-index: 999;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+
+        .modal-box {
+            background: var(--white);
+            border-radius: var(--radius) var(--radius) 0 0;
+            width: 100%;
+            max-width: 560px;
+            padding: 20px 18px 30px;
+            box-shadow: 0 -8px 40px rgba(108,5,155,0.2);
+            animation: slideUp 0.25s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal-title {
+            font-size: 15px;
+            font-weight: 900;
+            color: var(--purple);
+            margin-bottom: 4px;
+        }
+        .modal-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .modal-fields { display: flex; flex-direction: column; gap: 11px; }
+        .modal-field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        .modal-field input {
+            width: 100%;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 10px 13px;
+            border-radius: var(--radius-sm);
+            transition: border-color 0.2s;
+        }
+        .modal-field input:focus { outline: none; border-color: var(--purple); background: var(--white); }
+        .modal-field input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .modal-hint {
+            font-size: 11px;
+            color: var(--text-light);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .modal-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .btn-modal-cancel {
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            color: var(--text-muted);
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+        }
+        .btn-modal-save {
+            background: linear-gradient(135deg, #6c059b, #4a0370);
+            border: none;
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(108,5,155,0.3);
+        }
+        .btn-modal-save:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-modal-save:active { transform: scale(0.98); }
+
+        .btn-edit-row {
+            background: var(--purple-dim);
+            border: 1.5px solid var(--purple-mid);
+            color: var(--purple);
+            font-family: 'Nunito', sans-serif;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-edit-row:active { transform: scale(0.95); }
+
+        /* ── EXPORT BOX ── */
+        .export-box {
+            background: var(--purple-dim);
+            border: 1.5px solid var(--purple-mid);
+            border-radius: var(--radius);
+            padding: 13px 14px;
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .export-box-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--purple);
+            margin-bottom: 2px;
+        }
+        .export-datas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .export-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .export-select {
+            width: 100%;
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        .export-select:focus { outline: none; border-color: var(--purple); }
+        .export-input {
+            width: 100%;
+            background: var(--white);
+            border: 1.5px solid var(--border);
+            color: var(--text);
+            font-family: 'Nunito', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+        }
+        .export-input:focus { outline: none; border-color: var(--purple); }
+        .export-custom-dates { display: none; }
+        .btn-export {
+            width: 100%;
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white;
+            border: none;
+            font-family: 'Nunito', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(22,163,74,0.3);
+            transition: all 0.2s;
+            letter-spacing: 0.2px;
+        }
+        .btn-export:active { transform: scale(0.98); opacity: 0.9; }
+
         /* ── FADE IN ── */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(8px); }
@@ -502,6 +691,7 @@
                 <button class="tab-btn" onclick="abrirTab('caixas', this)">💰 Caixas</button>
                 <button class="tab-btn" onclick="abrirTab('detalhado', this)">📈 Relatórios</button>
                 <button class="tab-btn" onclick="abrirTab('produtos', this)">🛒 Produtos do Dia</button>
+                <button class="tab-btn" onclick="abrirTab('caixasDia', this); carregarCaixasDia()">🗓️ Caixas por Dia</button>
             </div>
 
             <!-- TAB: VISÃO GERAL -->
@@ -583,8 +773,35 @@
                 </div>
             </div>
 
-            <!-- TAB: DETALHADO -->
+            <!-- TAB: DETALHADO / RELATÓRIOS -->
             <div id="tabDetalhado" class="tab-pane">
+
+                <!-- BOX EXPORTAR -->
+                <div class="export-box">
+                    <div class="export-box-title">📤 Exportar Vendas (CSV)</div>
+                    <div>
+                        <div class="export-label">Período</div>
+                        <select id="exportPeriodo" class="export-select" onchange="mudarPeriodoExport()">
+                            <option value="hoje">📅 Hoje</option>
+                            <option value="semana">📅 Esta Semana</option>
+                            <option value="mes" selected>📅 Este Mês</option>
+                            <option value="ano">📅 Este Ano</option>
+                            <option value="custom">📅 Personalizado</option>
+                        </select>
+                    </div>
+                    <div class="export-custom-dates export-datas" id="exportCustomDates">
+                        <div>
+                            <div class="export-label">De</div>
+                            <input type="date" id="exportDataInicio" class="export-input">
+                        </div>
+                        <div>
+                            <div class="export-label">Até</div>
+                            <input type="date" id="exportDataFim" class="export-input">
+                        </div>
+                    </div>
+                    <button class="btn-export" onclick="exportarVendasExcel()">⬇️ Baixar Excel de Vendas</button>
+                </div>
+
                 <div class="table-section">
                     <div class="table-card">
                         <div class="table-title">📅 Vendas Dia a Dia</div>
@@ -642,6 +859,33 @@
                 </div>
             </div>
 
+            <!-- TAB: CAIXAS POR DIA -->
+            <div id="tabCaixasDia" class="tab-pane">
+                <div class="table-section">
+                    <div class="table-card">
+                        <div class="table-title">🗓️ Fechamentos de Caixa por Dia</div>
+                        <div class="scroll-hint">Toque em ✏️ para editar os valores do fechamento</div>
+                        <div class="table-scroll">
+                            <table id="tabelaCaixasDia-wrap">
+                                <thead><tr>
+                                    <th>Data Abertura</th>
+                                    <th>Data Fechamento</th>
+                                    <th class="r">Valor Inicial</th>
+                                    <th class="r">Vendas</th>
+                                    <th class="r">Dinheiro Contado</th>
+                                    <th class="r">Total Geral</th>
+                                    <th>Status</th>
+                                    <th class="r">Ação</th>
+                                </tr></thead>
+                                <tbody id="tabelaCaixasDia">
+                                    <tr><td colspan="8" class="loading-state"><div class="spinner">⏳</div><div>Carregando...</div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div><!-- /tabs-wrap -->
     </div><!-- /main -->
 
@@ -667,6 +911,7 @@
             lojaAtual = loja;
             document.getElementById('lojaInfo').textContent = '🏪 ' + loja.nome;
             definirPeriodoMesAtual();
+            mudarPeriodoExport(); // inicializa datas do export
             await carregarDados();
         }
 
@@ -1029,7 +1274,316 @@
             btn.classList.add('active');
         }
 
+        // ── CAIXAS POR DIA ──────────────────────────────────────
+        let caixaEmEdicao = null;
+
+        async function carregarCaixasDia() {
+            const di = document.getElementById('dataInicio').value;
+            const df = document.getElementById('dataFim').value;
+            if (!di || !df) return;
+
+            const tbody = document.getElementById('tabelaCaixasDia');
+            tbody.innerHTML = `<tr><td colspan="8" class="loading-state"><div class="spinner">⏳</div><div>Carregando caixas...</div></td></tr>`;
+
+            const { data: caixas, error } = await supabaseClient
+                .from('caixas')
+                .select('*')
+                .eq('loja_id', lojaAtual.id)
+                .gte('data_abertura', di)
+                .lte('data_abertura', df + ' 23:59:59')
+                .order('data_abertura', { ascending: false });
+
+            if (error || !caixas?.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="empty"><div class="empty-icon">📭</div>Nenhum caixa no período</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = caixas.map(c => {
+                const vi = parseFloat(c.valor_inicial || 0);
+                const vv = parseFloat(c.valor_vendas || 0);
+                const vf = parseFloat(c.valor_final || 0);
+                const totalGeral = vi + vv;
+                const abertura = new Date(c.data_abertura).toLocaleString('pt-BR');
+                const fechamento = c.data_fechamento ? new Date(c.data_fechamento).toLocaleString('pt-BR') : '—';
+                const statusBadge = `<span class="badge badge-${c.status === 'ABERTO' ? 'aberto' : 'fechado'}">${c.status}</span>`;
+                return `<tr id="row-caixa-${c.id}">
+                    <td><strong>${abertura}</strong></td>
+                    <td>${fechamento}</td>
+                    <td class="r" id="vi-${c.id}">${brl(vi)}</td>
+                    <td class="r">${brl(vv)}</td>
+                    <td class="r" id="vf-${c.id}">${brl(vf)}</td>
+                    <td class="r pos" id="tg-${c.id}">${brl(totalGeral)}</td>
+                    <td>${statusBadge}</td>
+                    <td class="r"><button class="btn-edit-row" onclick='abrirModalEdicao(${JSON.stringify(c)})'>✏️ Editar</button></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function abrirModalEdicao(caixa) {
+            caixaEmEdicao = caixa;
+            const abertura = new Date(caixa.data_abertura).toLocaleString('pt-BR');
+            document.getElementById('modalEditarSub').textContent = `Abertura: ${abertura} · ${caixa.status}`;
+            document.getElementById('editValorInicial').value = parseFloat(caixa.valor_inicial || 0).toFixed(2);
+            document.getElementById('editValorFinal').value = parseFloat(caixa.valor_final || 0).toFixed(2);
+            document.getElementById('editValorVendas').value = parseFloat(caixa.valor_vendas || 0).toFixed(2);
+            document.getElementById('btnSalvarEdicao').disabled = false;
+            document.getElementById('modalEditarCaixa').classList.add('open');
+        }
+
+        function fecharModal(e) {
+            if (e.target === document.getElementById('modalEditarCaixa')) {
+                document.getElementById('modalEditarCaixa').classList.remove('open');
+            }
+        }
+
+        async function salvarEdicaoCaixa() {
+            if (!caixaEmEdicao) return;
+            const btn = document.getElementById('btnSalvarEdicao');
+            btn.disabled = true;
+            btn.textContent = '⏳ Salvando...';
+
+            const novoValorInicial = parseFloat(document.getElementById('editValorInicial').value) || 0;
+            const novoValorFinal   = parseFloat(document.getElementById('editValorFinal').value)   || 0;
+            const valorVendas      = parseFloat(caixaEmEdicao.valor_vendas || 0);
+
+            const { error } = await supabaseClient
+                .from('caixas')
+                .update({
+                    valor_inicial: novoValorInicial,
+                    valor_final:   novoValorFinal
+                })
+                .eq('id', caixaEmEdicao.id);
+
+            if (error) {
+                alert('Erro ao salvar: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '💾 Salvar';
+                return;
+            }
+
+            // Atualiza a linha na tabela sem recarregar tudo
+            const totalGeral = novoValorInicial + valorVendas;
+            const viEl = document.getElementById('vi-' + caixaEmEdicao.id);
+            const vfEl = document.getElementById('vf-' + caixaEmEdicao.id);
+            const tgEl = document.getElementById('tg-' + caixaEmEdicao.id);
+            if (viEl) viEl.textContent = brl(novoValorInicial);
+            if (vfEl) vfEl.textContent = brl(novoValorFinal);
+            if (tgEl) tgEl.textContent = brl(totalGeral);
+
+            document.getElementById('modalEditarCaixa').classList.remove('open');
+            btn.textContent = '💾 Salvar';
+            caixaEmEdicao = null;
+
+            // Recalcula o card Total Vendas somando valor_final de todos caixas do período
+            await recalcularCardTotalPorCaixas();
+        }
+
+        async function recalcularCardTotalPorCaixas() {
+            const di = document.getElementById('dataInicio').value;
+            const df = document.getElementById('dataFim').value;
+            if (!di || !df) return;
+
+            const { data: caixas, error } = await supabaseClient
+                .from('caixas')
+                .select('valor_final, valor_inicial, valor_vendas')
+                .eq('loja_id', lojaAtual.id)
+                .gte('data_abertura', di)
+                .lte('data_abertura', df + ' 23:59:59');
+
+            if (error || !caixas?.length) return;
+
+            const totalFinal = caixas.reduce((s, c) => s + parseFloat(c.valor_final || 0), 0);
+            const qtdCaixas  = caixas.length;
+
+            document.getElementById('totalVendas').textContent = brl(totalFinal);
+            document.getElementById('subtitleVendas').textContent = `${qtdCaixas} ${qtdCaixas === 1 ? 'fechamento' : 'fechamentos'} de caixa`;
+            document.getElementById('ticketMedio').textContent = brl(qtdCaixas > 0 ? totalFinal / qtdCaixas : 0);
+        }
+        // ── FIM CAIXAS POR DIA ──────────────────────────────────
+
+        // ── EXPORT RELATÓRIOS ────────────────────────────────────
+        function mudarPeriodoExport() {
+            const tipo = document.getElementById('exportPeriodo').value;
+            const cd = document.getElementById('exportCustomDates');
+            const hoje = new Date();
+            let di, df;
+
+            if (tipo === 'custom') { cd.style.display = 'grid'; return; }
+            cd.style.display = 'none';
+
+            switch(tipo) {
+                case 'hoje': di = df = hoje; break;
+                case 'semana':
+                    di = new Date(hoje); di.setDate(hoje.getDate() - hoje.getDay());
+                    df = new Date(hoje); df.setDate(hoje.getDate() + (6 - hoje.getDay())); break;
+                case 'mes':
+                    di = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    df = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0); break;
+                case 'ano':
+                    di = new Date(hoje.getFullYear(), 0, 1);
+                    df = new Date(hoje.getFullYear(), 11, 31); break;
+            }
+            if (di && df) {
+                document.getElementById('exportDataInicio').value = di.toISOString().split('T')[0];
+                document.getElementById('exportDataFim').value = df.toISOString().split('T')[0];
+            }
+        }
+
+        function getExportPeriodo() {
+            const tipo = document.getElementById('exportPeriodo').value;
+            const hoje = new Date();
+            let di, df;
+            if (tipo === 'custom') {
+                di = document.getElementById('exportDataInicio').value;
+                df = document.getElementById('exportDataFim').value;
+                if (!di || !df) { alert('Selecione as datas de início e fim para exportar.'); return null; }
+                return { di, df };
+            }
+            switch(tipo) {
+                case 'hoje': di = df = hoje; break;
+                case 'semana':
+                    di = new Date(hoje); di.setDate(hoje.getDate() - hoje.getDay());
+                    df = new Date(hoje); df.setDate(hoje.getDate() + (6 - hoje.getDay())); break;
+                case 'mes':
+                    di = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                    df = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0); break;
+                case 'ano':
+                    di = new Date(hoje.getFullYear(), 0, 1);
+                    df = new Date(hoje.getFullYear(), 11, 31); break;
+            }
+            return { di: di.toISOString().split('T')[0], df: df.toISOString().split('T')[0] };
+        }
+
+        async function exportarVendasExcel() {
+            const periodo = getExportPeriodo();
+            if (!periodo) return;
+            const { di, df } = periodo;
+
+            const btn = document.querySelector('.btn-export');
+            btn.textContent = '⏳ Gerando Excel...';
+            btn.disabled = true;
+
+            try {
+                // Buscar vendas
+                const vendas = await buscarTodosRegistros('vendas', {
+                    eq:    [['loja_id', lojaAtual.id]],
+                    gte:   [['data_venda', di]],
+                    lte:   [['data_venda', df + ' 23:59:59']],
+                    order: { col: 'data_venda', asc: true }
+                });
+
+                if (!vendas?.length) {
+                    alert('Nenhuma venda encontrada no período selecionado.');
+                    btn.textContent = '⬇️ Baixar Excel de Vendas';
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Buscar itens
+                const itens = await buscarTodosRegistros('itens_venda', {
+                    select: 'venda_id, nome_produto, quantidade, subtotal',
+                    eq:  [['loja_id', lojaAtual.id]],
+                    gte: [['data_registro', di + 'T00:00:00-03:00']],
+                    lte: [['data_registro', df + 'T23:59:59-03:00']]
+                });
+
+                const itensPorVenda = {};
+                (itens || []).forEach(i => {
+                    if (!itensPorVenda[i.venda_id]) itensPorVenda[i.venda_id] = [];
+                    itensPorVenda[i.venda_id].push(i);
+                });
+
+                // Montar array de objetos para SheetJS
+                const linhas = [];
+                vendas.forEach(v => {
+                    const data = new Date(v.data_venda).toLocaleString('pt-BR');
+                    const itensVenda = itensPorVenda[v.id] || [];
+                    if (itensVenda.length === 0) {
+                        linhas.push({
+                            'ID Venda': v.id,
+                            'Data/Hora': data,
+                            'Produto': '—',
+                            'Qtd': '—',
+                            'Subtotal Produto (R$)': '—',
+                            'Método Pagamento': v.metodo_pagamento || '—',
+                            'Valor Total Venda (R$)': parseFloat(v.valor_total),
+                            'Status': v.status
+                        });
+                    } else {
+                        itensVenda.forEach((item, idx) => {
+                            linhas.push({
+                                'ID Venda': idx === 0 ? v.id : '',
+                                'Data/Hora': idx === 0 ? data : '',
+                                'Produto': item.nome_produto,
+                                'Qtd': Number(item.quantidade),
+                                'Subtotal Produto (R$)': parseFloat(item.subtotal || 0),
+                                'Método Pagamento': idx === 0 ? (v.metodo_pagamento || '—') : '',
+                                'Valor Total Venda (R$)': idx === 0 ? parseFloat(v.valor_total) : '',
+                                'Status': idx === 0 ? v.status : ''
+                            });
+                        });
+                    }
+                });
+
+                // Criar workbook com SheetJS
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(linhas);
+
+                // Largura das colunas
+                ws['!cols'] = [
+                    { wch: 38 }, // ID Venda
+                    { wch: 20 }, // Data/Hora
+                    { wch: 30 }, // Produto
+                    { wch: 8  }, // Qtd
+                    { wch: 22 }, // Subtotal
+                    { wch: 20 }, // Método
+                    { wch: 24 }, // Valor Total
+                    { wch: 12 }  // Status
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Vendas');
+
+                const nomeArq = `vendas_${lojaAtual.nome.replace(/\s+/g,'_')}_${di}_a_${df}.xlsx`;
+                XLSX.writeFile(wb, nomeArq);
+
+            } catch(e) {
+                alert('Erro ao exportar: ' + e.message);
+            }
+
+            btn.textContent = '⬇️ Baixar Excel de Vendas';
+            btn.disabled = false;
+        }
+        // ── FIM EXPORT ───────────────────────────────────────────
+
         window.addEventListener('DOMContentLoaded', init);
     </script>
+    <!-- MODAL EDITAR FECHAMENTO -->
+    <div class="modal-overlay" id="modalEditarCaixa" onclick="fecharModal(event)">
+        <div class="modal-box">
+            <div class="modal-title">✏️ Editar Fechamento de Caixa</div>
+            <div class="modal-sub" id="modalEditarSub">—</div>
+            <div class="modal-fields">
+                <div class="modal-field">
+                    <label>Valor Inicial (Fundo de Caixa)</label>
+                    <input type="number" id="editValorInicial" step="0.01" min="0" placeholder="0,00">
+                </div>
+                <div class="modal-field">
+                    <label>💰 Valor Final do Fechamento</label>
+                    <input type="number" id="editValorFinal" step="0.01" min="0" placeholder="0,00">
+                    <div class="modal-hint">⚡ Atualiza automaticamente o card "Total Vendas" no topo</div>
+                </div>
+                <div class="modal-field">
+                    <label>Vendas (somente leitura)</label>
+                    <input type="number" id="editValorVendas" step="0.01" disabled>
+                    <div class="modal-hint">Calculado automaticamente pelo sistema</div>
+                </div>
+            </div>
+            <div class="modal-btns">
+                <button class="btn-modal-cancel" onclick="document.getElementById('modalEditarCaixa').classList.remove('open')">Cancelar</button>
+                <button class="btn-modal-save" id="btnSalvarEdicao" onclick="salvarEdicaoCaixa()">💾 Salvar</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
