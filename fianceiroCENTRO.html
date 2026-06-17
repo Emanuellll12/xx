@@ -8,7 +8,7 @@
     <title>💰 Financeiro - OMG PDV</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -1483,6 +1483,7 @@
 
                 // Agrupar por dia
                 const pd = {};
+                const DIAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
                 vendas.forEach(v => {
                     const dia = v.data_venda.split('T')[0];
                     if (!pd[dia]) pd[dia] = { qtd: 0, total: 0 };
@@ -1490,28 +1491,126 @@
                     pd[dia].total += parseFloat(v.valor_total);
                 });
 
-                const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-                const linhas = Object.keys(pd).sort().map(dia => {
-                    const dt = new Date(dia + 'T12:00:00');
-                    const d = pd[dia];
+                const diasOrdenados = Object.keys(pd).sort();
+
+                // ── Cores ──
+                const ROXO_ESC  = '4a0370';
+                const ROXO_MED  = '6c059b';
+                const ROXO_LIGHT= 'e9d5ff';
+                const ROXO_MID  = 'f3e8ff';
+                const ROXO_SAB  = 'ede0f7';
+                const BRANCO    = 'FFFFFF';
+                const TEXTO     = '1a0a2e';
+                const FMT_BRL   = '"R$ "#,##0.00';
+                const FMT_QTD   = '#,##0';
+
+                function borda(cor, est) {
+                    const s = { style: est || 'thin', color: { rgb: cor || 'd8b4fe' } };
+                    return { top: s, bottom: s, left: s, right: s };
+                }
+                function cel(v, t, bold, bg, color, sz, align, numFmt, brd, italic) {
                     return {
-                        'Data': dt.toLocaleDateString('pt-BR'),
-                        'Dia da Semana': dias[dt.getDay()],
-                        'Qtd Vendas': d.qtd,
-                        'Total do Dia (R$)': parseFloat(d.total.toFixed(2)),
-                        'Ticket Médio (R$)': parseFloat((d.total / d.qtd).toFixed(2))
+                        v, t,
+                        s: {
+                            font: { name: 'Arial', bold: !!bold, italic: !!italic, color: { rgb: color || TEXTO }, sz: sz || 11 },
+                            fill: { patternType: 'solid', fgColor: { rgb: bg || BRANCO } },
+                            alignment: { horizontal: align || 'left', vertical: 'center' },
+                            numFmt: numFmt || 'General',
+                            border: brd ? borda(brd === true ? 'd8b4fe' : brd) : undefined
+                        }
                     };
-                });
+                }
 
                 const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.json_to_sheet(linhas);
+                const ws = {};
+
+                // ── Linha 1: Título ──
+                const tituloVal = `  RESUMO FINANCEIRO — ${lojaAtual.nome.toUpperCase()}`;
+                ws['A1'] = cel(tituloVal,       's', true,  ROXO_ESC, BRANCO, 15, 'center');
+                ws['B1'] = cel('',              's', false, ROXO_ESC, BRANCO, 15, 'center');
+                ws['C1'] = cel('',              's', false, ROXO_ESC, BRANCO, 15, 'center');
+                ws['D1'] = cel('',              's', false, ROXO_ESC, BRANCO, 15, 'center');
+                ws['E1'] = cel('',              's', false, ROXO_ESC, BRANCO, 15, 'center');
+
+                // ── Linha 2: Subtítulo ──
+                const diFormatado = new Date(di + 'T12:00:00').toLocaleDateString('pt-BR');
+                const dfFormatado = new Date(df + 'T12:00:00').toLocaleDateString('pt-BR');
+                const sub = `Período: ${diFormatado} a ${dfFormatado}  |  OMG PDV`;
+                ws['A2'] = cel(sub,  's', false, ROXO_MED, ROXO_LIGHT, 10, 'center', 'General', false, true);
+                ws['B2'] = cel('',   's', false, ROXO_MED, BRANCO,     10, 'center');
+                ws['C2'] = cel('',   's', false, ROXO_MED, BRANCO,     10, 'center');
+                ws['D2'] = cel('',   's', false, ROXO_MED, BRANCO,     10, 'center');
+                ws['E2'] = cel('',   's', false, ROXO_MED, BRANCO,     10, 'center');
+
+                // ── Linha 3: espaço ──
+                ['A3','B3','C3','D3','E3'].forEach(r => { ws[r] = cel('','s',false,BRANCO,BRANCO,6,'left'); });
+
+                // ── Linha 4: Header ──
+                const headers = ['Data','Dia da Semana','Qtd Vendas','Total do Dia (R$)','Ticket Médio (R$)'];
+                const hCols   = ['A','B','C','D','E'];
+                const hAligns = ['center','center','center','right','right'];
+                headers.forEach((h, i) => {
+                    ws[`${hCols[i]}4`] = cel(h, 's', true, ROXO_MED, BRANCO, 11, hAligns[i], 'General', 'd8b4fe');
+                });
+
+                // ── Linhas de dados ──
+                let totalQtd = 0, totalValor = 0;
+                diasOrdenados.forEach((dia, idx) => {
+                    const row = idx + 5;
+                    const dt = new Date(dia + 'T12:00:00');
+                    const diaNome = DIAS[dt.getDay()];
+                    const isSabado = diaNome === 'Sábado';
+                    const bg = isSabado ? ROXO_SAB : (idx % 2 === 0 ? BRANCO : ROXO_MID);
+                    const dataFmt = dt.toLocaleDateString('pt-BR');
+                    const d = pd[dia];
+                    const ticket = d.qtd > 0 ? d.total / d.qtd : 0;
+                    totalQtd   += d.qtd;
+                    totalValor += d.total;
+
+                    ws[`A${row}`] = cel(dataFmt,   's', false, bg, TEXTO, 11, 'center', 'General',  true);
+                    ws[`B${row}`] = cel(diaNome,   's', false, bg, TEXTO, 11, 'center', 'General',  true);
+                    ws[`C${row}`] = cel(d.qtd,     'n', false, bg, TEXTO, 11, 'center', FMT_QTD,    true);
+                    ws[`D${row}`] = cel(d.total,   'n', false, bg, TEXTO, 11, 'right',  FMT_BRL,    true);
+                    ws[`E${row}`] = cel(ticket,    'n', false, bg, TEXTO, 11, 'right',  FMT_BRL,    true);
+                });
+
+                // ── Linha TOTAL GERAL ──
+                const totalRow = diasOrdenados.length + 5;
+                const ticketGeral = totalQtd > 0 ? totalValor / totalQtd : 0;
+                ws[`A${totalRow}`] = cel('TOTAL GERAL', 's', true, ROXO_ESC, BRANCO, 12, 'center', 'General', ROXO_ESC);
+                ws[`B${totalRow}`] = cel('',            's', true, ROXO_ESC, BRANCO, 12, 'center', 'General', ROXO_ESC);
+                ws[`C${totalRow}`] = cel(totalQtd,      'n', true, ROXO_ESC, BRANCO, 12, 'center', FMT_QTD,   ROXO_ESC);
+                ws[`D${totalRow}`] = cel(totalValor,    'n', true, ROXO_ESC, BRANCO, 12, 'right',  FMT_BRL,   ROXO_ESC);
+                ws[`E${totalRow}`] = cel(ticketGeral,   'n', true, ROXO_ESC, BRANCO, 12, 'right',  FMT_BRL,   ROXO_ESC);
+
+                // ── Merges ──
+                ws['!merges'] = [
+                    { s:{r:0,c:0}, e:{r:0,c:4} }, // título
+                    { s:{r:1,c:0}, e:{r:1,c:4} }, // subtítulo
+                    { s:{r:totalRow-1,c:0}, e:{r:totalRow-1,c:1} } // TOTAL GERAL label
+                ];
+
+                // ── Largura colunas ──
                 ws['!cols'] = [
                     { wch: 14 }, // Data
-                    { wch: 16 }, // Dia semana
-                    { wch: 12 }, // Qtd
-                    { wch: 20 }, // Total
-                    { wch: 20 }  // Ticket médio
+                    { wch: 16 }, // Dia
+                    { wch: 13 }, // Qtd
+                    { wch: 22 }, // Total
+                    { wch: 22 }  // Ticket
                 ];
+
+                // ── Altura linhas ──
+                ws['!rows'] = [
+                    { hpt: 38 }, // título
+                    { hpt: 18 }, // subtítulo
+                    { hpt: 6  }, // espaço
+                    { hpt: 24 }, // header
+                ];
+                diasOrdenados.forEach(() => ws['!rows'].push({ hpt: 20 }));
+                ws['!rows'].push({ hpt: 26 }); // total geral
+
+                ws['!ref'] = `A1:E${totalRow}`;
+
                 XLSX.utils.book_append_sheet(wb, ws, 'Resumo por Dia');
 
                 const nomeArq = `resumo_diario_${lojaAtual.nome.replace(/\s+/g,'_')}_${di}_a_${df}.xlsx`;
@@ -1519,6 +1618,7 @@
 
             } catch(e) {
                 alert('Erro ao exportar: ' + e.message);
+                console.error(e);
             }
 
             btn.textContent = '⬇️ Baixar Excel de Vendas';
