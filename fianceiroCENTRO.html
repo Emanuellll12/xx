@@ -888,8 +888,6 @@
 
         </div><!-- /tabs-wrap -->
     </div><!-- /main -->
-
-
     <script>
      const SUPABASE_URL = 'https://acvlqbbgekdlpohiimmq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_fqoPdWAWTxiE0H3dequ7xw_786X14i0';
@@ -1576,12 +1574,13 @@
 
                 // ── Linha TOTAL GERAL ──
                 const totalRow = diasOrdenados.length + 5;
-                const ticketGeral = totalQtd > 0 ? totalValor / totalQtd : 0;
-                ws[`A${totalRow}`] = cel('TOTAL GERAL', 's', true, ROXO_ESC, BRANCO, 12, 'center', 'General', ROXO_ESC);
-                ws[`B${totalRow}`] = cel('',            's', true, ROXO_ESC, BRANCO, 12, 'center', 'General', ROXO_ESC);
-                ws[`C${totalRow}`] = cel(totalQtd,      'n', true, ROXO_ESC, BRANCO, 12, 'center', FMT_QTD,   ROXO_ESC);
-                ws[`D${totalRow}`] = cel(totalValor,    'n', true, ROXO_ESC, BRANCO, 12, 'right',  FMT_BRL,   ROXO_ESC);
-                ws[`E${totalRow}`] = cel(ticketGeral,   'n', true, ROXO_ESC, BRANCO, 12, 'right',  FMT_BRL,   ROXO_ESC);
+                const dataStart = 5;
+                const dataEnd = totalRow - 1;
+                ws[`A${totalRow}`] = cel('TOTAL GERAL',                        's', true, ROXO_ESC, BRANCO, 12, 'center', 'General',  ROXO_ESC);
+                ws[`B${totalRow}`] = cel('',                                   's', true, ROXO_ESC, BRANCO, 12, 'center', 'General',  ROXO_ESC);
+                ws[`C${totalRow}`] = { f: `SUM(C${dataStart}:C${dataEnd})`,   t: 'n', s: cel(0,'n',true,ROXO_ESC,BRANCO,12,'center',FMT_QTD,ROXO_ESC).s };
+                ws[`D${totalRow}`] = { f: `SUM(D${dataStart}:D${dataEnd})`,   t: 'n', s: cel(0,'n',true,ROXO_ESC,BRANCO,12,'right', FMT_BRL,ROXO_ESC).s };
+                ws[`E${totalRow}`] = { f: `D${totalRow}/C${totalRow}`,         t: 'n', s: cel(0,'n',true,ROXO_ESC,BRANCO,12,'right', FMT_BRL,ROXO_ESC).s };
 
                 // ── Merges ──
                 ws['!merges'] = [
