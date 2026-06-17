@@ -889,6 +889,7 @@
         </div><!-- /tabs-wrap -->
     </div><!-- /main -->
 
+
     <script>
      const SUPABASE_URL = 'https://acvlqbbgekdlpohiimmq.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_fqoPdWAWTxiE0H3dequ7xw_786X14i0';
@@ -1464,11 +1465,12 @@
             btn.disabled = true;
 
             try {
-                // Buscar vendas
                 const vendas = await buscarTodosRegistros('vendas', {
+                    select: 'data_venda, valor_total, status',
                     eq:    [['loja_id', lojaAtual.id]],
                     gte:   [['data_venda', di]],
                     lte:   [['data_venda', df + ' 23:59:59']],
+                    neq:   [['status', 'CANCELADA']],
                     order: { col: 'data_venda', asc: true }
                 });
 
@@ -1479,71 +1481,40 @@
                     return;
                 }
 
-                // Buscar itens
-                const itens = await buscarTodosRegistros('itens_venda', {
-                    select: 'venda_id, nome_produto, quantidade, subtotal',
-                    eq:  [['loja_id', lojaAtual.id]],
-                    gte: [['data_registro', di + 'T00:00:00-03:00']],
-                    lte: [['data_registro', df + 'T23:59:59-03:00']]
-                });
-
-                const itensPorVenda = {};
-                (itens || []).forEach(i => {
-                    if (!itensPorVenda[i.venda_id]) itensPorVenda[i.venda_id] = [];
-                    itensPorVenda[i.venda_id].push(i);
-                });
-
-                // Montar array de objetos para SheetJS
-                const linhas = [];
+                // Agrupar por dia
+                const pd = {};
                 vendas.forEach(v => {
-                    const data = new Date(v.data_venda).toLocaleString('pt-BR');
-                    const itensVenda = itensPorVenda[v.id] || [];
-                    if (itensVenda.length === 0) {
-                        linhas.push({
-                            'ID Venda': v.id,
-                            'Data/Hora': data,
-                            'Produto': '—',
-                            'Qtd': '—',
-                            'Subtotal Produto (R$)': '—',
-                            'Método Pagamento': v.metodo_pagamento || '—',
-                            'Valor Total Venda (R$)': parseFloat(v.valor_total),
-                            'Status': v.status
-                        });
-                    } else {
-                        itensVenda.forEach((item, idx) => {
-                            linhas.push({
-                                'ID Venda': idx === 0 ? v.id : '',
-                                'Data/Hora': idx === 0 ? data : '',
-                                'Produto': item.nome_produto,
-                                'Qtd': Number(item.quantidade),
-                                'Subtotal Produto (R$)': parseFloat(item.subtotal || 0),
-                                'Método Pagamento': idx === 0 ? (v.metodo_pagamento || '—') : '',
-                                'Valor Total Venda (R$)': idx === 0 ? parseFloat(v.valor_total) : '',
-                                'Status': idx === 0 ? v.status : ''
-                            });
-                        });
-                    }
+                    const dia = v.data_venda.split('T')[0];
+                    if (!pd[dia]) pd[dia] = { qtd: 0, total: 0 };
+                    pd[dia].qtd++;
+                    pd[dia].total += parseFloat(v.valor_total);
                 });
 
-                // Criar workbook com SheetJS
+                const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+                const linhas = Object.keys(pd).sort().map(dia => {
+                    const dt = new Date(dia + 'T12:00:00');
+                    const d = pd[dia];
+                    return {
+                        'Data': dt.toLocaleDateString('pt-BR'),
+                        'Dia da Semana': dias[dt.getDay()],
+                        'Qtd Vendas': d.qtd,
+                        'Total do Dia (R$)': parseFloat(d.total.toFixed(2)),
+                        'Ticket Médio (R$)': parseFloat((d.total / d.qtd).toFixed(2))
+                    };
+                });
+
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.json_to_sheet(linhas);
-
-                // Largura das colunas
                 ws['!cols'] = [
-                    { wch: 38 }, // ID Venda
-                    { wch: 20 }, // Data/Hora
-                    { wch: 30 }, // Produto
-                    { wch: 8  }, // Qtd
-                    { wch: 22 }, // Subtotal
-                    { wch: 20 }, // Método
-                    { wch: 24 }, // Valor Total
-                    { wch: 12 }  // Status
+                    { wch: 14 }, // Data
+                    { wch: 16 }, // Dia semana
+                    { wch: 12 }, // Qtd
+                    { wch: 20 }, // Total
+                    { wch: 20 }  // Ticket médio
                 ];
+                XLSX.utils.book_append_sheet(wb, ws, 'Resumo por Dia');
 
-                XLSX.utils.book_append_sheet(wb, ws, 'Vendas');
-
-                const nomeArq = `vendas_${lojaAtual.nome.replace(/\s+/g,'_')}_${di}_a_${df}.xlsx`;
+                const nomeArq = `resumo_diario_${lojaAtual.nome.replace(/\s+/g,'_')}_${di}_a_${df}.xlsx`;
                 XLSX.writeFile(wb, nomeArq);
 
             } catch(e) {
