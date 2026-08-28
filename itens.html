@@ -573,6 +573,68 @@
                 font-size: 13px;
             }
 
+            /* ── TABELA "EDIÇÃO RÁPIDA" VIRA CARDS NO MOBILE (SEM SCROLL LATERAL) ── */
+            #tableEdicao {
+                overflow-x: visible;
+                margin: 0;
+            }
+
+            #tableEdicao::after {
+                display: none;
+            }
+
+            #tabelaEdicao {
+                min-width: 0;
+            }
+
+            #tabelaEdicao thead {
+                display: none;
+            }
+
+            #tabelaEdicao, #tabelaEdicao tbody, #tabelaEdicao tr, #tabelaEdicao td {
+                display: block;
+                width: 100%;
+            }
+
+            #tabelaEdicao tr {
+                background: #fff;
+                border: 1.5px solid #ede0f7;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                padding: 4px 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+
+            #tabelaEdicao td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 0;
+                border-bottom: 1px solid #f3f4f6;
+                text-align: right;
+                font-size: 14px;
+            }
+
+            #tabelaEdicao td:last-child {
+                border-bottom: none;
+            }
+
+            #tabelaEdicao td::before {
+                content: attr(data-label);
+                font-weight: 800;
+                color: #7c6b92;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                text-align: left;
+                flex-shrink: 0;
+            }
+
+            #scrollIndicatorEdicao {
+                display: none !important;
+            }
+
             /* MODAL MOBILE */
             .modal {
                 padding: 0;
@@ -992,12 +1054,13 @@
                             <th>Item</th>
                             <th>Estoque</th>
                             <th>Preço Venda</th>
+                            <th style="width:120px;">Ativo</th>
                             <th style="width:48px; text-align:center;">✏️</th>
                         </tr>
                     </thead>
                     <tbody id="tbodyEdicao">
                         <tr>
-                            <td colspan="4" class="loading">Carregando...</td>
+                            <td colspan="6" class="loading">Carregando...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1331,9 +1394,8 @@ const SUPABASE_KEY = 'sb_publishable_jq1hqwLe8BfFOLIXUGDaFQ_dMqNqbp1';
             try {
                 const { data, error } = await supabaseClient
                     .from('itens')
-                    .select('codigo, nome, estoque, preco_venda')
+                    .select('codigo, nome, estoque, preco_venda, ativo')
                     .eq('loja_id', lojaAtual.id)
-                    .eq('ativo', true)
                     .order('codigo');
 
                 if (error) throw error;
@@ -1391,21 +1453,59 @@ const SUPABASE_KEY = 'sb_publishable_jq1hqwLe8BfFOLIXUGDaFQ_dMqNqbp1';
             const tbody = document.getElementById('tbodyEdicao');
            
             if (itens.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-icon">📦</div><p>Nenhum item cadastrado</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-icon">📦</div><p>Nenhum item cadastrado</p></td></tr>';
                 return;
             }
 
             tbody.innerHTML = itens.map(item => `
-                <tr oncontextmenu="mostrarContextMenu(event, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
-                    <td>${item.codigo}</td>
-                    <td class="editable" ondblclick="editarCampo('${item.codigo}', 'nome', this)">${item.nome}</td>
-                    <td class="editable" ondblclick="editarCampo('${item.codigo}', 'estoque', this)">${item.estoque}</td>
-                    <td class="editable" ondblclick="editarCampo('${item.codigo}', 'preco_venda', this)">R$ ${parseFloat(item.preco_venda).toFixed(2)}</td>
-                    <td style="text-align:center; padding:8px;">
+                <tr oncontextmenu="mostrarContextMenu(event, ${JSON.stringify(item).replace(/"/g, '&quot;')})" id="row-item-${item.codigo}">
+                    <td data-label="Código"><strong>${item.codigo}</strong></td>
+                    <td data-label="Item" class="editable" ondblclick="editarCampo('${item.codigo}', 'nome', this)">${item.nome}</td>
+                    <td data-label="Estoque" class="editable" ondblclick="editarCampo('${item.codigo}', 'estoque', this)">${item.estoque}</td>
+                    <td data-label="Preço Venda" class="editable" ondblclick="editarCampo('${item.codigo}', 'preco_venda', this)">R$ ${parseFloat(item.preco_venda).toFixed(2)}</td>
+                    <td data-label="Ativo" style="padding:6px;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <select id="ativo-${item.codigo}" style="padding:5px 6px; border-radius:6px; border:1.5px solid #ede0f7; font-family:'Nunito',sans-serif; font-weight:700; font-size:13px;">
+                                <option value="true" ${item.ativo ? 'selected' : ''}>TRUE</option>
+                                <option value="false" ${!item.ativo ? 'selected' : ''}>FALSE</option>
+                            </select>
+                            <button class="btn-edit-row" onclick="salvarAtivo('${item.codigo}')" title="Salvar status ativo">💾</button>
+                        </div>
+                    </td>
+                    <td data-label="Editar" style="text-align:center; padding:8px;">
                         <button class="btn-edit-row" onclick="abrirEdicaoItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" title="Editar item">✏️</button>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        async function salvarAtivo(codigo) {
+            const select = document.getElementById(`ativo-${codigo}`);
+            if (!select) return;
+            const novoValor = select.value === 'true';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('itens')
+                    .update({ ativo: novoValor })
+                    .eq('codigo', codigo)
+                    .eq('loja_id', lojaAtual.id);
+
+                if (error) throw error;
+
+                const item = itensAtual.find(i => i.codigo === codigo);
+                if (item) item.ativo = novoValor;
+
+                const row = document.getElementById(`row-item-${codigo}`);
+                if (row) {
+                    row.style.transition = 'background 0.3s';
+                    row.style.background = '#dcfce7';
+                    setTimeout(() => { row.style.background = ''; }, 700);
+                }
+            } catch (error) {
+                console.error('Erro ao salvar status ativo:', error);
+                alert('Erro ao salvar status ativo do item');
+            }
         }
 
         function renderizarTabelaDetalhado(itens) {
@@ -1805,4 +1905,4 @@ const SUPABASE_KEY = 'sb_publishable_jq1hqwLe8BfFOLIXUGDaFQ_dMqNqbp1';
         }
     </script>
 </body>
-                        </html>
+    </html>
