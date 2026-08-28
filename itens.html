@@ -930,10 +930,6 @@
                 <span>📦</span>
                 <span>Itens</span>
             </div>
-            <div class="nav-item" onclick="fazerLogout()" style="margin-top: auto;">
-                <span>🚪</span>
-                <span>SAIR</span>
-            </div>
         </div>
     </div>
 
@@ -956,10 +952,6 @@
             <div class="mobile-nav-item active">
                 <span>📦</span>
                 <span>Itens</span>
-            </div>
-            <div class="mobile-nav-item" onclick="fazerLogout()">
-                <span>🚪</span>
-                <span>SAIR</span>
             </div>
         </div>
     </div>
@@ -1192,8 +1184,8 @@
 
     <script>
         // ==================== CONFIGURAÇÃO SUPABASE ====================
-const SUPABASE_URL = 'https://alhqozirjypclsukjhiy.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsaHFvemlyanlwY2xzdWtqaGl5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA4MzI5NzgsImV4cCI6MjA4NjQwODk3OH0.fVDK0dtv8fOlwuSX0s32xjOQDAF2Yl_H8ZT9rFDB0uo';
+const SUPABASE_URL = 'https://bsvbtfylaqlhnpajdwnp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_jq1hqwLe8BfFOLIXUGDaFQ_dMqNqbp1';
 
         let supabaseClient;
         let lojaAtual = null;
@@ -1206,47 +1198,15 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             console.error('Erro ao inicializar Supabase:', error);
         }
 
-        // ==================== VERIFICAR AUTENTICAÇÃO ====================
+        // ==================== LOJA FIXA (SEM LOGIN) ====================
+        const LOJA_ID_FIXO = 'd4682e9a-5f6d-494a-a871-ae08f1651f1d';
+
         async function verificarAutenticacao() {
             try {
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-               
-                if (error || !session) {
-                    console.error('Sem sessão ativa');
-                    window.location.href = 'vendas.html';
-                    return false;
-                }
-
-                usuarioAtual = session.user;
-                console.log('✅ Usuário logado:', usuarioAtual.email);
-
-                // Buscar loja do usuário
-                const { data: usuarioLoja, error: lojaError } = await supabaseClient
-                    .from('usuarios_loja')
-                    .select('loja_id, cargo')
-                    .eq('user_id', session.user.id)
-                    .maybeSingle();
-
-                if (lojaError) {
-                    console.error('Erro ao buscar loja:', lojaError);
-                    alert('Erro ao buscar loja do usuário');
-                    return false;
-                }
-
-                if (!usuarioLoja) {
-                    console.error('Usuário sem loja associada');
-                    alert('Usuário sem loja associada');
-                    window.location.href = 'vendas.html';
-                    return false;
-                }
-
-                console.log('✅ Loja ID:', usuarioLoja.loja_id);
-
-                // Buscar informações da loja
                 const { data: lojaInfo, error: lojaInfoError } = await supabaseClient
                     .from('lojas')
                     .select('*')
-                    .eq('id', usuarioLoja.loja_id)
+                    .eq('id', LOJA_ID_FIXO)
                     .single();
 
                 if (lojaInfoError || !lojaInfo) {
@@ -1256,20 +1216,13 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 }
 
                 lojaAtual = lojaInfo;
+                usuarioAtual = { email: 'sistema@omg.local' };
                 console.log('✅ Loja carregada:', lojaAtual.nome);
                 return true;
             } catch (error) {
-                console.error('Erro na autenticação:', error);
-                alert('Erro ao verificar autenticação: ' + error.message);
+                console.error('Erro ao carregar loja:', error);
+                alert('Erro ao carregar loja: ' + error.message);
                 return false;
-            }
-        }
-
-        // ==================== LOGOUT ====================
-        async function fazerLogout() {
-            if (confirm('Deseja sair?')) {
-                await supabaseClient.auth.signOut();
-                window.location.href = 'vendas.html';
             }
         }
 
@@ -1852,4 +1805,4 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
         }
     </script>
 </body>
-</html>
+                        </html>
