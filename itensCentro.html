@@ -1281,7 +1281,6 @@ const SUPABASE_KEY = 'sb_publishable_fqoPdWAWTxiE0H3dequ7xw_786X14i0';
                 lojaAtual = lojaInfo;
                 usuarioAtual = { email: 'sistema@omg.local' };
                 console.log('✅ Loja carregada:', lojaAtual.nome);
-                document.title = 'OMG - Itens - ' + lojaAtual.nome;
                 return true;
             } catch (error) {
                 console.error('Erro ao carregar loja:', error);
@@ -1726,7 +1725,7 @@ const SUPABASE_KEY = 'sb_publishable_fqoPdWAWTxiE0H3dequ7xw_786X14i0';
                 } else {
                     const { error } = await supabaseClient
                         .from('itens')
-                        .insert([{ ...dados, loja_id: lojaAtual.id }]);
+                        .insert([dados]);
                    
                     if (error) throw error;
                 }
