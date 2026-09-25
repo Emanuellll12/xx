@@ -2850,13 +2850,6 @@
         let _dinheiroValorTotal = 0;
 
         function abrirModalDinheiro() {
-            if (_dinheiroProcessando) return;
-            // O pagamento dividido reutiliza este modal e substitui estes eventos.
-            document.getElementById('mdBtnOk').onclick = confirmarDinheiro;
-            document.getElementById('mdInput').onkeydown = mdKeyDown;
-            document.querySelector('.modal-dinheiro-btn-cancel').onclick = fecharModalDinheiro;
-            document.getElementById('mdErro').hidden = true;
-            document.getElementById('mdBtnOk').textContent = '✅ Confirmar';
             _dinheiroValorTotal = parseFloat(getValorTotal());
             document.getElementById('mdTotal').textContent = 'R$ ' + _dinheiroValorTotal.toFixed(2).replace('.', ',');
             document.getElementById('mdInput').value = '';
@@ -2866,12 +2859,10 @@
         }
 
         function fecharModalDinheiro() {
-            if (_dinheiroProcessando) return;
             document.getElementById('modalDinheiro').classList.remove('active');
         }
 
         function _atualizarTroco() {
-            if (_dinheiroProcessando) return;
             const inputVal = document.getElementById('mdInput').value.replace(',', '.');
             const recebido = parseFloat(inputVal);
             const trocoBox = document.getElementById('mdTrocoBox');
@@ -2912,82 +2903,42 @@
         }
 
         function mdKeyDown(e) {
-            if (_dinheiroProcessando) return;
             if (e.key === 'Enter') {
-                e.preventDefault();
                 const btn = document.getElementById('mdBtnOk');
                 if (!btn.disabled) confirmarDinheiro();
             }
             if (e.key === 'Escape') fecharModalDinheiro();
         }
 
-        let _dinheiroProcessando = false; // Proteção contra double-submit
-
         async function confirmarDinheiro() {
-            // Proteção contra duplo clique
-            if (_dinheiroProcessando) return;
-            if (!caixaAtual || caixaAtual.status !== 'ABERTO' || carrinho.length === 0) return;
-
             const inputVal = document.getElementById('mdInput').value.replace(',', '.');
             const valorRecebido = parseFloat(inputVal);
             if (isNaN(valorRecebido) || valorRecebido < _dinheiroValorTotal) return;
 
-            // Desabilitar botão imediatamente
-            const btnOk = document.getElementById('mdBtnOk');
-            if (btnOk) {
-                btnOk.disabled = true;
-                btnOk.textContent = '⏳ Processando...';
-            }
-            _dinheiroProcessando = true;
-            const input = document.getElementById('mdInput');
-            const btnCancelar = document.querySelector('.modal-dinheiro-btn-cancel');
-            const erro = document.getElementById('mdErro');
-            input.disabled = true;
-            btnCancelar.disabled = true;
-            erro.hidden = true;
-
             const troco = valorRecebido - _dinheiroValorTotal;
-            let vendaRegistrada = false;
+            fecharModalDinheiro();
 
             try {
-                // A gaveta só pode abrir após a confirmação do registro da venda.
+                const resultadoGaveta = await abrirGaveta();
+                if (resultadoGaveta && !resultadoGaveta.sucesso && !resultadoGaveta.continuarVenda) return;
+
                 const dadosPagamento = { valor_recebido: valorRecebido, troco: troco };
                 const resultado = await registrarVenda('DINHEIRO', dadosPagamento);
 
                 if (!resultado || !resultado.sucesso) {
-                    throw new Error(resultado?.erro || 'O sistema não confirmou o registro.');
+                    alert('❌ Erro ao registrar venda no sistema.');
+                    return;
                 }
-                vendaRegistrada = true;
 
-                // Limpar antes de acionar a gaveta: falhas nela não desfazem a venda.
                 limparCarrinho(true);
-                await abrirGaveta(true);
-                document.getElementById('modalDinheiro').classList.remove('active');
                 if (troco > 0) {
                     showVendaSucesso(`DINHEIRO • Troco: R$ ${troco.toFixed(2).replace('.', ',')}`);
                 } else {
                     showVendaSucesso('DINHEIRO • Sem troco');
                 }
-
             } catch (error) {
                 console.error('Erro ao processar DINHEIRO:', error);
-                if (vendaRegistrada) {
-                    document.getElementById('modalDinheiro').classList.remove('active');
-                    alert('⚠️ A venda em dinheiro já foi registrada. Não repita a venda.\n\nErro ao concluir a operação: ' + error.message);
-                } else {
-                    erro.textContent = '❌ Não foi possível confirmar o registro da venda em dinheiro. O carrinho foi mantido. Tente novamente.\n\nDetalhes: ' + (error?.message || 'Erro desconhecido');
-                    erro.hidden = false;
-                    document.getElementById('modalDinheiro').classList.add('active');
-                }
-            } finally {
-                // SEMPRE reabilita o botão e libera o lock, independente do resultado
-                _dinheiroProcessando = false;
-                input.disabled = false;
-                btnCancelar.disabled = false;
-                if (btnOk) {
-                    _atualizarTroco();
-                    btnOk.textContent = erro.hidden ? '✅ Confirmar' : '🔄 Tentar novamente';
-                }
+                alert('❌ Erro ao processar pagamento em dinheiro:\n\n' + error.message);
             }
         }
 
@@ -3844,8 +3795,6 @@
         function _aguardarModalDinheiroDividido(valorParcela) {
             return new Promise((resolve) => {
                 _dinheiroValorTotal = valorParcela; // usa a mesma variável do modal normal
-                document.getElementById('mdErro').hidden = true;
-                document.getElementById('mdBtnOk').textContent = '✅ Confirmar';
                 document.getElementById('mdTotal').textContent = 'R$ ' + valorParcela.toFixed(2).replace('.', ',');
                 document.getElementById('mdInput').value = '';
                 _atualizarTroco();
@@ -4266,7 +4215,7 @@
         const PAGBANK_URL = 'http://localhost:5000'
 
         // ==================== ABRIR GAVETA ====================
-        async function abrirGaveta(vendaJaRegistrada = false) {
+        async function abrirGaveta() {
             try {
                 const _r = await fetch(`${PAGBANK_URL}/abrir-gaveta`, {
                     method: 'POST',
@@ -4278,10 +4227,6 @@
                 if (_d.sucesso) return { sucesso: true };
                 throw new Error(_d.erro || 'Gaveta nao abriu');
             } catch (e) {
-                if (vendaJaRegistrada) {
-                    alert('⚠️ A venda em dinheiro foi registrada, mas não foi possível confirmar a abertura da gaveta.\n\nVerifique a gaveta. Não repita a venda.');
-                    return { sucesso: false };
-                }
                 const ok = confirm('⚠️ ERRO GAVETA\nContinuar SEM gaveta?');
                 return { sucesso: false, continuarVenda: ok };
             }
@@ -4749,7 +4694,6 @@
             <div class="modal-dinheiro-icone">💵</div>
             <div class="modal-dinheiro-titulo">Pagamento em Dinheiro</div>
             <div class="modal-dinheiro-total" id="mdTotal">R$ 0,00</div>
-            <p id="mdErro" role="alert" hidden style="color: #fca5a5; white-space: pre-line; margin-bottom: 20px;"></p>
 
             <div class="modal-dinheiro-label">Valor recebido</div>
             <input class="modal-dinheiro-input" id="mdInput" type="number" min="0" step="0.01"
