@@ -2847,24 +2847,69 @@
         }
 
         // ==================== MODAL DINHEIRO / TROCO ====================
+        // Modal ÚNICO usado tanto pela venda normal quanto pelo pagamento dividido.
+        // Cada uso informa seus próprios callbacks (nada de sobrescrever onclick do botão).
         let _dinheiroValorTotal = 0;
+        let _mdOnConfirm = null;
+        let _mdOnCancel = null;
+        let _mdProcessando = false;
 
-        function abrirModalDinheiro() {
-            _dinheiroValorTotal = parseFloat(getValorTotal());
-            document.getElementById('mdTotal').textContent = 'R$ ' + _dinheiroValorTotal.toFixed(2).replace('.', ',');
+        function _centavos(v) { return Math.round(parseFloat(v) * 100); }
+
+        function _lerValorRecebido() {
+            const v = parseFloat(String(document.getElementById('mdInput').value).replace(',', '.'));
+            return isNaN(v) ? NaN : v;
+        }
+
+        function _abrirModalDinheiro(valor, onConfirm, onCancel) {
+            _dinheiroValorTotal = valor;
+            _mdOnConfirm = onConfirm;
+            _mdOnCancel = onCancel || null;
+            _mdProcessando = false;
+            document.getElementById('mdTotal').textContent = 'R$ ' + valor.toFixed(2).replace('.', ',');
             document.getElementById('mdInput').value = '';
             _atualizarTroco();
             document.getElementById('modalDinheiro').classList.add('active');
             setTimeout(() => document.getElementById('mdInput').focus(), 80);
         }
 
+        // Venda normal (botão DINHEIRO)
+        function abrirModalDinheiro() {
+            _abrirModalDinheiro(parseFloat(getValorTotal()), confirmarDinheiro, null);
+        }
+
         function fecharModalDinheiro() {
             document.getElementById('modalDinheiro').classList.remove('active');
         }
 
+        function mdCancelar() {
+            fecharModalDinheiro();
+            const cb = _mdOnCancel;
+            _mdOnConfirm = null;
+            _mdOnCancel = null;
+            if (cb) cb();
+        }
+
+        async function mdConfirmar() {
+            if (_mdProcessando) return; // evita clique duplo / Enter repetido
+            const recebido = _lerValorRecebido();
+            if (isNaN(recebido) || _centavos(recebido) < _centavos(_dinheiroValorTotal)) return;
+
+            _mdProcessando = true;
+            const troco = (_centavos(recebido) - _centavos(_dinheiroValorTotal)) / 100;
+            const cb = _mdOnConfirm;
+            _mdOnConfirm = null;
+            _mdOnCancel = null;
+            fecharModalDinheiro();
+            try {
+                if (cb) await cb(recebido, troco);
+            } finally {
+                _mdProcessando = false;
+            }
+        }
+
         function _atualizarTroco() {
-            const inputVal = document.getElementById('mdInput').value.replace(',', '.');
-            const recebido = parseFloat(inputVal);
+            const recebido = _lerValorRecebido();
             const trocoBox = document.getElementById('mdTrocoBox');
             const trocoValor = document.getElementById('mdTrocoValor');
             const trocoMsg = document.getElementById('mdTrocoMsg');
@@ -2879,15 +2924,16 @@
                 return;
             }
 
-            const troco = recebido - _dinheiroValorTotal;
+            const trocoCent = _centavos(recebido) - _centavos(_dinheiroValorTotal);
+            const troco = trocoCent / 100;
 
-            if (troco < 0) {
+            if (trocoCent < 0) {
                 trocoBox.className = 'modal-dinheiro-troco-box';
                 trocoValor.className = 'modal-dinheiro-troco-valor';
                 trocoValor.textContent = '— insuficiente';
                 trocoMsg.textContent = `Falta R$ ${Math.abs(troco).toFixed(2).replace('.', ',')}`;
                 btnOk.disabled = true;
-            } else if (troco === 0) {
+            } else if (trocoCent === 0) {
                 trocoBox.className = 'modal-dinheiro-troco-box sem-troco';
                 trocoValor.className = 'modal-dinheiro-troco-valor sem-troco';
                 trocoValor.textContent = 'Sem troco ✅';
@@ -2904,43 +2950,43 @@
 
         function mdKeyDown(e) {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 const btn = document.getElementById('mdBtnOk');
-                if (!btn.disabled) confirmarDinheiro();
+                if (!btn.disabled) mdConfirmar();
             }
-            if (e.key === 'Escape') fecharModalDinheiro();
+            if (e.key === 'Escape') mdCancelar();
         }
 
-        async function confirmarDinheiro() {
-            const inputVal = document.getElementById('mdInput').value.replace(',', '.');
-            const valorRecebido = parseFloat(inputVal);
-            if (isNaN(valorRecebido) || valorRecebido < _dinheiroValorTotal) return;
-
-            const troco = valorRecebido - _dinheiroValorTotal;
-            fecharModalDinheiro();
-
+        // Venda normal em dinheiro: 1) registra a venda  2) mostra sucesso  3) abre a gaveta
+        async function confirmarDinheiro(valorRecebido, troco) {
             try {
-                const resultadoGaveta = await abrirGaveta();
-                if (resultadoGaveta && !resultadoGaveta.sucesso && !resultadoGaveta.continuarVenda) return;
-
-                const dadosPagamento = { valor_recebido: valorRecebido, troco: troco };
-                const resultado = await registrarVenda('DINHEIRO', dadosPagamento);
+                const resultado = await registrarVenda('DINHEIRO', { valor_recebido: valorRecebido, troco: troco });
 
                 if (!resultado || !resultado.sucesso) {
-                    alert('❌ Erro ao registrar venda no sistema.');
+                    alert('❌ Erro ao registrar venda no sistema.\n\n' + ((resultado && resultado.erro) || '') +
+                          '\n\nOs itens continuam no carrinho. Tente confirmar novamente.');
+                    // Reabre o modal com o valor já digitado
+                    abrirModalDinheiro();
+                    document.getElementById('mdInput').value = valorRecebido;
+                    _atualizarTroco();
                     return;
                 }
 
                 limparCarrinho(true);
                 if (troco > 0) {
-                    showVendaSucesso(`DINHEIRO • Troco: R$ ${troco.toFixed(2).replace('.', ',')}`);
+                    showVendaSucesso(`DINHEIRO • Troco: R$ ${troco.toFixed(2).replace('.', ',')} • Cód. ${resultado.codigo_venda}`);
                 } else {
-                    showVendaSucesso('DINHEIRO • Sem troco');
+                    showVendaSucesso(`DINHEIRO • Sem troco • Cód. ${resultado.codigo_venda}`);
                 }
+
+                // Venda já está salva: agora garante a abertura da gaveta
+                await abrirGavetaGarantida();
             } catch (error) {
                 console.error('Erro ao processar DINHEIRO:', error);
                 alert('❌ Erro ao processar pagamento em dinheiro:\n\n' + error.message);
             }
         }
+
 
         // ==================== TOGGLE VIEW ====================
         function toggleView(view) {
@@ -3791,46 +3837,15 @@
             });
         }
 
-        // Aguarda o modal de dinheiro do dividido — seta o valor fixo da parcela como mínimo
+        // Aguarda o modal de dinheiro do dividido (usa o mesmo modal, com callbacks próprios).
+        // A gaveta NÃO abre aqui: abre depois que a venda inteira for registrada.
         function _aguardarModalDinheiroDividido(valorParcela) {
             return new Promise((resolve) => {
-                _dinheiroValorTotal = valorParcela; // usa a mesma variável do modal normal
-                document.getElementById('mdTotal').textContent = 'R$ ' + valorParcela.toFixed(2).replace('.', ',');
-                document.getElementById('mdInput').value = '';
-                _atualizarTroco();
-                document.getElementById('modalDinheiro').classList.add('active');
-                setTimeout(() => document.getElementById('mdInput').focus(), 80);
-
-                // Sobrescreve confirmar e cancelar para este contexto
-                document.getElementById('mdBtnOk').onclick = async () => {
-                    const inputVal = document.getElementById('mdInput').value.replace(',', '.');
-                    const valorRecebido = parseFloat(inputVal);
-                    if (isNaN(valorRecebido) || valorRecebido < valorParcela) return;
-                    const troco = valorRecebido - valorParcela;
-                    document.getElementById('modalDinheiro').classList.remove('active');
-                    // Abre gaveta antes de resolver
-                    const resGaveta = await abrirGaveta();
-                    if (resGaveta && !resGaveta.sucesso && !resGaveta.continuarVenda) {
-                        resolve({ cancelado: true });
-                        return;
-                    }
-                    resolve({ aprovado: true, valorRecebido, troco });
-                };
-                document.getElementById('mdInput').onkeydown = (e) => {
-                    if (e.key === 'Enter') {
-                        const btn = document.getElementById('mdBtnOk');
-                        if (!btn.disabled) btn.click();
-                    }
-                    if (e.key === 'Escape') {
-                        document.getElementById('modalDinheiro').classList.remove('active');
-                        resolve({ cancelado: true });
-                    }
-                };
-                // botão cancelar
-                document.querySelector('.modal-dinheiro-btn-cancel').onclick = () => {
-                    document.getElementById('modalDinheiro').classList.remove('active');
-                    resolve({ cancelado: true });
-                };
+                _abrirModalDinheiro(
+                    valorParcela,
+                    (valorRecebido, troco) => resolve({ aprovado: true, valorRecebido, troco }),
+                    () => resolve({ cancelado: true })
+                );
             });
         }
 
@@ -3938,6 +3953,10 @@
                 limparCarrinho(true);
                 fecharPagamentoDividido();
                 showVendaSucesso(`DIVIDIDO • Cód. ${resultadoVenda.codigo_venda}`);
+                // Se alguma parcela foi em dinheiro, abre a gaveta depois de registrar a venda
+                if (pagamentosProcessados.some(p => p.metodo === 'DINHEIRO')) {
+                    await abrirGavetaGarantida();
+                }
 
             } catch (error) {
                 console.error('❌ Erro ao finalizar pagamento dividido:', error);
@@ -4230,6 +4249,33 @@
                 const ok = confirm('⚠️ ERRO GAVETA\nContinuar SEM gaveta?');
                 return { sucesso: false, continuarVenda: ok };
             }
+        }
+
+        // ==================== ABRIR GAVETA (GARANTIDA) ====================
+        // Usada depois que a venda já foi registrada: tenta várias vezes e nunca
+        // desfaz/bloqueia a venda. Se falhar, avisa para abrir manualmente.
+        async function abrirGavetaGarantida(tentativas = 3) {
+            for (let i = 1; i <= tentativas; i++) {
+                try {
+                    const r = await fetch(`${PAGBANK_URL}/abrir-gaveta`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ acao: 'abrir' }),
+                        signal: AbortSignal.timeout(4000)
+                    });
+                    const d = await r.json();
+                    if (d && d.sucesso) {
+                        console.log(`💰 Gaveta aberta (tentativa ${i})`);
+                        return true;
+                    }
+                    console.warn(`Gaveta não abriu (tentativa ${i}):`, d && d.erro);
+                } catch (e) {
+                    console.warn(`Erro ao abrir gaveta (tentativa ${i}):`, e);
+                }
+                if (i < tentativas) await new Promise(res => setTimeout(res, 600));
+            }
+            alert('⚠️ Venda registrada com sucesso, mas a GAVETA NÃO ABRIU.\n\nAbra manualmente e confira o servidor da maquininha (localhost:5000).');
+            return false;
         }
 
         // ==================== DÉBITO PAGBANK ====================
@@ -4706,8 +4752,8 @@
             </div>
 
             <div class="modal-dinheiro-btns">
-                <button class="modal-dinheiro-btn-cancel" onclick="fecharModalDinheiro()">Cancelar</button>
-                <button class="modal-dinheiro-btn-ok" id="mdBtnOk" onclick="confirmarDinheiro()" disabled>✅ Confirmar</button>
+                <button class="modal-dinheiro-btn-cancel" onclick="mdCancelar()">Cancelar</button>
+                <button class="modal-dinheiro-btn-ok" id="mdBtnOk" onclick="mdConfirmar()" disabled>✅ Confirmar</button>
             </div>
         </div>
     </div>
