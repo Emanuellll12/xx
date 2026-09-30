@@ -3516,7 +3516,7 @@
         async function retirarDinheiro() {
             const senhaDigitada = prompt('🔒 Digite a senha para retirar dinheiro:');
             if (senhaDigitada === null) return; // Cancelou
-            if (senhaDigitada !== 'novello01' && senhaDigitada !== 'salgado01') {
+            if (senhaDigitada !== 'novello01') {
                 alert('❌ Senha incorreta! Acesso negado.');
                 return;
             }
