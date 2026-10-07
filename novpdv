@@ -2179,6 +2179,46 @@
             }
         }
 
+        // ==================== NOTIFICAÇÃO DE VENDA EM DINHEIRO ====================
+        // Envia ao MESMO grupo do Telegram do fechamento de caixa.
+        // `itens` deve ser um snapshot do carrinho (antes de limpar).
+        async function notificarVendaDinheiro({ vendaId, valorVenda, valorDinheiro, valorRecebido, troco, itens, dividido }) {
+            const token = '8008178289:AAGfcm32ibQCt5Ew1U5euarrcIevAmsS0Wk';
+            const chatId = '-1002732995273'; // mesmo chat do fechamento de caixa
+            const fmt = v => `R$ ${parseFloat(v || 0).toFixed(2).replace('.', ',')}`;
+
+            const listaItens = (itens || []).map(i =>
+                `• ${i.nome} x${i.quantidade} — ${fmt(i.preco * i.quantidade)}`
+            ).join('\n');
+
+            const mensagem =
+                `💵 *VENDA EM DINHEIRO${dividido ? ' (PARTE DO DIVIDIDO)' : ''}*\n\n` +
+                `🏪 *Loja:* ${lojaAtual.nome}\n` +
+                `🆔 *Venda:* #${vendaId}\n` +
+                `💰 *Valor em dinheiro:* ${fmt(valorDinheiro)}\n` +
+                (dividido ? `🧾 *Total da venda:* ${fmt(valorVenda)}\n` : '') +
+                `🖐️ *Recebido:* ${fmt(valorRecebido)}\n` +
+                `🔄 *Troco:* ${fmt(troco)}\n\n` +
+                `*Itens:*\n${listaItens}\n\n` +
+                `👤 *Usuário:* ${usuarioAtual.email}\n` +
+                `⏰ *Data/Hora:* ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}\n\n` +
+                `_Notificação automática via PDV_`;
+
+            try {
+                const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatId, text: mensagem, parse_mode: 'Markdown' })
+                });
+                const data = await response.json();
+                if (data.ok) console.log('✅ Notificação de venda em dinheiro enviada');
+                else console.error('❌ Telegram erro (venda dinheiro):', data);
+            } catch (error) {
+                // Nunca bloqueia a venda
+                console.error('❌ Erro ao notificar venda em dinheiro:', error);
+            }
+        }
+
         // ==================== NOTIFICAÇÃO DE AÇÕES DO CAIXA ====================
         async function notificarAcaoCaixa(acao, dados = {}) {
             console.log('▶️ notificarAcaoCaixa INICIADA');
@@ -2930,6 +2970,17 @@
                     alert('❌ Erro ao registrar venda no sistema.');
                     return;
                 }
+
+                // Avisa no Telegram do caixa (snapshot do carrinho antes de limpar)
+                notificarVendaDinheiro({
+                    vendaId: resultado.codigo_venda,
+                    valorVenda: _dinheiroValorTotal,
+                    valorDinheiro: _dinheiroValorTotal,
+                    valorRecebido: valorRecebido,
+                    troco: troco,
+                    itens: carrinho.map(i => ({ ...i })),
+                    dividido: false
+                });
 
                 limparCarrinho(true);
                 if (troco > 0) {
@@ -3938,6 +3989,20 @@
                     alert('❌ Erro ao registrar venda no sistema!\n\nATENÇÃO: Os pagamentos foram processados mas a venda não foi registrada.');
                     return;
                 }
+
+                // Avisa no Telegram do caixa para cada parcela em dinheiro
+                const itensSnapshot = carrinho.map(i => ({ ...i }));
+                pagamentosProcessados
+                    .filter(p => p.metodo === 'DINHEIRO')
+                    .forEach(p => notificarVendaDinheiro({
+                        vendaId: resultadoVenda.codigo_venda,
+                        valorVenda: valorTotal,
+                        valorDinheiro: p.valor,
+                        valorRecebido: p.valor_recebido,
+                        troco: p.troco,
+                        itens: itensSnapshot,
+                        dividido: true
+                    }));
 
                 limparCarrinho(true);
                 fecharPagamentoDividido();
