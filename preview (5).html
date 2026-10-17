@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#462e58">
+<title>Vozes que Transformam • ODS 5</title>
+<style>
+:root{--paper:#fbf8f2;--ink:#30263b;--purple:#65427e;--deep:#432b55;--lavender:#e6deed;--orange:#d77950;--line:#ded7df;--muted:#706878}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:95px}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 Arial,Helvetica,sans-serif}button{font:inherit;color:inherit;cursor:pointer}button,a{-webkit-tap-highlight-color:transparent}a{color:inherit}img{display:block;max-width:100%}h1,h2,h3,p{margin:0}h1,h2{font-family:Georgia,'Times New Roman',serif;font-weight:400}h2{font-size:clamp(34px,4vw,51px);line-height:1.13;letter-spacing:-1.6px}h3{line-height:1.3}p{color:var(--muted)}a,button,summary{outline-offset:5px}a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var(--orange)}.wrap{width:min(1180px,calc(100% - 64px));margin:auto}.eyebrow{font-size:10px;font-weight:700;letter-spacing:2.1px;text-transform:uppercase;color:var(--purple);display:block;margin-bottom:18px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:20px;background:var(--deep);color:white;border:1px solid var(--deep);border-radius:7px;padding:13px 22px;text-decoration:none;font-size:13px;font-weight:600;transition:transform .2s,background .2s}.btn:hover{background:#68447f;transform:translateY(-2px)}.text-link{border:0;background:none;padding:0;text-decoration:none;color:var(--purple);font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:15px}.text-link:hover{text-decoration:underline}.skip{position:fixed;top:-100px;left:10px;background:white;padding:10px;z-index:100}.skip:focus{top:10px}.topline{background:var(--deep);color:#f6edf8;text-align:center;padding:7px 20px;font-size:10px;letter-spacing:1px}.topline span{color:#e8c0c9}
+header{position:sticky;top:0;z-index:20;background:rgba(251,248,242,.97);border-bottom:1px solid var(--line)}.nav{display:flex;align-items:center;justify-content:space-between;gap:20px;min-height:83px}.brand{display:inline-block;text-decoration:none;flex-shrink:0}.brand-title{display:block;font-family:Georgia,serif;font-size:22px;line-height:1.05;letter-spacing:-.5px}.brand-title small{display:block;font:8px Arial,sans-serif;letter-spacing:1.65px;margin-top:7px;text-transform:uppercase}.navlinks{display:flex;gap:28px;align-items:center}.navlinks>a{font-size:11px;text-decoration:none;white-space:nowrap}.navlinks>a:hover,.navlinks>a.active{color:var(--purple)}.navlinks>a.active{text-decoration:underline;text-underline-offset:8px}.menu-toggle{display:none;border:1px solid var(--line);border-radius:6px;padding:8px 12px;background:transparent}
+.hero{padding:58px 0 48px;overflow:hidden}.hero-grid{display:grid;grid-template-columns:1.02fr 1fr;gap:30px;align-items:center}.hero .eyebrow{display:inline-flex;align-items:center;gap:9px;border:1px solid #d9cedf;border-radius:50px;padding:6px 12px;font-size:9px;letter-spacing:1.5px;margin-bottom:24px}.dot{width:6px;height:6px;border-radius:50%;background:#a46a95}.hero h1{font-size:clamp(44px,5.5vw,73px);line-height:1.04;letter-spacing:-3px;max-width:600px}.hero h1 em{color:var(--purple);font-weight:400}.hero-copy>p{font-size:14px;max-width:400px;line-height:1.9;margin:24px 0 28px}.community-note{display:flex;align-items:center;gap:11px;margin-top:34px;font-size:10px;color:var(--muted)}.avatars{display:flex;padding-left:4px}.avatars i{display:block;width:27px;height:27px;border:2px solid var(--paper);border-radius:50%;background:#dccce4;margin-left:-4px}.avatars i:nth-child(2){background:#eab7a5}.avatars i:nth-child(3){background:#c3c8ad}.art-wrap{position:relative;padding:4px 0 22px}.hero-art{width:100%;aspect-ratio:1.04;object-fit:contain}.float-note{position:absolute;bottom:23px;left:1%;background:#fffdf8;box-shadow:0 10px 40px #3f255914;border:1px solid #e3dbe3;border-radius:8px;padding:18px 23px;transform:rotate(-4deg);font:18px/1.2 Georgia,serif}.float-note small{font:9px Arial,sans-serif;display:block;margin-top:7px;letter-spacing:1px;text-transform:uppercase}.art-caption{position:absolute;right:3px;bottom:3px;color:var(--muted);font-size:9px;letter-spacing:.6px}
+.values{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.values-row{display:grid;grid-template-columns:repeat(4,1fr);padding:26px 0}.value{display:flex;align-items:center;gap:16px;padding:0 25px;border-right:1px solid var(--line)}.value:first-child{padding-left:0}.value:last-child{border:0}.value-icon{font-size:25px;color:var(--purple);line-height:1}.value b{font-size:12px;display:block}.value small{font-size:10px;color:var(--muted)}
+.section{padding:86px 0}.section-head{display:flex;align-items:end;justify-content:space-between;gap:30px;margin-bottom:33px}.section-head h2{max-width:610px}.section-head>p{max-width:310px;font-size:13px}.about{display:grid;grid-template-columns:1fr 1.1fr;gap:95px}.about-copy>p{margin:24px 0;font-size:14px;max-width:440px}.ods-card{display:flex;align-items:center;gap:17px;margin-top:27px}.ods-tile{width:62px;height:65px;flex-shrink:0;border-radius:4px;background:#ed493e;color:white;display:flex;align-items:center;justify-content:center;gap:5px}.ods-tile b{font-size:35px;line-height:1}.ods-tile span{font-size:9px;line-height:1.2;max-width:29px;font-weight:bold}.ods-card p{font-size:11px;max-width:255px}.ods-card a{display:block;margin-top:4px;color:var(--purple)}.accordion{border-top:1px solid var(--line)}details{border-bottom:1px solid var(--line)}summary{cursor:pointer;padding:19px 0;font-size:13px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;gap:15px;list-style:none}summary::-webkit-details-marker{display:none}summary:after{content:"+";font-size:22px;font-weight:400;color:var(--purple)}details[open] summary:after{content:"−"}details>div{padding:0 8px 20px 0;color:var(--muted);font-size:13px}details ul,details ol{padding-left:20px;margin:8px 0}details li{margin:8px 0}
+.learn{background:#f0ebf3;border-top:1px solid #e6deeb;border-bottom:1px solid #e6deeb}.learn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:23px}.learn-card{background:var(--paper);border:1px solid #e0d8e5;border-radius:10px;overflow:hidden;transition:transform .2s}.learn-card:hover{transform:translateY(-5px)}.learn-card img{width:100%;height:180px;object-fit:cover}.card-body{padding:24px}.tag{font-size:9px;text-transform:uppercase;letter-spacing:1.4px;color:var(--purple);display:block;margin-bottom:12px}.card-body h3{font:25px/1.15 Georgia,serif;letter-spacing:-.5px}.card-body p{font-size:12px;margin:14px 0 20px}.learn-bottom{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:15px}.learn-bottom small{font-size:9px;color:var(--muted)}.learning-tip{margin-top:28px;text-align:center;font-size:11px;color:var(--muted)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}.filter{border:1px solid var(--line);padding:7px 17px;border-radius:25px;background:transparent;font-size:11px}.filter[aria-pressed="true"]{background:var(--deep);color:white;border-color:var(--deep)}.action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.action{border:1px solid var(--line);border-radius:10px;padding:27px;display:flex;flex-direction:column;align-items:flex-start;background:#fffdf9}.action[hidden]{display:none}.action-top{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}.action-icon{font-size:26px;color:var(--purple);width:47px;height:47px;display:grid;place-items:center;background:var(--lavender);border-radius:50%}.status{font-size:9px;color:#736c5c;background:#f1eee6;padding:4px 8px;border-radius:20px}.action h3{font:25px/1.2 Georgia,serif}.action p{font-size:12px;margin:12px 0 20px}.action .meta{font-size:10px;margin-top:auto;padding-bottom:20px;color:var(--muted)}.action .text-link{border-top:1px solid var(--line);padding-top:17px;width:100%;justify-content:space-between}.small-note{font-size:10px;color:var(--muted);margin-top:18px}
+.stories{background:var(--deep);color:var(--paper);position:relative;overflow:hidden}.stories .eyebrow{color:#d5b6df}.stories h2 em{color:#e6bac5}.stories .section-head p{color:#c9bdd1}.story-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:19px}.story-card{background:#533b66;border:1px solid #745c84;border-radius:9px;overflow:hidden}.story-art{height:184px;width:100%;object-fit:cover}.story-body{padding:19px}.story-body small{font-size:9px;color:#d7bce1;letter-spacing:1px;text-transform:uppercase}.story-body h3{font:24px/1.15 Georgia,serif;margin:9px 0 17px}.story-body button{background:none;border:0;color:#eee2f2;padding:0;font-size:11px;text-align:left}.story-body button:hover{text-decoration:underline}.stories-note{font-size:10px;color:#c7b8d0;margin-top:18px}
+.support{display:grid;grid-template-columns:1fr 1fr;gap:75px;align-items:center}.support-copy>p{font-size:13px;margin:22px 0}.support-copy .text-link{margin-bottom:20px}.support small{font-size:10px;color:var(--muted);display:block}.support-boxes{display:grid;gap:14px}.support-box{border:1px solid var(--line);border-radius:9px;padding:24px;display:grid;grid-template-columns:85px 1fr;gap:20px;background:#f3ecf5}.support-box.emergency{background:#f7eae5;border-color:#ead4c9}.phone{font:43px/1 Georgia,serif;color:var(--deep);text-decoration:none;padding-top:6px}.support-box h3{font-size:13px}.support-box p{font-size:11px;margin:5px 0}.support-box a:not(.phone){font-size:10px;font-weight:bold;color:var(--purple)}
+footer{border-top:1px solid var(--line);padding:35px 0 22px}.footer-top{display:flex;align-items:center;justify-content:space-between;gap:25px}.footer-top>p{font-size:11px;max-width:270px}.footer-links{display:flex;gap:20px;font-size:11px}.footer-links button{border:0;padding:0;background:none;text-decoration:underline}.footer-bottom{display:flex;justify-content:space-between;gap:20px;border-top:1px solid var(--line);margin-top:27px;padding-top:17px;font-size:9px;color:var(--muted)}.back-top{position:fixed;bottom:23px;right:23px;z-index:15;border:1px solid #c9b9d3;background:var(--paper);border-radius:50%;width:39px;height:39px;box-shadow:0 4px 20px #432b5515;display:grid;place-items:center;text-decoration:none}.back-top[hidden]{display:none}
+dialog{width:min(640px,calc(100% - 30px));max-height:85vh;border:1px solid var(--line);border-radius:13px;padding:0;background:var(--paper);color:var(--ink);box-shadow:0 20px 100px #21192c33}dialog::backdrop{background:#21192c99;backdrop-filter:blur(4px)}.modal-head{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:17px 27px;background:var(--paper);border-bottom:1px solid var(--line);z-index:1}.modal-head .eyebrow{margin:0;font-size:9px}.close{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;background:transparent;font-size:20px;line-height:1}.modal-content{padding:29px}.modal-content h2{font-size:37px;margin-bottom:22px}.modal-content h3{font-size:16px;margin:24px 0 9px}.modal-content p,.modal-content li{font-size:14px;color:var(--muted);margin-bottom:13px}.modal-content a{color:var(--purple);overflow-wrap:anywhere}.modal-content ul{padding-left:20px}.modal-content .source{font-size:11px;border-top:1px solid var(--line);padding-top:17px;margin-top:22px}.modal-content blockquote{margin:20px 0;padding:18px;border-left:3px solid var(--purple);background:var(--lavender);font-family:Georgia,serif;font-size:21px}
+@media(min-width:1500px){.hero{padding-top:75px;padding-bottom:65px}}
+@media(max-width:1000px){.navlinks{gap:18px}.navlinks>a{font-size:10px}.brand-title{font-size:20px}.about{gap:40px}.support{gap:35px}.value{padding:0 16px;gap:10px}.hero h1{font-size:58px}.story-body h3{font-size:21px}}
+@media(max-width:800px){.wrap{width:calc(100% - 40px)}.nav{min-height:73px}.menu-toggle{display:block}.navlinks{display:none;position:absolute;top:73px;left:0;right:0;padding:22px;background:var(--paper);border-bottom:1px solid var(--line);box-shadow:0 14px 24px #30263b0a}.navlinks.open{display:flex;flex-direction:column;align-items:stretch;gap:18px}.navlinks>a{font-size:13px}.hero-grid{gap:5px}.hero h1{font-size:47px;letter-spacing:-2px}.hero .eyebrow{font-size:8px}.hero-copy>p{font-size:12px}.hero .btn{font-size:11px;padding:12px 15px}.float-note{font-size:14px;padding:15px 18px}.float-note small{font-size:7px}.values-row{grid-template-columns:repeat(2,1fr);gap:22px}.value:nth-child(2){border:0}.value:nth-child(3){padding-left:0}.learn-grid{gap:12px}.card-body{padding:18px}.card-body h3{font-size:22px}.learn-card img{height:140px}.action-grid{gap:12px}.action{padding:20px}.action h3{font-size:21px}.action-top{flex-wrap:wrap;gap:10px}.story-grid{grid-template-columns:repeat(2,1fr)}.story-art{height:200px}.section{padding:64px 0}.footer-top{flex-wrap:wrap}}
+@media(max-width:580px){.topline{font-size:8px}.hero{padding:38px 0 30px}.hero-grid{grid-template-columns:1fr}.hero h1{font-size:54px;max-width:400px}.hero-copy>p{font-size:14px;max-width:360px;margin:20px 0}.hero .eyebrow{font-size:8px;margin-bottom:20px}.community-note{margin-top:22px}.art-wrap{max-width:430px;width:100%;margin:16px auto 0}.hero-art{aspect-ratio:1.2}.float-note{left:6%;bottom:16px}.art-caption{font-size:8px}.values-row{padding:22px 0;gap:20px}.value{padding:0 10px;gap:10px}.value small{font-size:9px}.value b{font-size:11px}.value-icon{font-size:22px}.about,.support{grid-template-columns:1fr;gap:34px}.about-copy>p{max-width:none}.section-head{display:block}.section-head>p{margin-top:17px;max-width:none}h2{font-size:38px}.learn-grid,.action-grid{grid-template-columns:1fr}.learn-card{display:grid;grid-template-columns:115px 1fr}.learn-card img{height:100%;min-height:230px;object-fit:cover}.card-body h3{font-size:24px}.card-body p{font-size:11px}.action{padding:25px}.action-top{margin-bottom:18px}.action h3{font-size:26px}.action p{font-size:13px}.story-grid{gap:12px}.story-art{height:150px}.story-body{padding:15px}.story-body h3{font-size:23px}.support-box{padding:22px;grid-template-columns:70px 1fr;gap:15px}.footer-top>p{max-width:none}.footer-links{width:100%}.footer-bottom{flex-direction:column;gap:8px}.back-top{right:12px;bottom:12px}.modal-content{padding:24px}.modal-content h2{font-size:32px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+<div class="topline">PROJETO DE EXTENSÃO UNIVERSITÁRIA <span> &nbsp; • &nbsp; </span> CONHECIMENTO QUE TRANSFORMA REALIDADES</div>
+
+<header>
+  <nav class="nav wrap" aria-label="Menu principal">
+    <a class="brand" href="#inicio" aria-label="Vozes que Transformam — início">
+      <span class="brand-title">vozes que<br>transformam<small>Educação · Respeito · Igualdade</small></span>
+    </a>
+    <button class="menu-toggle" aria-expanded="false" aria-controls="menu">Menu ☰</button>
+    <div class="navlinks" id="menu">
+      <a class="active" href="#inicio">Início</a>
+      <a href="#sobre">O projeto</a>
+      <a href="#aprenda">Aprenda sobre igualdade</a>
+      <a href="#acoes">Nossas ações</a>
+      <a href="#apoio">Direitos e apoio</a>
+    </div>
+  </nav>
+</header>
+
+<main id="conteudo">
+<section id="inicio" class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span> ODS 5 &nbsp; · &nbsp; AGENDA 2030</span>
+      <h1>Igualdade começa<br>com <em>conhecimento.</em><br>E cresce com<br>a nossa voz.</h1>
+      <p>Conectamos universidade e comunidade para construir um futuro com mais respeito, direitos e oportunidades para todas.</p>
+      <a class="btn" href="#sobre">Conheça o projeto <span aria-hidden="true">↗</span></a>
+      <div class="community-note"><span class="avatars" aria-hidden="true"><i></i><i></i><i></i></span> Diferentes histórias. Um propósito em comum.</div>
+    </div>
+    <div class="art-wrap">
+      <img id="heroImage" class="hero-art" alt="Ilustração de mulheres diversas reunidas, com um livro e um símbolo de igualdade." width="640" height="610">
+      <div class="float-note">Juntas, abrimos caminhos.<small>Cada voz faz a diferença</small></div>
+      <span class="art-caption">DIVERSIDADE QUE NOS FORTALECE.</span>
+    </div>
+  </div>
+</section>
+
+<div class="values">
+  <div class="wrap values-row">
+    <div class="value"><span class="value-icon" aria-hidden="true">▱</span><div><b>Educação</b><small>Aprender para transformar.</small></div></div>
+    <div class="value"><span class="value-icon" aria-hidden="true">◎</span><div><b>Participação</b><small>Construir mudanças coletivas.</small></div></div>
+    <div class="value"><span class="value-icon" aria-hidden="true">⚖</span><div><b>Direitos</b><small>Promover respeito e equidade.</small></div></div>
+    <div class="value"><span class="value-icon" aria-hidden="true">◉</span><div><b>Conscientização</b><small>Questionar estereótipos.</small></div></div>
+  </div>
+</div>
+
+<section id="sobre" class="section">
+  <div class="wrap about">
+    <div class="about-copy">
+      <span class="eyebrow">01 / NOSSO PROPÓSITO</span>
+      <h2>A transformação<br>se constrói <em>em conjunto.</em></h2>
+      <p>O Vozes que Transformam é uma proposta de extensão universitária que une educação, escuta e participação comunitária para promover a igualdade de gênero.</p>
+      <p>Nossa missão é transformar conhecimento em atitudes: na universidade, na escola, no trabalho e dentro de casa.</p>
+      <div class="ods-card">
+        <div class="ods-tile" aria-label="ODS 5: igualdade de gênero"><b>5</b><span>IGUALDADE DE GÊNERO</span></div>
+        <p>Uma proposta alinhada à Agenda 2030 e ao empoderamento de mulheres e meninas.<a href="https://brasil.un.org/pt-br/sdgs/5" target="_blank" rel="noopener noreferrer">Conheça a ODS 5 na ONU ↗</a></p>
+      </div>
+    </div>
+    <div class="accordion">
+      <details open>
+        <summary>Por que este projeto existe?</summary>
+        <div>Desigualdades de gênero limitam o acesso a oportunidades, à participação social e à autonomia. A universidade pode contribuir com espaços de diálogo e produção compartilhada de conhecimento, considerando também raça, classe, deficiência, idade e território.</div>
+      </details>
+      <details>
+        <summary>Objetivo geral e objetivos específicos</summary>
+        <div><p>Promover a conscientização sobre igualdade de gênero por meio da educação e de ações construídas com a comunidade.</p><ul><li>Discutir estereótipos e práticas discriminatórias do cotidiano.</li><li>Divulgar direitos e canais oficiais de apoio.</li><li>Valorizar trajetórias de mulheres na ciência, na cultura e na vida pública.</li><li>Estimular a divisão justa do cuidado e a participação em decisões.</li><li>Produzir materiais educativos acessíveis com a comunidade.</li></ul></div>
+      </details>
+      <details>
+        <summary>Como vamos trabalhar?</summary>
+        <div><ol><li><b>Escutar:</b> realizar encontros iniciais para identificar demandas locais, sem solicitar relatos pessoais de violência.</li><li><b>Planejar:</b> definir temas, formatos e acessibilidade junto às pessoas participantes.</li><li><b>Agir:</b> desenvolver oficinas, rodas de conversa e campanhas educativas.</li><li><b>Avaliar e devolver:</b> reunir aprendizados e compartilhar os resultados com a comunidade.</li></ol><p>Proposta de ciclo semestral: diagnóstico no primeiro mês, ações nos meses seguintes e avaliação ao final.</p></div>
+      </details>
+      <details>
+        <summary>Público, equipe e vínculo acadêmico</summary>
+        <div><p>Público proposto: estudantes, profissionais da educação e moradores das comunidades parceiras. As atividades devem acolher pessoas de todos os gêneros.</p><p>Equipe prevista: coordenação docente, estudantes extensionistas e representantes da comunidade. Contribuições de profissionais especializados podem apoiar os temas de direitos e proteção.</p><p><b>A definir:</b> instituição, curso, coordenação, equipe nominal e parcerias. Esta apresentação não representa vínculo institucional já formalizado.</p></div>
+      </details>
+      <details>
+        <summary>Avaliação, resultados esperados e ODS 5</summary>
+        <div><p>Avaliação proposta: registro agregado de participação, questionários anônimos antes e depois das atividades e devolutivas qualitativas. Os indicadores devem acompanhar aprendizagem, acessibilidade e utilidade dos materiais.</p><p>Resultados esperados: maior conhecimento sobre desigualdades, reconhecimento de estereótipos e fortalecimento do diálogo comunitário. Não há resultados de execução informados nesta versão.</p><p>Conexão temática com as metas 5.1, 5.2, 5.4 e 5.5: discriminação, violência, trabalho de cuidado e participação das mulheres nas decisões.</p></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="aprenda" class="section learn">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow">02 / CONHECIMENTO QUE LIBERTA</span><h2>Para transformar,<br>primeiro precisamos <em>entender.</em></h2></div>
+      <p>Pequenas leituras para ampliar perspectivas e levar a igualdade para o dia a dia.</p>
+    </div>
+    <div class="learn-grid">
+      <article class="learn-card">
+        <img id="learn1" alt="Ilustração de formas diferentes equilibradas sobre uma base." width="400" height="210">
+        <div class="card-body"><span class="tag">Conceitos essenciais</span><h3>Igualdade e equidade: por onde começar?</h3><p>Direitos iguais e caminhos que reconhecem necessidades diferentes.</p><div class="learn-bottom"><button class="text-link" data-article="equidade">Explorar o tema →</button><small>LEITURA BREVE</small></div></div>
+      </article>
+      <article class="learn-card">
+        <img id="learn2" alt="Ilustração de um livro aberto com uma flor." width="400" height="210">
+        <div class="card-body"><span class="tag">Além dos rótulos</span><h3>Talento não tem gênero.</h3><p>Como questionar estereótipos na escola, em casa e no trabalho.</p><div class="learn-bottom"><button class="text-link" data-article="estereotipos">Explorar o tema →</button><small>LEITURA BREVE</small></div></div>
+      </article>
+      <article class="learn-card">
+        <img id="learn3" alt="Ilustração de duas mãos sustentando um coração." width="400" height="210">
+        <div class="card-body"><span class="tag">Mudança cotidiana</span><h3>O cuidado também é coletivo.</h3><p>Compartilhar responsabilidades abre espaço para novas oportunidades.</p><div class="learn-bottom"><button class="text-link" data-article="cuidado">Explorar o tema →</button><small>LEITURA BREVE</small></div></div>
+      </article>
+    </div>
+    <div class="learning-tip">Uma boa conversa pode ser o primeiro passo para uma grande mudança.</div>
+  </div>
+</section>
+
+<section id="acoes" class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow">03 / DA REFLEXÃO À PRÁTICA</span><h2>Conhecimento em movimento.</h2></div>
+      <p>Encontros e experiências para aproximar pessoas, compartilhar saberes e construir soluções.</p>
+    </div>
+    <div class="filters" role="group" aria-label="Filtrar ações por formato">
+      <button class="filter" data-filter="all" aria-pressed="true">Todas as ações</button>
+      <button class="filter" data-filter="conversa" aria-pressed="false">Rodas de conversa</button>
+      <button class="filter" data-filter="oficina" aria-pressed="false">Oficinas</button>
+      <button class="filter" data-filter="campanha" aria-pressed="false">Campanhas</button>
+    </div>
+    <div class="action-grid">
+      <article class="action" data-type="conversa">
+        <div class="action-top"><span class="action-icon" aria-hidden="true">☏</span><span class="status">Ação proposta</span></div>
+        <span class="tag">Escuta e diálogo</span><h3>Vozes em roda</h3><p>Conversas sobre respeito, oportunidades e os desafios da igualdade em nossa comunidade.</p><div class="meta">Comunidade e universidade · Duração sugerida: 90 min</div><button class="text-link" data-action="roda">Conheça a proposta <span>↗</span></button>
+      </article>
+      <article class="action" data-type="oficina">
+        <div class="action-top"><span class="action-icon" aria-hidden="true">✎</span><span class="status">Ação proposta</span></div>
+        <span class="tag">Aprender fazendo</span><h3>Desconstruindo rótulos</h3><p>Uma oficina participativa para reconhecer estereótipos e criar novas narrativas.</p><div class="meta">Escolas e espaços comunitários · Duração sugerida: 2 h</div><button class="text-link" data-action="oficina">Conheça a proposta <span>↗</span></button>
+      </article>
+      <article class="action" data-type="campanha">
+        <div class="action-top"><span class="action-icon" aria-hidden="true">⚑</span><span class="status">Ação proposta</span></div>
+        <span class="tag">Informação que circula</span><h3>Respeito se compartilha</h3><p>Materiais educativos sobre direitos, divisão do cuidado e canais de apoio.</p><div class="meta">Comunicação digital e comunitária · Ciclo sugerido: 4 semanas</div><button class="text-link" data-action="campanha">Conheça a proposta <span>↗</span></button>
+      </article>
+    </div>
+    <p class="small-note" id="filterStatus" aria-live="polite">3 propostas de atividades. Datas e locais dependem da organização do projeto.</p>
+  </div>
+</section>
+
+<section class="section stories" id="historias">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow">04 / MULHERES QUE ABRIRAM CAMINHOS</span><h2>Suas histórias inspiram.<br>Seus legados <em>transformam.</em></h2></div>
+      <p>Conheça mulheres cuja contribuição merece espaço nas salas de aula e nas nossas conversas.</p>
+    </div>
+    <div class="story-grid">
+      <article class="story-card"><img id="story1" class="story-art" alt="Composição simbólica com um livro e uma flor, representando educação." width="280" height="210"><div class="story-body"><small>Educação e direitos</small><h3>Nísia<br>Floresta</h3><button data-person="nisia">Conheça sua história ↗</button></div></article>
+      <article class="story-card"><img id="story2" class="story-art" alt="Composição simbólica de uma página escrita, representando literatura." width="280" height="210"><div class="story-body"><small>Literatura e sociedade</small><h3>Carolina Maria<br>de Jesus</h3><button data-person="carolina">Conheça sua história ↗</button></div></article>
+      <article class="story-card"><img id="story3" class="story-art" alt="Composição simbólica com formas geométricas, representando engenharia." width="280" height="210"><div class="story-body"><small>Engenharia e ciência</small><h3>Enedina Alves<br>Marques</h3><button data-person="enedina">Conheça sua história ↗</button></div></article>
+      <article class="story-card"><img id="story4" class="story-art" alt="Composição simbólica com um ramo e um círculo, representando ciência e participação." width="280" height="210"><div class="story-body"><small>Ciência e participação</small><h3>Bertha<br>Lutz</h3><button data-person="bertha">Conheça sua história ↗</button></div></article>
+    </div>
+    <p class="stories-note">Seleção educativa do site · Ilustrações simbólicas · Referências disponíveis em cada história.</p>
+  </div>
+</section>
+
+<section id="apoio" class="section">
+  <div class="wrap support">
+    <div class="support-copy">
+      <span class="eyebrow">05 / DIREITOS E REDE DE APOIO</span><h2>Informação acolhe.<br>Apoio faz a diferença.</h2>
+      <p>Toda mulher merece viver com respeito e segurança. Conhecer os canais de atendimento é uma forma de fortalecer a rede de proteção.</p>
+      <button class="text-link" data-article="direitos">Entenda os caminhos de apoio <span>↗</span></button>
+      <small>Este projeto tem caráter educativo e não realiza atendimento de emergência. Canais abaixo disponíveis no Brasil.</small>
+    </div>
+    <div class="support-boxes">
+      <div class="support-box"><a class="phone" href="tel:180" aria-label="Ligar para 180">180</a><div><h3>Central de Atendimento à Mulher</h3><p>Orientação, informações sobre serviços e registro de denúncias. Gratuito, 24 horas, todos os dias.</p><a href="tel:180">Ligar para o 180 ↗</a></div></div>
+      <div class="support-box emergency"><a class="phone" href="tel:190" aria-label="Ligar para 190">190</a><div><h3>Em uma emergência</h3><p>Em caso de emergência ou perigo imediato, acione a Polícia Militar.</p><a href="tel:190">Ligar para o 190 ↗</a></div></div>
+      <small>Fonte: <a href="https://www.gov.br/mulheres/pt-br/ligue180" target="_blank" rel="noopener noreferrer">Ministério das Mulheres — Ligue 180 ↗</a></small>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <a class="brand" href="#inicio"><span class="brand-title">vozes que<br>transformam<small>Projeto de extensão · ODS 5</small></span></a>
+      <p>Conhecimento, respeito e oportunidades para todas.</p>
+      <div class="footer-links"><button id="sourcesButton">Fontes e referências</button></div>
+    </div>
+    <div class="footer-bottom"><span>Vozes que Transformam · Proposta acadêmica de extensão universitária.</span><span>Educação para a igualdade. Espaço para todas as vozes.</span></div>
+  </div>
+</footer>
+
+<a href="#inicio" class="back-top" aria-label="Voltar ao início" hidden>↑</a>
+<dialog id="reader" aria-labelledby="modalTitle">
+  <div class="modal-head"><span class="eyebrow" id="modalCategory">Vozes que Transformam</span><button class="close" aria-label="Fechar conteúdo">×</button></div>
+  <div class="modal-content"><h2 id="modalTitle"></h2><div id="modalBody"></div></div>
+</dialog>
+
+<script>
+const svgImage=(content,w=400,h=240)=>'data:image/svg+xml;base64,'+btoa(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${content}</svg>`
+);
+const setArt=(id,content,w,h)=>document.getElementById(id).src=svgImage(content,w,h);
+const leaf=`<path d="M0 0Q-35-25-11-50Q14-33 0 0M0-5Q32-21 30-49Q5-45 0-5" fill="#76836b"/>`;
+
+function woman(x,y,s,skin,hair,shirt,style){
+  const hairShape=style===0
+    ?`<path d="M-49 6Q-64-72 2-73Q62-67 48 20L35 62H-42Z" fill="${hair}"/><g fill="${hair}"><circle cx="-39" cy="-38" r="22"/><circle cx="-20" cy="-61" r="22"/><circle cx="11" cy="-65" r="24"/><circle cx="36" cy="-45" r="24"/></g>`
+    :style===1?`<path d="M-45 49L-47-28Q-41-78 9-69Q54-62 48-17L58 60Z" fill="${hair}"/>`
+    :`<path d="M-43 12Q-59-68-2-72Q57-66 43 20Z" fill="${hair}"/><circle cx="31" cy="-66" r="24" fill="${hair}"/>`;
+  return `<g transform="translate(${x} ${y}) scale(${s})">
+    ${hairShape}<path d="M-79 157L-69 67Q-57 35-20 33H21Q60 38 71 70L86 157Z" fill="${shirt}"/>
+    <path d="M-15 14V41Q0 62 19 40V12Z" fill="${skin}"/>
+    <ellipse cy="-17" rx="35" ry="45" fill="${skin}"/>
+    <path d="M-35-30Q-15-30-2-54Q16-28 34-27L34-44Q19-75-13-59Q-37-53-35-30Z" fill="${hair}"/>
+    <g stroke="#382a37" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M-21-18q5-4 10 0M11-18q5-4 10 0M1-13l-3 14h6M-9 9q9 8 18 0"/></g>
+    <circle cx="-36" cy="-1" r="5" fill="${skin}"/><circle cx="36" cy="-1" r="5" fill="${skin}"/>
+    <g fill="none" stroke="#eac688" stroke-width="3"><ellipse cx="-37" cy="10" rx="5" ry="8"/><ellipse cx="37" cy="10" rx="5" ry="8"/></g>
+    <path d="M-20 42L-35 74M20 42L35 74" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="2"/>
+  </g>`;
+}
+setArt('heroImage',`
+<defs><clipPath id="scene"><path d="M44 554V282C44 116 164 38 320 38S595 123 595 282V554Z"/></clipPath><pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".8" fill="#4c315e" opacity=".12"/></pattern></defs>
+<path d="M44 554V282C44 116 164 38 320 38S595 123 595 282V554Z" fill="#e6dce9"/>
+<g clip-path="url(#scene)">
+<circle cx="474" cy="155" r="92" fill="#e9bd9e"/>
+<path d="M0 410Q150 330 280 419T650 404V620H0Z" fill="#bbc4aa"/>
+<path d="M0 497Q210 381 440 499T680 470V620H0Z" fill="#c6b1d5"/>
+<path d="M84 227Q113 176 160 188Q194 197 205 231L180 253H89Z" fill="#eee8df"/>
+${woman(200,273,1.36,'#b77150','#382b3a','#e6a795',0)}
+${woman(435,254,1.2,'#e5b49d','#807c84','#75866e',1)}
+${woman(320,394,1.51,'#8d503b','#292b37','#796094',2)}
+<path d="M257 530L251 456Q296 449 327 469Q357 448 401 453L397 527Q357 526 327 543Q294 525 257 530Z" fill="#fff3d8"/>
+<path d="M327 469V538" stroke="#c5ad8a" stroke-width="3"/>
+<g stroke="#b5a68c" stroke-width="2"><path d="M264 469l47 13M264 481l47 13M264 494l47 13M343 483l43-15M343 496l43-15M343 509l43-15"/></g>
+<path d="M220 507Q234 478 253 491L269 516Q261 538 239 532Z" fill="#8d503b"/>
+<path d="M424 504Q414 479 397 491L385 515Q395 534 416 530Z" fill="#8d503b"/>
+<rect width="640" height="610" fill="url(#dots)"/>
+</g>
+<path d="M54 529Q62 451 40 391M49 468Q13 457 13 430Q45 427 49 468M47 450Q76 424 85 394Q45 405 47 450" fill="#6d7e69"/>
+<path d="M580 547Q560 462 589 384M574 495Q610 474 619 438Q576 449 574 495M576 461Q543 452 539 416Q571 423 576 461" fill="#71806c"/>
+<g transform="translate(325 102) rotate(12)"><circle r="36" fill="#faf6ec" stroke="#c7b4ce"/><path d="M-13-7H13M-13 7H13" stroke="#77598e" stroke-width="5" stroke-linecap="round"/></g>
+<path d="M500 60Q543 67 558 105M550 92l9 16 2-19" fill="none" stroke="#9e7d9c" stroke-width="2" stroke-linecap="round"/>
+`,640,610);
+
+const art1=`<rect width="400" height="240" fill="#e4d9eb"/><circle cx="316" cy="48" r="70" fill="#d0bcde"/><path d="M80 197H326" stroke="#a08aaa" stroke-width="2"/><path d="M194 85L158 197H238Z" fill="#836398"/><path d="M77 102L315 70" stroke="#493254" stroke-width="9" stroke-linecap="round"/><circle cx="120" cy="63" r="34" fill="#d99a80"/><path d="M254 63V5H308V63Z" fill="#faf3de"/>`;
+const art2=`<rect width="400" height="240" fill="#ead6ca"/><circle cx="70" cy="50" r="78" fill="#dcae98"/><path d="M90 183L97 78Q145 69 202 97Q254 68 309 79L318 183Q259 175 202 207Q148 177 90 183Z" fill="#fff7e6"/><path d="M202 99V204M114 103q38-4 69 14M113 123q38-4 69 14M112 143q38-4 69 14M224 116q32-15 67-13M224 137q32-15 67-13" stroke="#beab93" stroke-width="2" fill="none"/><path d="M260 126Q262 65 283 46" stroke="#718268" stroke-width="4" fill="none"/><g transform="translate(266 97) scale(.6)">${leaf}</g><g fill="#84648e"><ellipse cx="283" cy="39" rx="12" ry="23"/><ellipse cx="283" cy="39" rx="12" ry="23" transform="rotate(60 283 39)"/><ellipse cx="283" cy="39" rx="12" ry="23" transform="rotate(120 283 39)"/></g><circle cx="283" cy="39" r="8" fill="#e6be80"/>`;
+const art3=`<rect width="400" height="240" fill="#dde3d4"/><circle cx="335" cy="35" r="75" fill="#c5ceb7"/><path d="M200 131C123 88 154 35 188 57L200 68L212 57C250 30 275 91 200 131Z" fill="#9a779f"/><path d="M47 222L109 125Q119 112 130 127L158 167L187 153Q203 150 209 163Q214 178 197 184L148 211L133 240H47Z" fill="#ad7055"/><path d="M353 222L291 125Q281 112 270 127L242 167L213 153Q197 150 191 163Q186 178 203 184L252 211L267 240H353Z" fill="#e3b199"/><path d="M133 151L151 183M267 151L249 183" stroke="#684f4c" stroke-width="2" fill="none"/>`;
+
+setArt('learn1',art1,400,240);
+setArt('learn2',art2,400,240);
+setArt('learn3',art3,400,240);
+setArt('story1',art2,400,240);
+setArt('story2',`<rect width="400" height="240" fill="#cfb9d8"/><circle cx="295" cy="59" r="79" fill="#e4d6e8"/><g transform="rotate(-9 190 130)"><rect x="98" y="38" width="155" height="196" rx="4" fill="#f8efdb"/><path d="M119 79h107M119 99h107M119 119h84M119 139h107M119 159h90M119 179h107" stroke="#977d9e" stroke-width="3"/></g><path d="M246 205L289 45L301 49L258 210L246 223Z" fill="#704d7f"/><path d="M246 205L258 210L246 223Z" fill="#c08b65"/>`,400,240);
+setArt('story3',`<rect width="400" height="240" fill="#d5d9bf"/><circle cx="113" cy="60" r="80" fill="#c0c8a7"/><path d="M77 216L269 29L322 216Z" fill="#f7efd8"/><path d="M156 187L253 93L280 187Z" fill="#d5d9bf"/><path d="M76 216H338M90 199L104 213M111 179L126 192M131 159L146 173M151 140L167 153M171 121L187 134M191 101L207 114" stroke="#8d9977" stroke-width="3"/><circle cx="113" cy="85" r="30" fill="none" stroke="#788768" stroke-width="3"/>`,400,240);
+setArt('story4',`<rect width="400" height="240" fill="#dfb5a4"/><circle cx="295" cy="47" r="83" fill="#e8c8b6"/><path d="M199 218Q194 108 242 39" stroke="#66765c" stroke-width="5" fill="none"/><g transform="translate(212 140) rotate(14) scale(1.25)">${leaf}</g><g transform="translate(229 88) rotate(14) scale(.85)">${leaf}</g><circle cx="155" cy="118" r="42" fill="none" stroke="#805f8f" stroke-width="9"/><path d="M155 160V208M134 188H176" stroke="#805f8f" stroke-width="9"/><circle cx="88" cy="58" r="6" fill="#fff2dd"/>`,400,240);
+
+const sources={
+  onu:'https://brasil.un.org/pt-br/sdgs/5',
+  ipea:'https://www.ipea.gov.br/ods/ods5.html',
+  apoio:'https://www.gov.br/mulheres/pt-br/ligue180'
+};
+const sourceLink=(url,label)=>`<a href="${url}" target="_blank" rel="noopener noreferrer">${label} ↗</a>`;
+
+const articles={
+  equidade:{
+    category:'Conceitos essenciais',title:'Igualdade e equidade: por onde começar?',
+    body:`<p>Igualdade de gênero significa que o gênero de uma pessoa não deve determinar seus direitos, oportunidades ou possibilidades de participação.</p><h3>E a equidade?</h3><p>A equidade considera que as pessoas podem enfrentar barreiras diferentes. Por isso, uma mesma oportunidade pode exigir condições de acesso distintas para se tornar real.</p><blockquote>O acesso existe de verdade quando as barreiras também são enfrentadas.</blockquote><h3>Um exemplo na comunidade</h3><p>Uma oficina pode estar aberta a todas as pessoas, mas um horário incompatível com o cuidado de crianças pode impedir a participação de parte do público. Ouvir a comunidade e adaptar o horário ajuda a ampliar o acesso.</p><h3>Leve para a prática</h3><ul><li>Pergunte quem ainda não está participando e por quê.</li><li>Considere transporte, acessibilidade e responsabilidades de cuidado.</li><li>Inclua as pessoas afetadas na construção das soluções.</li></ul><p class="source">Texto educativo do projeto. Referências: ${sourceLink(sources.onu,'ONU Brasil — ODS 5')} e ${sourceLink(sources.ipea,'Ipea — metas da ODS 5')}.</p>`
+  },
+  estereotipos:{
+    category:'Além dos rótulos',title:'Talento não tem gênero.',
+    body:`<p>Estereótipos são ideias generalizadas que atribuem características ou papéis às pessoas. Quando associamos profissões, tarefas ou comportamentos a um gênero, podemos restringir escolhas antes mesmo de conhecer cada pessoa.</p><h3>Na escola</h3><p>Apresente referências de mulheres em diferentes áreas e incentive todas as pessoas a experimentar ciência, esportes, artes e liderança.</p><h3>No trabalho e em casa</h3><p>Distribua tarefas por critérios claros. Observe quem fica responsável por organizar reuniões, fazer anotações, limpar espaços ou cuidar de outras pessoas.</p><h3>Uma pergunta para abrir a conversa</h3><blockquote>Eu faria o mesmo comentário se essa pessoa fosse de outro gênero?</blockquote><p>Questionar hábitos não exige constranger alguém. Uma conversa respeitosa pode ajudar a reconhecer expectativas injustas e construir alternativas.</p><p class="source">Texto educativo do projeto, em diálogo com as metas sobre discriminação e participação: ${sourceLink(sources.onu,'ONU Brasil — ODS 5')}.</p>`
+  },
+  cuidado:{
+    category:'Mudança cotidiana',title:'O cuidado também é coletivo.',
+    body:`<p>Cozinhar, limpar, acompanhar consultas, cuidar de crianças e organizar a rotina tornam a vida possível. O planejamento dessas tarefas também exige tempo e atenção.</p><h3>Responsabilidade compartilhada</h3><p>Dividir o cuidado vai além de executar uma tarefa quando alguém pede. Inclui perceber o que precisa ser feito, planejar e assumir a responsabilidade até o fim.</p><h3>Experimente em casa</h3><ul><li>Liste as tarefas visíveis e as de organização.</li><li>Converse sobre tempo disponível, necessidades e possibilidades de cada pessoa.</li><li>Combine responsabilidades completas e revise os acordos.</li><li>Respeite o descanso e o tempo de estudo de todas as pessoas.</li></ul><p>O cuidado também depende de serviços, infraestrutura e políticas públicas. Não é uma responsabilidade que deve recair apenas sobre as famílias.</p><p class="source">Referência: meta 5.4 da ${sourceLink(sources.onu,'ODS 5 — ONU Brasil')}, sobre reconhecimento do trabalho doméstico e de cuidado não remunerado.</p>`
+  },
+  direitos:{
+    category:'Direitos e apoio',title:'Você não precisa buscar apoio sozinha.',
+    body:`<p>Conhecer os serviços disponíveis pode ajudar a encontrar orientação e acolhimento. Este site não recebe denúncias nem realiza atendimento especializado.</p><h3>Orientação e denúncias: Ligue 180</h3><p>O serviço informa sobre direitos e sobre a rede de atendimento, além de registrar e encaminhar denúncias aos órgãos competentes. A ligação é gratuita e o atendimento funciona 24 horas, todos os dias.</p><h3>Emergência: Ligue 190</h3><p>Em uma emergência, acione a Polícia Militar pelo 190.</p><h3>Onde encontrar a rede local?</h3><p>O Ligue 180 pode informar sobre serviços como Centros de Referência, Delegacias de Atendimento à Mulher, Defensoria Pública e Casa da Mulher Brasileira.</p><h3>Para quem deseja apoiar</h3><p>Escute com respeito, evite julgamentos e não pressione a pessoa a contar sua história publicamente. Ofereça ajuda para acessar canais oficiais.</p><p class="source">Informações conferidas em 17/10/2026. Fonte: ${sourceLink(sources.apoio,'Ministério das Mulheres — Ligue 180')}.</p>`
+  }
+};
+
+const people={
+  nisia:{title:'Nísia Floresta',category:'Educação e direitos',body:`<p>Educadora e escritora, Nísia Floresta defendeu a educação das mulheres e questionou as diferenças entre o ensino oferecido a meninas e meninos no século XIX.</p><p>Também dirigiu um colégio para moças no Rio de Janeiro e escreveu em defesa dos direitos das mulheres.</p><h3>Para conversar em sala</h3><p>Quais barreiras à educação precisamos reconhecer e enfrentar hoje?</p><p class="source">Referência: ${sourceLink('https://nisiafloresta.rn.gov.br/a-mulher/','Prefeitura de Nísia Floresta — A mulher')}.</p>`},
+  carolina:{title:'Carolina Maria de Jesus',category:'Literatura e sociedade',body:`<p>Escritora brasileira, Carolina Maria de Jesus é autora de <em>Quarto de despejo: diário de uma favelada</em>, publicado em 1960.</p><p>Sua escrita abre caminhos para conversar sobre desigualdade, cotidiano e o reconhecimento de vozes historicamente marginalizadas.</p><h3>Para conversar em sala</h3><p>Quais autoras aparecem nas nossas leituras? Quais perspectivas ainda precisam de espaço?</p><p class="source">Referência: ${sourceLink('https://carolinamariadejesus.ims.com.br/quarto-de-despejo/','Instituto Moreira Salles — Quarto de despejo')}.</p>`},
+  enedina:{title:'Enedina Alves Marques',category:'Engenharia e ciência',body:`<p>Enedina Alves Marques foi a primeira engenheira negra do Brasil e a primeira mulher formada em engenharia no Paraná. Concluiu o curso de Engenharia Civil em 1945.</p><p>Sua trajetória permite discutir como gênero e raça atravessam o acesso à formação e ao reconhecimento profissional.</p><h3>Para conversar em sala</h3><p>Como uma instituição pode tornar o acesso à ciência e à tecnologia mais inclusivo?</p><p class="source">Referência: ${sourceLink('https://labpop.ufes.br/pt-br/enedina-marques','Universidade Federal do Espírito Santo — Enedina Marques')}.</p>`},
+  bertha:{title:'Bertha Lutz',category:'Ciência e participação',body:`<p>Bióloga e defensora dos direitos das mulheres, Bertha Lutz construiu uma trajetória que conectou ciência, educação e participação política.</p><p>Sua atuação pelo acesso das mulheres a espaços de formação e decisão é uma referência para pensar a igualdade de oportunidades.</p><h3>Para conversar em sala</h3><p>Quem participa das decisões na escola, na universidade e na comunidade?</p><p class="source">Referência: ${sourceLink('https://cienciaweb.ifsc.usp.br/bertha-maria-julia-lutz-biologa-e-pioneira-do-movimento-feminista-no-brasil/','Instituto de Física de São Carlos — USP')}.</p>`}
+};
+
+const actions={
+  roda:{title:'Vozes em roda',category:'Roda de conversa · Proposta',body:`<p><b>Objetivo:</b> criar um espaço de escuta e reflexão sobre igualdade no cotidiano.</p><h3>Roteiro sugerido · 90 minutos</h3><ul><li>Acolhida e acordos de convivência: 15 minutos.</li><li>Situações fictícias para discutir estereótipos: 25 minutos.</li><li>Conversa em pequenos grupos: 30 minutos.</li><li>Aprendizados e propostas coletivas: 20 minutos.</li></ul><p>A mediação deve respeitar o direito de não falar e evitar a exposição de histórias pessoais. Uma avaliação anônima pode orientar o próximo encontro.</p><p><b>Organização:</b> equipe extensionista e representantes da comunidade. Data, local e acessibilidade a definir com o público.</p>`},
+  oficina:{title:'Desconstruindo rótulos',category:'Oficina · Proposta',body:`<p><b>Objetivo:</b> reconhecer mensagens que limitam escolhas e criar materiais que valorizem diferentes trajetórias.</p><h3>Roteiro sugerido · 2 horas</h3><ul><li>Mapeamento de estereótipos em exemplos de comunicação: 25 minutos.</li><li>Debate sobre seus efeitos: 25 minutos.</li><li>Criação de cartazes e novas narrativas: 50 minutos.</li><li>Compartilhamento e avaliação: 20 minutos.</li></ul><p><b>Materiais:</b> papel, canetas e exemplos educativos previamente selecionados. Oferecer alternativas acessíveis de participação e descrição das imagens.</p><p>Para atividades com crianças e adolescentes, adequar linguagem, planejamento e procedimentos de autorização às regras da instituição parceira.</p><p>Data, local e facilitadores ainda serão definidos.</p>`},
+  campanha:{title:'Respeito se compartilha',category:'Campanha · Proposta',body:`<p><b>Objetivo:</b> ampliar a circulação de informação acessível sobre igualdade e apoio.</p><h3>Ciclo sugerido · 4 semanas</h3><ul><li>Semana 1: escuta da comunidade e seleção dos temas.</li><li>Semana 2: produção e revisão dos materiais.</li><li>Semana 3: divulgação em espaços e canais autorizados.</li><li>Semana 4: coleta de sugestões e devolutiva.</li></ul><p>Produtos propostos: cartazes, pequenos textos, cards com descrição de imagens e uma conversa com profissional convidado sobre direitos e rede de atendimento.</p><p>Fontes oficiais devem ser verificadas antes da divulgação. Imagens e relatos de participantes só devem ser usados com as autorizações aplicáveis.</p><p>Parcerias, canais e calendário dependem da organização do projeto.</p>`}
+};
+
+const modal=document.getElementById('reader');
+let previousFocus=null;
+function openReader(item){
+  previousFocus=document.activeElement;
+  document.getElementById('modalTitle').textContent=item.title;
+  document.getElementById('modalCategory').textContent=item.category;
+  document.getElementById('modalBody').innerHTML=item.body;
+  modal.showModal();
+  modal.scrollTop=0;
+  document.body.style.overflow='hidden';
+}
+document.querySelectorAll('[data-article]').forEach(button=>{
+  button.onclick=()=>openReader(articles[button.dataset.article]);
+});
+document.querySelectorAll('[data-person]').forEach(button=>{
+  button.onclick=()=>openReader(people[button.dataset.person]);
+});
+document.querySelectorAll('[data-action]').forEach(button=>{
+  button.onclick=()=>openReader(actions[button.dataset.action]);
+});
+document.querySelector('.close').onclick=()=>modal.close();
+modal.addEventListener('close',()=>{
+  document.body.style.overflow='';
+  if(previousFocus)previousFocus.focus({preventScroll:true});
+});
+modal.addEventListener('click',event=>{
+  const rect=modal.getBoundingClientRect();
+  if(event.target===modal&&(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)){
+    modal.close();
+  }
+});
+document.getElementById('sourcesButton').onclick=()=>openReader({
+  title:'Fontes e referências',category:'Para continuar aprendendo',
+  body:`<p>Os textos são sínteses educativas. As atividades e a estrutura acadêmica são propostas para adaptação pela instituição responsável.</p><ul><li>${sourceLink(sources.onu,'ONU Brasil — Objetivo de Desenvolvimento Sustentável 5')}</li><li>${sourceLink(sources.ipea,'Ipea — ODS 5 e adequação das metas ao Brasil')}</li><li>${sourceLink(sources.apoio,'Ministério das Mulheres — Ligue 180')}</li><li>${sourceLink('https://nisiafloresta.rn.gov.br/a-mulher/','Prefeitura de Nísia Floresta — trajetória da educadora')}</li><li>${sourceLink('https://carolinamariadejesus.ims.com.br/quarto-de-despejo/','Instituto Moreira Salles — Carolina Maria de Jesus')}</li><li>${sourceLink('https://labpop.ufes.br/pt-br/enedina-marques','UFES — Enedina Marques')}</li><li>${sourceLink('https://cienciaweb.ifsc.usp.br/bertha-maria-julia-lutz-biologa-e-pioneira-do-movimento-feminista-no-brasil/','USP — Bertha Lutz')}</li></ul><p class="source">Consulta: 17 de outubro de 2026. As referências abrem em uma nova aba. Ilustrações vetoriais originais e simbólicas; não representam retratos das personalidades. Este site não implica parceria ou endosso das instituições citadas.</p>`
+});
+
+const menuButton=document.querySelector('.menu-toggle');
+const menu=document.getElementById('menu');
+menuButton.onclick=()=>{
+  const open=menuButton.getAttribute('aria-expanded')!=='true';
+  menuButton.setAttribute('aria-expanded',String(open));
+  menu.classList.toggle('open',open);
+};
+document.querySelectorAll('.navlinks a').forEach(link=>{
+  link.addEventListener('click',()=>{
+    menu.classList.remove('open');
+    menuButton.setAttribute('aria-expanded','false');
+  });
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&menu.classList.contains('open')){
+    menu.classList.remove('open');
+    menuButton.setAttribute('aria-expanded','false');
+    menuButton.focus();
+  }
+});
+document.querySelectorAll('.filter').forEach(button=>{
+  button.onclick=()=>{
+    document.querySelectorAll('.filter').forEach(other=>{
+      other.setAttribute('aria-pressed',String(other===button));
+    });
+    let count=0;
+    document.querySelectorAll('.action').forEach(card=>{
+      const visible=button.dataset.filter==='all'||button.dataset.filter===card.dataset.type;
+      card.hidden=!visible;
+      if(visible)count++;
+    });
+    document.getElementById('filterStatus').textContent=
+      `${count} proposta${count>1?'s':''} de atividade${count>1?'s':''}. Datas e locais dependem da organização do projeto.`;
+  };
+});
+const backTop=document.querySelector('.back-top');
+window.addEventListener('scroll',()=>{
+  backTop.hidden=window.scrollY<550;
+},{passive:true});
+
+if('IntersectionObserver' in window){
+  const observer=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        document.querySelectorAll('.navlinks a').forEach(link=>{
+          const active=link.getAttribute('href')==='#'+entry.target.id;
+          link.classList.toggle('active',active);
+          if(active)link.setAttribute('aria-current','location');
+          else link.removeAttribute('aria-current');
+        });
+      }
+    });
+  },{rootMargin:'-18% 0px -55% 0px'});
+  document.querySelectorAll('main section[id]').forEach(section=>observer.observe(section));
+}
+</script>
+</body>
+</html>
